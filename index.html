@@ -62,6 +62,7 @@
   button.hell { background: var(--blau-hell); color: var(--blau); margin-top: 0; }
   button.klein { width: auto; padding: 8px 12px; font-size: 14px; margin: 0; }
   button.rot { background: #fee2e2; color: var(--rot); }
+  input.abgeleitet { background: var(--bg); }
   .check { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--text); margin: 14px 0 0; cursor: pointer; }
   .check input { width: 22px; height: 22px; flex: none; padding: 0; accent-color: var(--blau); }
   .eintrag.erledigt { background: #ecfdf5; margin: 0 -14px; padding-left: 14px; padding-right: 14px; }
@@ -200,6 +201,7 @@
           <input type="number" id="abgebucht" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00">
         </div>
       </div>
+      <p class="hinweis" id="rechenHinweis" style="margin:6px 0 0"></p>
       <label for="beschreibung">Beschreibung</label>
       <textarea id="beschreibung" rows="2" placeholder="z. B. Abendessen am Strand"></textarea>
       <label class="check"><input type="checkbox" id="geprueft"> Bereits mit Umrechnungskurs eingetragen</label>
@@ -368,13 +370,14 @@
     };
   }
   function ladenEinst() {
-    var e = { kategorien: [], budget: null, letzterKurs: null };
+    var e = { kategorien: [], budget: null, letzterKurs: null, restbei: 'beide' };
     try {
       var roh = localStorage.getItem(KEY_EINST);
       var d = roh ? JSON.parse(roh) : {};
       e.kategorien = sauberKategorien(d.kategorien);
       e.budget = sauberBudget(d.budget);
       e.letzterKurs = (d.letzterKurs > 0 && isFinite(d.letzterKurs)) ? d.letzterKurs : null;
+      e.restbei = (d.restbei === 'Sabine' || d.restbei === 'Tobi') ? d.restbei : 'beide';
     } catch (err) {}
     return e;
   }
@@ -497,39 +500,63 @@
 
   function startKurs() { return einst.letzterKurs || STANDARD_KURS; }
 
-  // Kurs und abgebuchter Euro-Betrag hängen zusammen: Wer zuletzt von Hand eingegeben wurde, bleibt stehen,
-  // der andere Wert wird daraus berechnet.
-  var zuletztEuro = false;
+  // Pesos, Euro und Kurs hängen zusammen (₱ = € × Kurs). Zwei der drei Werte sind von Hand eingegeben,
+  // der dritte wird berechnet. `anker` merkt sich die zwei zuletzt von Hand geänderten Werte (ältester zuerst).
+  var anker = ['kurs'];
+  var FELD = { php: 'betrag', eur: 'abgebucht', kurs: 'kurs' };
   function feldZahl(id) { return parseFloat(String($(id).value).replace(',', '.')); }
   function kursRunden(k) { return Math.round(k * 10000) / 10000; }
-  function vorschau() {
-    var b = feldZahl('betrag');
-    if (zuletztEuro) {
-      var e = feldZahl('abgebucht');
-      if (b > 0 && e > 0) $('kurs').value = kursRunden(b / e);
-    } else {
-      var k = feldZahl('kurs');
-      $('abgebucht').value = (b > 0 && k > 0) ? (b / k).toFixed(2) : '';
+  function gueltigerAnker(a) {
+    return Array.isArray(a) && a.length === 2 && a[0] !== a[1] &&
+      a.every(function (x) { return x === 'php' || x === 'eur' || x === 'kurs'; });
+  }
+  function berechne() {
+    var dritter = null;
+    if (anker.length === 2) {
+      dritter = ['php', 'eur', 'kurs'].filter(function (x) { return anker.indexOf(x) < 0; })[0];
     }
+    var b = feldZahl('betrag'), e = feldZahl('abgebucht'), k = feldZahl('kurs');
+    var hinweis = 'Gib den Betrag in Pesos oder in Euro ein. Der andere Wert wird über den Kurs berechnet.';
+    if (dritter === 'eur') {
+      $('abgebucht').value = (b > 0 && k > 0) ? (b / k).toFixed(2) : '';
+      hinweis = 'Der Euro-Betrag wird aus Pesos ÷ Kurs berechnet. Trage hier den echten Abbuchungsbetrag ein, dann ergibt sich der Kurs.';
+    } else if (dritter === 'php') {
+      $('betrag').value = (e > 0 && k > 0) ? (e * k).toFixed(2) : '';
+      hinweis = 'Der Peso-Betrag wird aus Euro × Kurs berechnet.';
+    } else if (dritter === 'kurs') {
+      if (b > 0 && e > 0) $('kurs').value = kursRunden(b / e);
+      hinweis = 'Der Kurs ergibt sich aus Pesos ÷ Euro. Änderst du ihn, bleibt der Euro-Betrag stehen und die Pesos werden angepasst.';
+    }
+    ['php', 'eur', 'kurs'].forEach(function (f) { $(FELD[f]).classList.toggle('abgeleitet', f === dritter); });
+    $('rechenHinweis').textContent = hinweis;
+  }
+  // Ein Feld wurde von Hand geändert. Es bleibt fest, der dritte Wert wird berechnet:
+  // - Pesos und Euro eingegeben: der Kurs ergibt sich daraus.
+  // - Kurs geändert, obwohl beide Währungen von Hand stammen: der zuletzt eingegebene Währungswert bleibt.
+  function beruehrt(f) {
+    var rest = anker.filter(function (x) { return x !== f; });
+    if (rest.length > 1) {
+      if (f === 'kurs') rest = [rest[1]];
+      else rest = rest.filter(function (x) { return x !== 'kurs'; });
+    }
+    anker = rest.concat([f]);
+    berechne();
   }
   function formZuruecksetzen() {
     bearbeiteId = null;
     $('form').reset();
     $('datum').value = heute();
     $('kurs').value = startKurs();
-    zuletztEuro = false;
+    anker = ['kurs'];
     letzteKategorie = $('kategorie').value;
     $('formTitel').textContent = 'Neue Ausgabe';
     $('speichern').textContent = 'Speichern';
     $('formKarte').classList.remove('bearbeiten');
-    vorschau();
+    berechne();
   }
-  $('betrag').addEventListener('input', vorschau);
-  $('kurs').addEventListener('input', function () { zuletztEuro = false; vorschau(); });
-  $('abgebucht').addEventListener('input', function () {
-    zuletztEuro = String($('abgebucht').value).trim() !== '';
-    vorschau();
-  });
+  $('betrag').addEventListener('input', function () { beruehrt('php'); });
+  $('abgebucht').addEventListener('input', function () { beruehrt('eur'); });
+  $('kurs').addEventListener('input', function () { beruehrt('kurs'); });
 
   $('kategorie').addEventListener('change', function () {
     if ($('kategorie').value !== '__neu__') { letzteKategorie = $('kategorie').value; return; }
@@ -546,13 +573,15 @@
 
   $('form').addEventListener('submit', function (e) {
     e.preventDefault();
-    var betrag = parseFloat(String($('betrag').value).replace(',', '.'));
-    var kurs = parseFloat(String($('kurs').value).replace(',', '.'));
-    var abgebucht = parseFloat(String($('abgebucht').value).replace(',', '.'));
-    if (!isFinite(betrag) || betrag <= 0) { toast('Bitte einen gültigen Betrag eingeben.'); return; }
-    var echtAbgebucht = zuletztEuro && isFinite(abgebucht) && abgebucht > 0;
-    if (echtAbgebucht) kurs = betrag / abgebucht; // Kurs ergibt sich aus dem tatsächlich abgebuchten Betrag
+    var betrag = feldZahl('betrag'), kurs = feldZahl('kurs'), euro = feldZahl('abgebucht');
+    if (!(betrag > 0)) { toast('Bitte einen gültigen Betrag (₱ oder €) eingeben.'); return; }
+    if (anker.indexOf('kurs') < 0) {
+      // Pesos und Euro wurden eingegeben: der Kurs ergibt sich daraus
+      if (!(euro > 0)) { toast('Bitte den Euro-Betrag eingeben.'); return; }
+      kurs = betrag / euro;
+    }
     if (!isFinite(kurs) || kurs <= 0) { toast('Bitte einen gültigen Kurs eingeben.'); return; }
+    var euroManuell = anker.indexOf('eur') >= 0 && euro > 0;
     if ($('kategorie').value === '__neu__') { toast('Bitte eine Kategorie wählen.'); return; }
     var eintrag = {
       id: bearbeiteId || neueId(),
@@ -563,7 +592,8 @@
       kurs: kurs,
       beschreibung: $('beschreibung').value.trim()
     };
-    if (echtAbgebucht) eintrag.abgebucht = Math.round(abgebucht * 100) / 100;
+    if (euroManuell) eintrag.abgebucht = Math.round(euro * 100) / 100;
+    eintrag.anker = anker.slice(); // merkt sich, welche Werte von Hand eingegeben wurden
     if ($('geprueft').checked) eintrag.geprueft = true;
     if (bearbeiteId) {
       ausgaben = ausgaben.map(function (a) { return a.id === bearbeiteId ? eintrag : a; });
@@ -626,19 +656,19 @@
       if (!$('suche').hidden) schliesseSuche();
       bearbeiteId = id;
       $('datum').value = a.datum;
+      anker = gueltigerAnker(a.anker) ? a.anker.slice() : (a.abgebucht > 0 ? ['php', 'eur'] : ['php', 'kurs']);
       $('betrag').value = a.betrag;
       $('kategorie').value = a.kategorie;
       letzteKategorie = a.kategorie;
       $('zahlung').value = a.zahlung || ZAHLUNGSMITTEL[0];
       $('kurs').value = a.kurs > 0 ? kursRunden(a.kurs) : startKurs();
-      zuletztEuro = a.abgebucht > 0;
-      if (zuletztEuro) $('abgebucht').value = a.abgebucht;
+      $('abgebucht').value = a.abgebucht > 0 ? a.abgebucht : '';
       $('beschreibung').value = a.beschreibung || '';
       $('geprueft').checked = !!a.geprueft;
       $('formTitel').textContent = 'Ausgabe ändern';
       $('speichern').textContent = 'Änderung speichern';
       $('formKarte').classList.add('bearbeiten');
-      vorschau();
+      berechne();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
@@ -711,6 +741,9 @@
   }
 
   // Reiter „Abrechnung“ (alles in Euro, Kurs je Eintrag)
+  // Wer hat wie viel vorgestreckt? Kartenzahlungen und Bargeldabhebungen zählen als bezahlt von der Person,
+  // deren Karte belastet wurde. Bar-Ausgaben und ING (Gemeinschaftskonto) sind neutral, weil das Geld
+  // schon über die Abhebung bzw. gemeinsam bezahlt wurde. Das Restbargeld gehört beiden je zur Hälfte.
   function renderAbrechnung() {
     var zaehlt = ausgaben.filter(function (a) { return !istAbh(a) && a.zahlung; });
     var ohneZ = ausgaben.filter(function (a) { return !istAbh(a) && !a.zahlung; });
@@ -719,23 +752,25 @@
       var e = euroVon(a);
       if (a.zahlung === 'KK Sabine') kS += e;
       else if (a.zahlung === 'KK Tobi') kT += e;
-      else if (a.zahlung === 'ING') kI += e; // Gemeinschaftskonto: neutral
+      else if (a.zahlung === 'ING') kI += e;
       else bar += e;
     });
     function abhebungenMit(m) { return summeEuro(ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === m; })); }
-    var abhS = abhebungenMit('KK Sabine'), abhT = abhebungenMit('KK Tobi'), abhI = abhebungenMit('ING');
-    var abhGes = abhS + abhT + abhI;
-    var keineAbh = abhGes <= 0;
-    // Bargeld stammt aus den Abhebungen: der ING-Anteil ist Gemeinschaftsgeld und bleibt neutral
-    var aS = keineAbh ? 0.5 : abhS / abhGes, aT = keineAbh ? 0.5 : abhT / abhGes, aI = keineAbh ? 0 : abhI / abhGes;
-    var barS = bar * aS, barT = bar * aT, barI = bar * aI;
-    var neutral = kI + barI;
-    var paidS = kS + barS, paidT = kT + barT;
-    var gesamt = paidS + paidT, haelfte = gesamt / 2;
-    var saldo = runden(paidS - haelfte);
+    var wS = abhebungenMit('KK Sabine'), wT = abhebungenMit('KK Tobi'), wI = abhebungenMit('ING');
+    var abgehoben = wS + wT + wI;
+    var kosten = kS + kT + kI + bar;                 // alle Ausgaben inkl. Bar und ING
+    var rest = runden(abgehoben - bar);             // Restbargeld
+    var vorS = kS + wS, vorT = kT + wT;              // von der Person vorgestreckt (Karte + Abhebungen)
+    var restBei = einst.restbei;
+    var hS = restBei === 'Sabine' ? 1 : (restBei === 'Tobi' ? 0 : 0.5);
+    var hT = 1 - hS;
+    // Positiv: Tobi schuldet Sabine. Grundwert = halber Unterschied der Vorauszahlungen (Restbargeld geteilt).
+    // Liegt das Restbargeld nur bei einem, muss er dem anderen dessen Hälfte erstatten.
+    var saldo = runden((vorS - vorT) / 2 + Math.max(rest, 0) * (hT - hS) / 2);
 
     var kopf;
-    if (!zaehlt.length) {
+    var hatDaten = zaehlt.length || abgehoben > 0;
+    if (!hatDaten) {
       kopf = '<div class="ergebnis">Noch nichts abzurechnen<span class="gross">0,00 €</span></div>';
     } else if (saldo === 0) {
       kopf = '<div class="ergebnis">Ihr seid quitt<span class="gross">0,00 €</span></div>';
@@ -745,37 +780,47 @@
       kopf = '<div class="ergebnis">Sabine schuldet Tobi<span class="gross">' + euroFmt(-saldo) + '</span></div>';
     }
     var html = kopf +
-      '<div class="rz"><span>' + (neutral > 0 ? 'Gesamtausgaben (ohne ING)' : 'Gesamtausgaben') + '</span><b>' + euroFmt(gesamt) + '</b></div>' +
-      '<div class="rz"><span>Anteil je Person (50 %)</span><b>' + euroFmt(haelfte) + '</b></div>' +
-      '<div class="rz"><span>Sabine hat bezahlt</span><b>' + euroFmt(paidS) + '</b></div>' +
+      '<div class="rz"><span>Gesamtausgaben</span><b>' + euroFmt(kosten) + '</b></div>' +
+      '<div class="rz sub"><span>davon bar bezahlt</span><span>' + euroFmt(bar) + '</span></div>' +
+      '<div class="rz sub"><span>davon über ING</span><span>' + euroFmt(kI) + '</span></div>' +
+      '<div class="rz"><span>Sabine hat vorgestreckt</span><b>' + euroFmt(vorS) + '</b></div>' +
       '<div class="rz sub"><span>Karte (KK Sabine)</span><span>' + euroFmt(kS) + '</span></div>' +
-      '<div class="rz sub"><span>Bar-Anteil</span><span>' + euroFmt(barS) + '</span></div>' +
-      '<div class="rz"><span>Tobi hat bezahlt</span><b>' + euroFmt(paidT) + '</b></div>' +
+      '<div class="rz sub"><span>Abhebungen</span><span>' + euroFmt(wS) + '</span></div>' +
+      '<div class="rz"><span>Tobi hat vorgestreckt</span><b>' + euroFmt(vorT) + '</b></div>' +
       '<div class="rz sub"><span>Karte (KK Tobi)</span><span>' + euroFmt(kT) + '</span></div>' +
-      '<div class="rz sub"><span>Bar-Anteil</span><span>' + euroFmt(barT) + '</span></div>';
+      '<div class="rz sub"><span>Abhebungen</span><span>' + euroFmt(wT) + '</span></div>' +
+      '<div class="rz"><span>Abhebungen über ING</span><b>' + euroFmt(wI) + '</b></div>' +
+      '<div class="rz"><span>Restbargeld</span><b>' + euroFmt(rest) + '</b></div>' +
+      '<div class="rz sub"><span>abgehoben ' + euroFmt(abgehoben) + ' − bar bezahlt ' + euroFmt(bar) + '</span><span></span></div>' +
+      '<label for="restbei">Restbargeld liegt bei</label>' +
+      '<select id="restbei">' +
+      '<option value="beide"' + (restBei === 'beide' ? ' selected' : '') + '>Beiden je zur Hälfte (geteilt)</option>' +
+      '<option value="Sabine"' + (restBei === 'Sabine' ? ' selected' : '') + '>Sabine</option>' +
+      '<option value="Tobi"' + (restBei === 'Tobi' ? ' selected' : '') + '>Tobi</option>' +
+      '</select>';
 
-    var notizen = [];
-    if (bar > 0 && keineAbh) {
-      notizen.push('<div class="warnung">Es sind keine Abhebungen erfasst. Die Bar-Ausgaben werden deshalb 50/50 gewertet.</div>');
-    } else if (bar > 0) {
-      var pz = function (x) { return Math.round(x * 100); };
-      notizen.push('Bar-Ausgaben (' + euroFmt(bar) + ') sind nach den Abhebungen zugeordnet: Sabine ' + pz(aS) + ' %, Tobi ' + pz(aT) + ' %' +
-        (aI > 0 ? ', ING ' + pz(aI) + ' % (neutral)' : '') + '.');
+    var notizen = ['Abhebungen zählen als bezahlt von der Person, deren Karte belastet wurde. Bar-Ausgaben und ING sind neutral.'];
+    if (rest > 0 && restBei === 'beide') {
+      notizen.push('Das Restbargeld (' + euroFmt(rest) + ') gehört euch je zur Hälfte (' + euroFmt(rest / 2) + '). Teilt es vor der Zahlung auf. Behält einer von euch alles, wähle oben, wer es hat.');
+    } else if (rest > 0) {
+      notizen.push('Das Restbargeld (' + euroFmt(rest) + ') liegt bei ' + restBei + '. Die Hälfte davon (' + euroFmt(rest / 2) + ') ist in der Zahlung berücksichtigt.');
     }
-    if (neutral > 0) {
-      notizen.push('Über ING (Gemeinschaftskonto) bezahlt: ' + euroFmt(neutral) + '. Das ist neutral und wird nicht verrechnet.');
+    if (rest < 0) {
+      notizen.push('<span class="warnung">Es wurde mehr bar bezahlt als abgehoben. Es fehlt wohl eine Abhebung.</span>');
     }
     if (ohneZ.length) {
       notizen.push('<span class="warnung">' + ohneZ.length + (ohneZ.length === 1 ? ' Eintrag hat' : ' Einträge haben') +
         ' kein Zahlungsmittel und fehlen in der Abrechnung.</span> Setze sie im Kasten „Bargeldbestand“ auf „Bar“ oder ändere sie einzeln.');
     }
-    var rest = bargeldbestand();
-    if (rest.peso > 0) {
-      notizen.push('Noch vorhandenes Bargeld (' + geld(rest.peso) + ') ist nicht eingerechnet.');
-    }
     html += notizen.map(function (n) { return '<p class="hinweis">' + n + '</p>'; }).join('');
     $('tab-abrechnung').innerHTML = html;
   }
+  $('tab-abrechnung').addEventListener('change', function (e) {
+    if (e.target.id !== 'restbei') return;
+    einst.restbei = e.target.value;
+    speichernEinst();
+    renderAbrechnung();
+  });
 
   // ---------- Bargeldbestand ----------
   function bargeldbestand() {
@@ -1081,6 +1126,7 @@
           if (a.kurs > 0 && isFinite(a.kurs)) e.kurs = a.kurs;
           if (a.abgebucht > 0 && isFinite(a.abgebucht)) e.abgebucht = a.abgebucht;
           if (a.geprueft === true) e.geprueft = true;
+          if (gueltigerAnker(a.anker)) e.anker = a.anker.slice();
           return e;
         });
         if (!gueltig.length) throw new Error('leer');
@@ -1091,6 +1137,7 @@
           einst.kategorien = sauberKategorien(neu.kategorien);
           einst.budget = sauberBudget(neu.budget);
           if (neu.letzterKurs > 0 && isFinite(neu.letzterKurs)) einst.letzterKurs = neu.letzterKurs;
+          einst.restbei = (neu.restbei === 'Sabine' || neu.restbei === 'Tobi') ? neu.restbei : 'beide';
         }
         kategorienAbgleichen();
         speichern(); speichernEinst();
