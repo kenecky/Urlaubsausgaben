@@ -66,6 +66,10 @@
   .wert-peso { display: block; }
   .wert-euro { display: block; font-size: 11.5px; font-weight: 400; color: var(--grau); line-height: 1.25; }
   .rz > b { text-align: right; }
+  .zm-klick, .tag-zeile.klick, .rz.klick { cursor: pointer; }
+  .pfeil { display: inline-block; width: 1.1em; color: var(--blau); }
+  .aufgeklappt { margin-top: 8px; border-top: 1px solid var(--linie); }
+  .tag-block + .tag-block { border-top: 0; }
   .check.mini { margin: 0; font-size: 13px; color: var(--grau); }
   .check.mini input { width: 18px; height: 18px; }
   .kat-aktion { display: flex; align-items: center; gap: 12px; }
@@ -140,7 +144,7 @@
   .rz.sub { padding: 2px 0 2px 14px; border-top: 0; font-size: 13px; color: var(--grau); }
   .ergebnis { text-align: center; background: var(--blau-hell); border-radius: 12px; padding: 16px 10px; margin-bottom: 12px; color: var(--blau); font-weight: 600; }
   .ergebnis .gross { font-size: 30px; font-weight: 800; display: block; margin-top: 2px; }
-  .tag-zeile { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; align-items: center; padding: 5px 0; font-size: 14px; }
+  .tag-zeile { display: grid; grid-template-columns: 86px 1fr auto; gap: 8px; align-items: center; padding: 5px 0; font-size: 14px; }
   .tag-zeile .t { color: var(--grau); font-size: 13px; }
 
   details summary { cursor: pointer; font-weight: 600; color: var(--blau); padding: 8px 0; }
@@ -713,36 +717,62 @@
   });
 
   // Reiter „Zahlungsmittel“
+  // Aufgeklappte Zeilen merken sich, auch wenn die Ansicht neu gezeichnet wird
+  var offenZahlung = {}, offenTag = {};
+  function sortNeu(liste) {
+    return liste.slice().sort(function (a, b) { return b.datum.localeCompare(a.datum) || b.id.localeCompare(a.id); });
+  }
+  function pfeil(offen) { return '<span class="pfeil">' + (offen ? '▾' : '▸') + '</span>'; }
+  function aufklapp(liste) {
+    return '<div class="aufgeklappt liste">' + sortNeu(liste).map(eintragHtml).join('') + '</div>';
+  }
   function renderZahlungsmittel() {
     var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
+    function zeile(key, name, ausg, abh, sub) {
+      var offen = !!offenZahlung[key];
+      var inhalt = ausg.concat(abh);
+      return '<div class="zm"><div class="zm-klick" data-zm="' + esc(key) + '" role="button" aria-expanded="' + offen + '">' +
+        '<div class="zm-kopf"><span class="zm-name">' + pfeil(offen) + esc(name) + '</span>' +
+        '<span class="zm-wert">' + wertEuro(summePeso(ausg), summeEuro(ausg)) + '</span></div>' +
+        '<div class="zm-sub">' + sub + '</div></div>' +
+        (offen ? (inhalt.length ? aufklapp(inhalt) : '<div class="leer">Keine Einträge.</div>') : '') + '</div>';
+    }
     var html = ZAHLUNGSMITTEL.map(function (m) {
       var ausg = ohneAbh.filter(function (a) { return a.zahlung === m; });
       var abh = ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === m; });
       var sub = ausg.length + (ausg.length === 1 ? ' Ausgabe' : ' Ausgaben');
       if (m !== 'Bar' && abh.length) sub += ' · Abhebungen: ' + geld(summePeso(abh)) + ' (≈ ' + euroFmt(summeEuro(abh)) + ')';
-      return '<div class="zm"><div class="zm-kopf"><span class="zm-name">' + esc(m) + '</span>' +
-        '<span class="zm-wert">' + wertEuro(summePeso(ausg), summeEuro(ausg)) + '</span></div>' +
-        '<div class="zm-sub">' + sub + '</div></div>';
+      return zeile(m, m, ausg, abh, sub);
     }).join('');
     var ohneZ = ohneAbh.filter(function (a) { return !a.zahlung; });
     if (ohneZ.length) {
-      html += '<div class="zm"><div class="zm-kopf"><span class="zm-name">Ohne Zahlungsmittel</span>' +
-        '<span class="zm-wert">' + wertEuro(summePeso(ohneZ), summeEuro(ohneZ)) + '</span></div>' +
-        '<div class="zm-sub">' + ohneZ.length + (ohneZ.length === 1 ? ' älterer Eintrag' : ' ältere Einträge') + '</div></div>';
+      html += zeile('__ohne__', 'Ohne Zahlungsmittel', ohneZ, [],
+        ohneZ.length + (ohneZ.length === 1 ? ' älterer Eintrag' : ' ältere Einträge'));
     }
-    html += '<div class="zm"><div class="zm-kopf"><span class="zm-name">Gesamt</span>' +
+    html += '<div class="zm"><div class="zm-kopf"><span class="zm-name"><span class="pfeil"></span>Gesamt</span>' +
       '<span class="zm-wert">' + wertEuro(summePeso(ohneAbh), summeEuro(ohneAbh)) + '</span></div>' +
       '<div class="zm-sub">ohne Bargeldabhebungen</div></div>';
     $('tab-zahlung').innerHTML = html;
   }
+  $('tab-zahlung').addEventListener('click', function (e) {
+    if (e.target.closest('button[data-aktion]')) { listeKlick(e); return; }
+    var k = e.target.closest('[data-zm]');
+    if (!k) return;
+    var key = k.getAttribute('data-zm');
+    offenZahlung[key] = !offenZahlung[key];
+    renderZahlungsmittel();
+  });
 
   // Reiter „Pro Tag“
   function renderProTag() {
     var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
     var tagListe = ohneAbh.filter(function (a) { return !istPauschal(a); });
     var pausListe = ohneAbh.filter(istPauschal);
+    var pausOffen = !!offenTag.__pausch__;
     var pausHtml = pausListe.length
-      ? '<div class="rz"><span>Gesamtreise-Kosten (nicht enthalten)</span><b>' + wertEuro(summePeso(pausListe), summeEuro(pausListe)) + '</b></div>'
+      ? '<div class="rz klick" data-tag="__pausch__" role="button" aria-expanded="' + pausOffen + '"><span>' + pfeil(pausOffen) + 'Gesamtreise-Kosten (nicht enthalten)</span><b>' +
+        wertEuro(summePeso(pausListe), summeEuro(pausListe)) + '</b></div>' +
+        (pausOffen ? aufklapp(pausListe) : '')
       : '';
     if (!tagListe.length) {
       $('tab-tag').innerHTML = pausHtml + '<div class="leer">Noch keine Tagesausgaben erfasst.</div>';
@@ -766,12 +796,26 @@
     for (var i = anzahl - 1; i >= 0; i--) {
       var d = tagPlus(von, i);
       var w = proTag[d] || 0;
-      html += '<div class="tag-zeile"><span class="t">' + esc(wochentag(d)) + ' ' + esc(datumAnzeige(d).slice(0, 5)) + '</span>' +
+      var eintraege = tagListe.filter(function (a) { return a.datum === d; });
+      var klickbar = eintraege.length > 0;
+      var offen = klickbar && !!offenTag[d];
+      html += '<div class="tag-block"><div class="tag-zeile' + (klickbar ? ' klick' : '') + '"' +
+        (klickbar ? ' data-tag="' + esc(d) + '" role="button" aria-expanded="' + offen + '"' : '') + '>' +
+        '<span class="t">' + (klickbar ? pfeil(offen) : '<span class="pfeil"></span>') + esc(wochentag(d)) + ' ' + esc(datumAnzeige(d).slice(0, 5)) + '</span>' +
         balkenSpur(max > 0 ? (w / max) * 100 : 0, prozentText(w, summe)) +
-        '<span class="balken-wert">' + wertEuro(w, proTagE[d] || 0) + '</span></div>';
+        '<span class="balken-wert">' + wertEuro(w, proTagE[d] || 0) + '</span></div>' +
+        (offen ? aufklapp(eintraege) : '') + '</div>';
     }
     $('tab-tag').innerHTML = html;
   }
+  $('tab-tag').addEventListener('click', function (e) {
+    if (e.target.closest('button[data-aktion]')) { listeKlick(e); return; }
+    var k = e.target.closest('[data-tag]');
+    if (!k) return;
+    var key = k.getAttribute('data-tag');
+    offenTag[key] = !offenTag[key];
+    renderProTag();
+  });
 
   // Reiter „Verrechnung“ (alles in Euro, Kurs je Eintrag)
   // Wer hat wie viel vorgestreckt? Kartenzahlungen und Bargeldabhebungen zählen als bezahlt von der Person,
