@@ -67,6 +67,11 @@
   .wert-euro { display: block; font-size: 11.5px; font-weight: 400; color: var(--grau); line-height: 1.25; }
   .rz > b { text-align: right; }
   .zm-klick, .tag-zeile.klick, .rz.klick { cursor: pointer; }
+  .kopf-klick { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; -webkit-tap-highlight-color: transparent; }
+  .kopf-klick::before { content: '▾'; color: var(--blau); width: 1em; flex: none; }
+  .karte.zu .kopf-klick::before { content: '▸'; }
+  .karte.zu > h2 { margin-bottom: 0; }
+  .karte.zu > .karte-inhalt { display: none; }
   .pfeil { display: inline-block; width: 1.1em; color: var(--blau); }
   .aufgeklappt { margin-top: 8px; border-top: 1px solid var(--linie); }
   .tag-block + .tag-block { border-top: 0; }
@@ -228,7 +233,7 @@
     <div class="hinweis" id="barHinweis"></div>
   </section>
 
-  <section class="karte">
+  <section class="karte" id="katKarte">
     <h2>Pro Kategorie</h2>
     <div id="balken"></div>
     <p class="hinweis">Tippe auf eine Kategorie, um die Liste zu filtern.</p>
@@ -299,7 +304,7 @@
     <div class="tab-inhalt" id="tab-abrechnung" hidden></div>
   </section>
 
-  <section class="karte">
+  <section class="karte" id="kategorienKarte">
     <h2>Kategorien</h2>
     <div id="katListe"></div>
     <div class="zeile" style="margin-top:8px">
@@ -309,7 +314,7 @@
     <p class="hinweis">„Gesamtreise“ markiert Kategorien, deren Kosten für die ganze Reise gelten (z. B. Flüge, Hunde). Sie zählen zum Budget, aber nicht zum Tagesschnitt und zur Hochrechnung. Einzelne Ausgaben markierst du im Formular. Neue Kategorien kannst du auch im Formular ganz unten über „＋ Neue Kategorie“ anlegen.</p>
   </section>
 
-  <section class="karte">
+  <section class="karte" id="backupKarte">
     <h2>Backup</h2>
     <div class="zeile">
       <div><button class="hell" id="exportJson" type="button" style="margin-top:0">Sichern (JSON)</button></div>
@@ -693,6 +698,7 @@
       $('formTitel').textContent = 'Ausgabe ändern';
       $('speichern').textContent = 'Änderung speichern';
       $('formKarte').classList.add('bearbeiten');
+      karteUmschalten('formKarte', false);
       berechne();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1244,7 +1250,44 @@
     this.value = '';
   });
 
+  // ---------- Auf- und zuklappbare Karten ----------
+  var KARTEN = ['formKarte', 'katKarte', 'budgetKarte', 'kategorienKarte', 'backupKarte'];
+  var KEY_UI = 'reiseausgaben.ui.v1';
+  function zugeklappteLaden() {
+    try { var d = JSON.parse(localStorage.getItem(KEY_UI)); return Array.isArray(d) ? d : []; } catch (e) { return []; }
+  }
+  function zugeklappteSpeichern() {
+    var zu = KARTEN.filter(function (id) { return $(id).classList.contains('zu'); });
+    try { localStorage.setItem(KEY_UI, JSON.stringify(zu)); } catch (e) {}
+  }
+  function karteUmschalten(id, zu) {
+    var k = $(id);
+    var neu = (typeof zu === 'boolean') ? zu : !k.classList.contains('zu');
+    k.classList.toggle('zu', neu);
+    k.querySelector('h2').setAttribute('aria-expanded', String(!neu));
+    zugeklappteSpeichern();
+  }
+  function kartenZuklappbarMachen() {
+    var anfang = zugeklappteLaden();
+    KARTEN.forEach(function (id) {
+      var karte = $(id), kopf = karte.querySelector('h2');
+      var inhalt = document.createElement('div');
+      inhalt.className = 'karte-inhalt';
+      while (kopf.nextSibling) inhalt.appendChild(kopf.nextSibling);
+      karte.appendChild(inhalt);
+      kopf.classList.add('kopf-klick');
+      kopf.setAttribute('role', 'button');
+      kopf.tabIndex = 0;
+      kopf.addEventListener('click', function () { karteUmschalten(id); });
+      kopf.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); karteUmschalten(id); }
+      });
+      karteUmschalten(id, anfang.indexOf(id) >= 0);
+    });
+  }
+
   // ---------- Start ----------
+  kartenZuklappbarMachen();
   kategorienAbgleichen();
   dropdownsFuellen();
   budgetFelderFuellen();
