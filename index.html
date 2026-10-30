@@ -82,6 +82,8 @@
   .eintrag .aktionen { grid-column: 2 / 3; display: flex; gap: 6px; justify-content: flex-end; align-items: flex-start; }
   .eintrag .kat.abh { background: #e2e8f0; color: #475569; }
   .balken-zeile.abhebung { grid-template-columns: 1fr auto; margin-top: 6px; border-top: 1px dashed var(--linie); border-radius: 0 0 8px 8px; padding-top: 10px; color: var(--grau); }
+  .eur { font-size: 15px; font-weight: 500; opacity: .85; white-space: nowrap; }
+  header .eur { font-size: 16px; }
   .bar-wert { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .bar-wert.negativ { color: var(--rot); }
   .hinweis.warnung { color: var(--rot); }
@@ -132,7 +134,7 @@
   </section>
 
   <section class="karte" id="barKarte">
-    <h2>Bargeld</h2>
+    <h2>Bargeldbestand</h2>
     <div class="bar-wert" id="barWert">0,00 ₱</div>
     <div class="hinweis" id="barDetail"></div>
     <div class="hinweis" id="barHinweis"></div>
@@ -187,6 +189,7 @@
   var STAT_KATEGORIEN = ['Essen & Trinken', 'Unterkunft', 'Transport', 'Aktivitäten', 'Einkaufen', 'Sonstiges'];
   var KATEGORIEN = STAT_KATEGORIEN.concat([ABHEBUNG]);
   var ZAHLUNGSMITTEL = ['Bar', 'KK Sabine', 'KK Tobi'];
+  var PESO_PRO_EURO = 70; // ungefährer Kurs (1 € ≈ 70 ₱); bei Bedarf hier anpassen
   var SPEICHER_KEY = 'reiseausgaben.v1';
 
   var ausgaben = laden();
@@ -220,6 +223,9 @@
   }
   function geld(n) {
     return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₱';
+  }
+  function euroText(n) {
+    return ' <span class="eur">(≈ ' + (n / PESO_PRO_EURO).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €)</span>';
   }
   function datumAnzeige(iso) {
     var t = iso.split('-');
@@ -313,7 +319,7 @@
     var nurAbhebung = (filterKat === ABHEBUNG);
     var statListe = nurAbhebung ? liste : liste.filter(function (a) { return a.kategorie !== ABHEBUNG; });
     var summe = statListe.reduce(function (s, a) { return s + a.betrag; }, 0);
-    $('gesamt').textContent = geld(summe);
+    $('gesamt').innerHTML = geld(summe) + euroText(summe);
     var anzahl = statListe.length;
     var zaehler = anzahl + (anzahl === 1 ? ' Ausgabe' : ' Ausgaben');
     if (nurAbhebung) {
@@ -359,7 +365,7 @@
 
     // Bargeld-Bestand = Abhebungen minus alles, was bar bezahlt wurde (rückwirkend aus allen Einträgen)
     var bestand = Math.round((abgehoben - barBezahlt) * 100) / 100;
-    $('barWert').textContent = geld(bestand);
+    $('barWert').innerHTML = geld(bestand) + euroText(bestand);
     $('barWert').classList.toggle('negativ', bestand < 0);
     $('barDetail').textContent = 'Abgehoben ' + geld(abgehoben) + ' − bar bezahlt ' + geld(barBezahlt);
     var hinweis = '';
