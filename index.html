@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d4ed8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Reise-Ausgaben</title>
+<style>
+  :root {
+    --blau: #1d4ed8;
+    --blau-hell: #dbeafe;
+    --text: #0f172a;
+    --grau: #64748b;
+    --linie: #e2e8f0;
+    --bg: #f1f5f9;
+    --rot: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px; padding-bottom: 40px;
+  }
+  header {
+    background: var(--blau); color: #fff; padding: 14px 16px;
+    padding-top: max(14px, env(safe-area-inset-top));
+    position: sticky; top: 0; z-index: 5;
+  }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .gesamt { font-size: 26px; font-weight: 700; margin-top: 2px; }
+  header .sub { font-size: 13px; opacity: .85; }
+  main { max-width: 640px; margin: 0 auto; padding: 12px; }
+  .karte {
+    background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  }
+  .karte h2 { margin: 0 0 10px; font-size: 15px; color: var(--grau); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  label { display: block; font-size: 13px; color: var(--grau); margin: 10px 0 4px; }
+  input, select, textarea {
+    width: 100%; font: inherit; padding: 12px; border: 1px solid #cbd5e1;
+    border-radius: 10px; background: #fff; color: var(--text);
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--blau); border-color: var(--blau); }
+  textarea { resize: vertical; min-height: 48px; }
+  .zeile { display: flex; gap: 10px; }
+  .zeile > div { flex: 1; min-width: 0; }
+  button {
+    font: inherit; border: 0; border-radius: 10px; padding: 13px 16px;
+    background: var(--blau); color: #fff; font-weight: 600; cursor: pointer; width: 100%;
+    margin-top: 14px;
+  }
+  button.hell { background: var(--blau-hell); color: var(--blau); margin-top: 0; }
+  button.klein { width: auto; padding: 8px 12px; font-size: 14px; margin: 0; }
+  button.rot { background: #fee2e2; color: var(--rot); }
+  .balken-zeile {
+    display: grid; grid-template-columns: 110px 1fr auto; gap: 8px; align-items: center;
+    padding: 6px 4px; border-radius: 8px; cursor: pointer; font-size: 14px;
+  }
+  .balken-zeile.aktiv { background: var(--blau-hell); }
+  .balken-spur { background: var(--bg); border-radius: 6px; height: 16px; overflow: hidden; }
+  .balken { background: var(--blau); height: 100%; border-radius: 6px; transition: width .3s; min-width: 2px; }
+  .balken-wert { font-variant-numeric: tabular-nums; font-size: 13px; text-align: right; min-width: 78px; }
+  .balken-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .filterleiste { display: flex; gap: 10px; margin-bottom: 8px; }
+  .filterleiste > div { flex: 1; min-width: 0; }
+  .filterleiste label { margin-top: 0; }
+  .eintrag {
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 10px;
+    padding: 12px 0; border-top: 1px solid var(--linie);
+  }
+  .eintrag:first-of-type { border-top: 0; }
+  .eintrag .betrag { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .eintrag .meta { font-size: 13px; color: var(--grau); }
+  .eintrag .kat { display: inline-block; background: var(--blau-hell); color: var(--blau); border-radius: 20px; padding: 1px 9px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  .eintrag .beschr { grid-column: 1 / 2; word-break: break-word; }
+  .eintrag .aktionen { grid-column: 2 / 3; display: flex; gap: 6px; justify-content: flex-end; align-items: flex-start; }
+  .leer { color: var(--grau); text-align: center; padding: 18px 0; }
+  .hinweis { font-size: 13px; color: var(--grau); margin: 8px 0 0; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(80px);
+    background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px;
+    transition: transform .25s; z-index: 20; max-width: 90%;
+  }
+  .toast.sichtbar { transform: translateX(-50%) translateY(0); }
+  .abbrechen { display: none; }
+  .bearbeiten .abbrechen { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Reise-Ausgaben</h1>
+  <div class="gesamt" id="gesamt">0,00 ₱</div>
+  <div class="sub" id="gesamtSub">Keine Ausgaben</div>
+</header>
+
+<main>
+  <section class="karte" id="formKarte">
+    <h2 id="formTitel">Neue Ausgabe</h2>
+    <form id="form" autocomplete="off">
+      <div class="zeile">
+        <div>
+          <label for="datum">Datum</label>
+          <input type="date" id="datum" required>
+        </div>
+        <div>
+          <label for="betrag">Betrag (₱)</label>
+          <input type="number" id="betrag" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
+        </div>
+      </div>
+      <label for="kategorie">Kategorie</label>
+      <select id="kategorie" required></select>
+      <label for="beschreibung">Beschreibung</label>
+      <textarea id="beschreibung" rows="2" placeholder="z. B. Abendessen am Strand"></textarea>
+      <button type="submit" id="speichern">Speichern</button>
+      <button type="button" class="hell abbrechen" id="abbrechen" style="margin-top:8px">Abbrechen</button>
+    </form>
+  </section>
+
+  <section class="karte">
+    <h2>Pro Kategorie</h2>
+    <div id="balken"></div>
+    <p class="hinweis">Tippe auf eine Kategorie, um die Liste zu filtern.</p>
+  </section>
+
+  <section class="karte">
+    <h2>Ausgaben</h2>
+    <div class="filterleiste">
+      <div>
+        <label for="filter">Kategorie</label>
+        <select id="filter"></select>
+      </div>
+      <div>
+        <label for="sortierung">Sortierung</label>
+        <select id="sortierung">
+          <option value="datum-neu">Neueste zuerst</option>
+          <option value="datum-alt">Älteste zuerst</option>
+          <option value="betrag-hoch">Teuerste zuerst</option>
+          <option value="betrag-tief">Günstigste zuerst</option>
+          <option value="kategorie">Kategorie A–Z</option>
+        </select>
+      </div>
+    </div>
+    <div id="liste"></div>
+  </section>
+
+  <section class="karte">
+    <h2>Backup</h2>
+    <div class="zeile">
+      <div><button class="hell" id="exportJson" type="button" style="margin-top:0">Sichern (JSON)</button></div>
+      <div><button class="hell" id="exportCsv" type="button" style="margin-top:0">Als CSV</button></div>
+    </div>
+    <button class="hell" id="importBtn" type="button" style="margin-top:10px">Backup laden</button>
+    <input type="file" id="importDatei" accept=".json,application/json" hidden>
+    <p class="hinweis">Deine Daten liegen nur auf diesem Handy. Sichere sie ab und zu, falls du Browserdaten löschst.</p>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var KATEGORIEN = ['Essen & Trinken', 'Unterkunft', 'Transport', 'Aktivitäten', 'Einkaufen', 'Sonstiges'];
+  var SPEICHER_KEY = 'reiseausgaben.v1';
+
+  var ausgaben = laden();
+  var bearbeiteId = null;
+  var filterKat = '';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------- Speicher ----------
+  function laden() {
+    try {
+      var roh = localStorage.getItem(SPEICHER_KEY);
+      var daten = roh ? JSON.parse(roh) : [];
+      return Array.isArray(daten) ? daten : [];
+    } catch (e) { return []; }
+  }
+  function speichern() {
+    try {
+      localStorage.setItem(SPEICHER_KEY, JSON.stringify(ausgaben));
+    } catch (e) {
+      toast('Speichern nicht möglich – Browser blockiert den Speicher.');
+    }
+  }
+
+  // ---------- Helfer ----------
+  function heute() {
+    var d = new Date();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var t = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + t;
+  }
+  function geld(n) {
+    return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₱';
+  }
+  function datumAnzeige(iso) {
+    var t = iso.split('-');
+    return t.length === 3 ? t[2] + '.' + t[1] + '.' + t[0] : iso;
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function neueId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+  var toastTimer;
+  function toast(text) {
+    var el = $('toast');
+    el.textContent = text;
+    el.classList.add('sichtbar');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('sichtbar'); }, 2400);
+  }
+
+  // ---------- Dropdowns ----------
+  function dropdownsFuellen() {
+    var opt = KATEGORIEN.map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('');
+    $('kategorie').innerHTML = opt;
+    $('filter').innerHTML = '<option value="">Alle</option>' + opt;
+  }
+
+  // ---------- Formular ----------
+  function formZuruecksetzen() {
+    bearbeiteId = null;
+    $('form').reset();
+    $('datum').value = heute();
+    $('formTitel').textContent = 'Neue Ausgabe';
+    $('speichern').textContent = 'Speichern';
+    $('formKarte').classList.remove('bearbeiten');
+  }
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var betrag = parseFloat(String($('betrag').value).replace(',', '.'));
+    if (!isFinite(betrag) || betrag <= 0) { toast('Bitte einen gültigen Betrag eingeben.'); return; }
+    var eintrag = {
+      id: bearbeiteId || neueId(),
+      datum: $('datum').value,
+      betrag: Math.round(betrag * 100) / 100,
+      kategorie: $('kategorie').value,
+      beschreibung: $('beschreibung').value.trim()
+    };
+    if (bearbeiteId) {
+      ausgaben = ausgaben.map(function (a) { return a.id === bearbeiteId ? eintrag : a; });
+      toast('Änderung gespeichert');
+    } else {
+      ausgaben.push(eintrag);
+      toast('Ausgabe gespeichert');
+    }
+    speichern();
+    var datumMerken = eintrag.datum;
+    formZuruecksetzen();
+    $('datum').value = datumMerken; // praktisch, wenn mehrere Ausgaben am selben Tag erfasst werden
+    zeichnen();
+  });
+
+  $('abbrechen').addEventListener('click', formZuruecksetzen);
+
+  // ---------- Anzeige ----------
+  function gefiltert() {
+    return ausgaben.filter(function (a) { return !filterKat || a.kategorie === filterKat; });
+  }
+  function sortiert(liste) {
+    var modus = $('sortierung').value;
+    var kopie = liste.slice();
+    kopie.sort(function (a, b) {
+      switch (modus) {
+        case 'datum-alt': return a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id);
+        case 'betrag-hoch': return b.betrag - a.betrag;
+        case 'betrag-tief': return a.betrag - b.betrag;
+        case 'kategorie': return a.kategorie.localeCompare(b.kategorie, 'de') || b.datum.localeCompare(a.datum);
+        default: return b.datum.localeCompare(a.datum) || b.id.localeCompare(a.id);
+      }
+    });
+    return kopie;
+  }
+
+  function zeichnen() {
+    // Kopf
+    var liste = gefiltert();
+    var summe = liste.reduce(function (s, a) { return s + a.betrag; }, 0);
+    $('gesamt').textContent = geld(summe);
+    var anzahl = liste.length;
+    $('gesamtSub').textContent = (filterKat ? filterKat + ' · ' : 'Alle Kategorien · ') +
+      anzahl + (anzahl === 1 ? ' Ausgabe' : ' Ausgaben');
+
+    // Balken (immer über alle Ausgaben)
+    var proKat = {};
+    KATEGORIEN.forEach(function (k) { proKat[k] = 0; });
+    ausgaben.forEach(function (a) {
+      proKat[a.kategorie] = (proKat[a.kategorie] || 0) + a.betrag;
+    });
+    var max = Math.max.apply(null, Object.keys(proKat).map(function (k) { return proKat[k]; }).concat([0]));
+    $('balken').innerHTML = Object.keys(proKat).map(function (k) {
+      var breite = max > 0 ? (proKat[k] / max) * 100 : 0;
+      return '<div class="balken-zeile' + (k === filterKat ? ' aktiv' : '') + '" data-kat="' + esc(k) + '">' +
+        '<span class="balken-name">' + esc(k) + '</span>' +
+        '<span class="balken-spur"><span class="balken" style="display:block;width:' + breite + '%"></span></span>' +
+        '<span class="balken-wert">' + geld(proKat[k]) + '</span></div>';
+    }).join('');
+
+    // Liste
+    var s = sortiert(liste);
+    if (!s.length) {
+      $('liste').innerHTML = '<div class="leer">' +
+        (ausgaben.length ? 'Keine Ausgaben in dieser Kategorie.' : 'Noch keine Ausgaben erfasst.') + '</div>';
+    } else {
+      $('liste').innerHTML = s.map(function (a) {
+        return '<div class="eintrag" data-id="' + esc(a.id) + '">' +
+          '<div class="meta"><span class="kat">' + esc(a.kategorie) + '</span>' + esc(datumAnzeige(a.datum)) + '</div>' +
+          '<div class="betrag">' + geld(a.betrag) + '</div>' +
+          '<div class="beschr">' + (a.beschreibung ? esc(a.beschreibung) : '<span class="meta">–</span>') + '</div>' +
+          '<div class="aktionen">' +
+          '<button type="button" class="klein hell" data-aktion="edit">Ändern</button>' +
+          '<button type="button" class="klein rot" data-aktion="del">Löschen</button>' +
+          '</div></div>';
+      }).join('');
+    }
+  }
+
+  $('balken').addEventListener('click', function (e) {
+    var zeile = e.target.closest('.balken-zeile');
+    if (!zeile) return;
+    var k = zeile.getAttribute('data-kat');
+    filterKat = (filterKat === k) ? '' : k;
+    $('filter').value = filterKat;
+    zeichnen();
+  });
+
+  $('filter').addEventListener('change', function () { filterKat = $('filter').value; zeichnen(); });
+  $('sortierung').addEventListener('change', zeichnen);
+
+  $('liste').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-aktion]');
+    if (!btn) return;
+    var id = btn.closest('.eintrag').getAttribute('data-id');
+    var a = ausgaben.filter(function (x) { return x.id === id; })[0];
+    if (!a) return;
+    if (btn.getAttribute('data-aktion') === 'del') {
+      if (confirm('Diese Ausgabe (' + geld(a.betrag) + ') löschen?')) {
+        ausgaben = ausgaben.filter(function (x) { return x.id !== id; });
+        speichern(); zeichnen(); toast('Gelöscht');
+      }
+    } else {
+      bearbeiteId = id;
+      $('datum').value = a.datum;
+      $('betrag').value = a.betrag;
+      $('kategorie').value = a.kategorie;
+      $('beschreibung').value = a.beschreibung || '';
+      $('formTitel').textContent = 'Ausgabe ändern';
+      $('speichern').textContent = 'Änderung speichern';
+      $('formKarte').classList.add('bearbeiten');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+
+  // ---------- Export / Import ----------
+  function download(name, inhalt, typ) {
+    var blob = new Blob([inhalt], { type: typ });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+
+  $('exportJson').addEventListener('click', function () {
+    if (!ausgaben.length) { toast('Noch nichts zu sichern.'); return; }
+    download('ausgaben-backup-' + heute() + '.json', JSON.stringify(ausgaben, null, 2), 'application/json');
+  });
+
+  $('exportCsv').addEventListener('click', function () {
+    if (!ausgaben.length) { toast('Noch nichts zu exportieren.'); return; }
+    var zeilen = [['Datum', 'Betrag (PHP)', 'Kategorie', 'Beschreibung']];
+    sortiert(ausgaben).forEach(function (a) {
+      zeilen.push([a.datum, String(a.betrag).replace('.', ','), a.kategorie, a.beschreibung || '']);
+    });
+    var csv = '﻿' + zeilen.map(function (z) {
+      return z.map(function (f) { return '"' + String(f).replace(/"/g, '""') + '"'; }).join(';');
+    }).join('\r\n');
+    download('ausgaben-' + heute() + '.csv', csv, 'text/csv;charset=utf-8');
+  });
+
+  $('importBtn').addEventListener('click', function () { $('importDatei').click(); });
+  $('importDatei').addEventListener('change', function () {
+    var datei = this.files[0];
+    if (!datei) return;
+    var leser = new FileReader();
+    leser.onload = function () {
+      try {
+        var daten = JSON.parse(leser.result);
+        if (!Array.isArray(daten)) throw new Error('format');
+        var gueltig = daten.filter(function (a) {
+          return a && typeof a.datum === 'string' && typeof a.betrag === 'number' && isFinite(a.betrag) &&
+                 typeof a.kategorie === 'string';
+        }).map(function (a) {
+          return { id: String(a.id || neueId()), datum: a.datum, betrag: a.betrag,
+                   kategorie: a.kategorie, beschreibung: String(a.beschreibung || '') };
+        });
+        if (!gueltig.length) throw new Error('leer');
+        if (!confirm(gueltig.length + ' Ausgaben laden? Die aktuelle Liste wird ersetzt.')) return;
+        ausgaben = gueltig;
+        speichern(); zeichnen(); toast(gueltig.length + ' Ausgaben geladen');
+      } catch (e) {
+        toast('Datei konnte nicht gelesen werden.');
+      }
+    };
+    leser.readAsText(datei);
+    this.value = '';
+  });
+
+  // ---------- Start ----------
+  dropdownsFuellen();
+  formZuruecksetzen();
+  zeichnen();
+
+  // Browser bitten, die Daten nicht automatisch zu löschen
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(function () {});
+  }
+
+  // Offline-Fähigkeit
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>
