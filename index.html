@@ -62,6 +62,9 @@
   button.hell { background: var(--blau-hell); color: var(--blau); margin-top: 0; }
   button.klein { width: auto; padding: 8px 12px; font-size: 14px; margin: 0; }
   button.rot { background: #fee2e2; color: var(--rot); }
+  .check { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--text); margin: 14px 0 0; cursor: pointer; }
+  .check input { width: 22px; height: 22px; flex: none; padding: 0; accent-color: var(--blau); }
+  .eintrag.erledigt { background: #ecfdf5; margin: 0 -14px; padding-left: 14px; padding-right: 14px; }
   .euro-box {
     padding: 12px; border-radius: 10px; background: var(--bg); color: var(--text);
     font-variant-numeric: tabular-nums; min-height: 47px; display: flex; align-items: center; white-space: nowrap;
@@ -193,12 +196,13 @@
           <input type="number" id="kurs" inputmode="decimal" step="any" min="0.0001" required>
         </div>
         <div>
-          <label>Entspricht</label>
-          <div class="euro-box" id="euroVorschau">–</div>
+          <label for="abgebucht">Abgebuchter Betrag (€)</label>
+          <input type="number" id="abgebucht" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00">
         </div>
       </div>
       <label for="beschreibung">Beschreibung</label>
       <textarea id="beschreibung" rows="2" placeholder="z. B. Abendessen am Strand"></textarea>
+      <label class="check"><input type="checkbox" id="geprueft"> Bereits mit Umrechnungskurs eingetragen</label>
       <button type="submit" id="speichern">Speichern</button>
       <button type="button" class="hell abbrechen" id="abbrechen" style="margin-top:8px">Abbrechen</button>
     </form>
@@ -455,7 +459,7 @@
   }
   function istAbh(a) { return a.kategorie === ABHEBUNG; }
   function kursVon(a) { return a.kurs > 0 ? a.kurs : STANDARD_KURS; }
-  function euroVon(a) { return a.betrag / kursVon(a); }
+  function euroVon(a) { return a.abgebucht > 0 ? a.abgebucht : a.betrag / kursVon(a); }
   function summePeso(liste) { return liste.reduce(function (s, a) { return s + a.betrag; }, 0); }
   function summeEuro(liste) { return liste.reduce(function (s, a) { return s + euroVon(a); }, 0); }
 
@@ -493,16 +497,27 @@
 
   function startKurs() { return einst.letzterKurs || STANDARD_KURS; }
 
+  // Kurs und abgebuchter Euro-Betrag hängen zusammen: Wer zuletzt von Hand eingegeben wurde, bleibt stehen,
+  // der andere Wert wird daraus berechnet.
+  var zuletztEuro = false;
+  function feldZahl(id) { return parseFloat(String($(id).value).replace(',', '.')); }
+  function kursRunden(k) { return Math.round(k * 10000) / 10000; }
   function vorschau() {
-    var b = parseFloat(String($('betrag').value).replace(',', '.'));
-    var k = parseFloat(String($('kurs').value).replace(',', '.'));
-    $('euroVorschau').textContent = (b > 0 && k > 0) ? '≈ ' + euroFmt(b / k) : '–';
+    var b = feldZahl('betrag');
+    if (zuletztEuro) {
+      var e = feldZahl('abgebucht');
+      if (b > 0 && e > 0) $('kurs').value = kursRunden(b / e);
+    } else {
+      var k = feldZahl('kurs');
+      $('abgebucht').value = (b > 0 && k > 0) ? (b / k).toFixed(2) : '';
+    }
   }
   function formZuruecksetzen() {
     bearbeiteId = null;
     $('form').reset();
     $('datum').value = heute();
     $('kurs').value = startKurs();
+    zuletztEuro = false;
     letzteKategorie = $('kategorie').value;
     $('formTitel').textContent = 'Neue Ausgabe';
     $('speichern').textContent = 'Speichern';
@@ -510,7 +525,11 @@
     vorschau();
   }
   $('betrag').addEventListener('input', vorschau);
-  $('kurs').addEventListener('input', vorschau);
+  $('kurs').addEventListener('input', function () { zuletztEuro = false; vorschau(); });
+  $('abgebucht').addEventListener('input', function () {
+    zuletztEuro = String($('abgebucht').value).trim() !== '';
+    vorschau();
+  });
 
   $('kategorie').addEventListener('change', function () {
     if ($('kategorie').value !== '__neu__') { letzteKategorie = $('kategorie').value; return; }
@@ -529,7 +548,10 @@
     e.preventDefault();
     var betrag = parseFloat(String($('betrag').value).replace(',', '.'));
     var kurs = parseFloat(String($('kurs').value).replace(',', '.'));
+    var abgebucht = parseFloat(String($('abgebucht').value).replace(',', '.'));
     if (!isFinite(betrag) || betrag <= 0) { toast('Bitte einen gültigen Betrag eingeben.'); return; }
+    var echtAbgebucht = zuletztEuro && isFinite(abgebucht) && abgebucht > 0;
+    if (echtAbgebucht) kurs = betrag / abgebucht; // Kurs ergibt sich aus dem tatsächlich abgebuchten Betrag
     if (!isFinite(kurs) || kurs <= 0) { toast('Bitte einen gültigen Kurs eingeben.'); return; }
     if ($('kategorie').value === '__neu__') { toast('Bitte eine Kategorie wählen.'); return; }
     var eintrag = {
@@ -541,6 +563,8 @@
       kurs: kurs,
       beschreibung: $('beschreibung').value.trim()
     };
+    if (echtAbgebucht) eintrag.abgebucht = Math.round(abgebucht * 100) / 100;
+    if ($('geprueft').checked) eintrag.geprueft = true;
     if (bearbeiteId) {
       ausgaben = ausgaben.map(function (a) { return a.id === bearbeiteId ? eintrag : a; });
       toast('Änderung gespeichert');
@@ -548,7 +572,7 @@
       ausgaben.push(eintrag);
       toast('Ausgabe gespeichert');
     }
-    einst.letzterKurs = kurs;
+    einst.letzterKurs = kursRunden(kurs);
     speichern(); speichernEinst();
     var datumMerken = eintrag.datum;
     formZuruecksetzen();
@@ -576,8 +600,9 @@
     return kopie;
   }
   function eintragHtml(a) {
-    var meta = esc(datumAnzeige(a.datum)) + (a.zahlung ? ' · ' + esc(a.zahlung) : '') + (a.kurs > 0 ? ' · Kurs ' + kursFmt(a.kurs) : '');
-    return '<div class="eintrag" data-id="' + esc(a.id) + '">' +
+    var meta = esc(datumAnzeige(a.datum)) + (a.zahlung ? ' · ' + esc(a.zahlung) : '') + (a.kurs > 0 ? ' · Kurs ' + kursFmt(a.kurs) : '') +
+      (a.abgebucht > 0 ? ' · ' + euroFmt(a.abgebucht) + ' abgebucht' : '') + (a.geprueft ? ' · ✓' : '');
+    return '<div class="eintrag' + (a.geprueft ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' +
       '<div class="meta"><span class="kat' + (istAbh(a) ? ' abh' : '') + '">' + esc(a.kategorie) + '</span>' + meta + '</div>' +
       '<div class="betrag">' + geld(a.betrag) + '</div>' +
       '<div class="beschr">' + (a.beschreibung ? esc(a.beschreibung) : '<span class="meta">–</span>') + '</div>' +
@@ -605,8 +630,11 @@
       $('kategorie').value = a.kategorie;
       letzteKategorie = a.kategorie;
       $('zahlung').value = a.zahlung || ZAHLUNGSMITTEL[0];
-      $('kurs').value = a.kurs > 0 ? a.kurs : startKurs();
+      $('kurs').value = a.kurs > 0 ? kursRunden(a.kurs) : startKurs();
+      zuletztEuro = a.abgebucht > 0;
+      if (zuletztEuro) $('abgebucht').value = a.abgebucht;
       $('beschreibung').value = a.beschreibung || '';
+      $('geprueft').checked = !!a.geprueft;
       $('formTitel').textContent = 'Ausgabe ändern';
       $('speichern').textContent = 'Änderung speichern';
       $('formKarte').classList.add('bearbeiten');
@@ -1016,10 +1044,10 @@
   });
   $('exportCsv').addEventListener('click', function () {
     if (!ausgaben.length) { toast('Noch nichts zu exportieren.'); return; }
-    var zeilen = [['Datum', 'Betrag (PHP)', 'Kategorie', 'Zahlungsmittel', 'Kurs (PHP je EUR)', 'Betrag (EUR)', 'Beschreibung']];
+    var zeilen = [['Datum', 'Betrag (PHP)', 'Kategorie', 'Zahlungsmittel', 'Kurs (PHP je EUR)', 'Betrag (EUR)', 'Kurs eingetragen', 'Beschreibung']];
     sortiert(ausgaben).forEach(function (a) {
       zeilen.push([a.datum, String(a.betrag).replace('.', ','), a.kategorie, a.zahlung || '',
-        a.kurs > 0 ? String(a.kurs).replace('.', ',') : '', String(runden(euroVon(a))).replace('.', ','), a.beschreibung || '']);
+        a.kurs > 0 ? String(a.kurs).replace('.', ',') : '', String(runden(euroVon(a))).replace('.', ','), a.geprueft ? 'ja' : 'nein', a.beschreibung || '']);
     });
     var csv = '﻿' + zeilen.map(function (z) {
       return z.map(function (f) { return '"' + String(f).replace(/"/g, '""') + '"'; }).join(';');
@@ -1043,6 +1071,8 @@
           var e = { id: String(a.id || neueId()), datum: a.datum, betrag: a.betrag,
                     kategorie: a.kategorie, zahlung: String(a.zahlung || ''), beschreibung: String(a.beschreibung || '') };
           if (a.kurs > 0 && isFinite(a.kurs)) e.kurs = a.kurs;
+          if (a.abgebucht > 0 && isFinite(a.abgebucht)) e.abgebucht = a.abgebucht;
+          if (a.geprueft === true) e.geprueft = true;
           return e;
         });
         if (!gueltig.length) throw new Error('leer');
