@@ -332,7 +332,7 @@
 
   var ABHEBUNG = 'Bargeldabhebung'; // zählt nicht zur Statistik, nur Dokumentation
   var STANDARD_KATEGORIEN = ['Essen & Trinken', 'Unterkunft', 'Transport', 'Aktivitäten', 'Einkaufen', 'Sonstiges'];
-  var ZAHLUNGSMITTEL = ['Bar', 'KK Sabine', 'KK Tobi'];
+  var ZAHLUNGSMITTEL = ['Bar', 'KK Sabine', 'KK Tobi', 'ING']; // ING = Gemeinschaftskonto (in der Abrechnung neutral)
   var STANDARD_KURS = 70; // Rückfall für alte Einträge ohne Kurs (1 € ≈ 70 ₱)
   var KEY = 'reiseausgaben.v1';
   var KEY_EINST = 'reiseausgaben.einstellungen.v1';
@@ -714,18 +714,22 @@
   function renderAbrechnung() {
     var zaehlt = ausgaben.filter(function (a) { return !istAbh(a) && a.zahlung; });
     var ohneZ = ausgaben.filter(function (a) { return !istAbh(a) && !a.zahlung; });
-    var kS = 0, kT = 0, bar = 0;
+    var kS = 0, kT = 0, kI = 0, bar = 0;
     zaehlt.forEach(function (a) {
       var e = euroVon(a);
       if (a.zahlung === 'KK Sabine') kS += e;
       else if (a.zahlung === 'KK Tobi') kT += e;
+      else if (a.zahlung === 'ING') kI += e; // Gemeinschaftskonto: neutral
       else bar += e;
     });
-    var abhS = summeEuro(ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === 'KK Sabine'; }));
-    var abhT = summeEuro(ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === 'KK Tobi'; }));
-    var keineAbh = (abhS + abhT) <= 0;
-    var anteilS = keineAbh ? 0.5 : abhS / (abhS + abhT);
-    var barS = bar * anteilS, barT = bar - barS;
+    function abhebungenMit(m) { return summeEuro(ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === m; })); }
+    var abhS = abhebungenMit('KK Sabine'), abhT = abhebungenMit('KK Tobi'), abhI = abhebungenMit('ING');
+    var abhGes = abhS + abhT + abhI;
+    var keineAbh = abhGes <= 0;
+    // Bargeld stammt aus den Abhebungen: der ING-Anteil ist Gemeinschaftsgeld und bleibt neutral
+    var aS = keineAbh ? 0.5 : abhS / abhGes, aT = keineAbh ? 0.5 : abhT / abhGes, aI = keineAbh ? 0 : abhI / abhGes;
+    var barS = bar * aS, barT = bar * aT, barI = bar * aI;
+    var neutral = kI + barI;
     var paidS = kS + barS, paidT = kT + barT;
     var gesamt = paidS + paidT, haelfte = gesamt / 2;
     var saldo = runden(paidS - haelfte);
@@ -741,7 +745,7 @@
       kopf = '<div class="ergebnis">Sabine schuldet Tobi<span class="gross">' + euroFmt(-saldo) + '</span></div>';
     }
     var html = kopf +
-      '<div class="rz"><span>Gesamtausgaben</span><b>' + euroFmt(gesamt) + '</b></div>' +
+      '<div class="rz"><span>' + (neutral > 0 ? 'Gesamtausgaben (ohne ING)' : 'Gesamtausgaben') + '</span><b>' + euroFmt(gesamt) + '</b></div>' +
       '<div class="rz"><span>Anteil je Person (50 %)</span><b>' + euroFmt(haelfte) + '</b></div>' +
       '<div class="rz"><span>Sabine hat bezahlt</span><b>' + euroFmt(paidS) + '</b></div>' +
       '<div class="rz sub"><span>Karte (KK Sabine)</span><span>' + euroFmt(kS) + '</span></div>' +
@@ -752,10 +756,14 @@
 
     var notizen = [];
     if (bar > 0 && keineAbh) {
-      notizen.push('<div class="warnung">Es sind keine Abhebungen mit KK Sabine oder KK Tobi erfasst. Die Bar-Ausgaben werden deshalb 50/50 gewertet.</div>');
+      notizen.push('<div class="warnung">Es sind keine Abhebungen erfasst. Die Bar-Ausgaben werden deshalb 50/50 gewertet.</div>');
     } else if (bar > 0) {
-      notizen.push('Bar-Ausgaben (' + euroFmt(bar) + ') sind nach den Abhebungen zugeordnet: Sabine ' +
-        Math.round(anteilS * 100) + ' %, Tobi ' + Math.round((1 - anteilS) * 100) + ' %.');
+      var pz = function (x) { return Math.round(x * 100); };
+      notizen.push('Bar-Ausgaben (' + euroFmt(bar) + ') sind nach den Abhebungen zugeordnet: Sabine ' + pz(aS) + ' %, Tobi ' + pz(aT) + ' %' +
+        (aI > 0 ? ', ING ' + pz(aI) + ' % (neutral)' : '') + '.');
+    }
+    if (neutral > 0) {
+      notizen.push('Über ING (Gemeinschaftskonto) bezahlt: ' + euroFmt(neutral) + '. Das ist neutral und wird nicht verrechnet.');
     }
     if (ohneZ.length) {
       notizen.push('<span class="warnung">' + ohneZ.length + (ohneZ.length === 1 ? ' Eintrag hat' : ' Einträge haben') +
