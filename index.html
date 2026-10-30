@@ -112,6 +112,8 @@
 
   /* Reiter */
   .tabs-karte { padding: 0; overflow: hidden; }
+  .tabs-karte > h2 { padding: 14px 14px 12px; margin: 0; }
+  .tabs-karte.zu > h2 { padding-bottom: 14px; }
   .tabs { display: flex; border-bottom: 1px solid var(--linie); overflow-x: auto; }
   .tab {
     flex: 1 1 auto; margin: 0; border-radius: 0; background: transparent; color: var(--grau);
@@ -272,7 +274,8 @@
     </details>
   </section>
 
-  <section class="karte tabs-karte">
+  <section class="karte tabs-karte" id="tabsKarte">
+    <h2>Übersicht</h2>
     <div class="tabs" role="tablist">
       <button type="button" class="tab aktiv" data-tab="ausgaben">Ausgaben</button>
       <button type="button" class="tab" data-tab="zahlung">Zahlungsmittel</button>
@@ -1173,6 +1176,7 @@
     filterKat = (filterKat === k) ? '' : k;
     $('filter').value = filterKat;
     tabWechseln('ausgaben');
+    karteUmschalten('tabsKarte', false);
     zeichnen();
   });
   $('filter').addEventListener('change', function () { filterKat = $('filter').value; zeichnen(); });
@@ -1251,7 +1255,7 @@
   });
 
   // ---------- Auf- und zuklappbare Karten ----------
-  var KARTEN = ['formKarte', 'katKarte', 'budgetKarte', 'kategorienKarte', 'backupKarte'];
+  var KARTEN = ['formKarte', 'barKarte', 'katKarte', 'budgetKarte', 'tabsKarte', 'kategorienKarte', 'backupKarte'];
   var KEY_UI = 'reiseausgaben.ui.v1';
   function zugeklappteLaden() {
     try { var d = JSON.parse(localStorage.getItem(KEY_UI)); return Array.isArray(d) ? d : []; } catch (e) { return []; }
