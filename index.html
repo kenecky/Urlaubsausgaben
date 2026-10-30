@@ -17,6 +17,7 @@
     --linie: #e2e8f0;
     --bg: #f1f5f9;
     --rot: #dc2626;
+    --gruen: #15803d;
   }
   * { box-sizing: border-box; }
   body {
@@ -25,13 +26,19 @@
     font-size: 16px; padding-bottom: 40px;
   }
   header {
-    background: var(--blau); color: #fff; padding: 14px 16px;
-    padding-top: max(14px, env(safe-area-inset-top));
+    background: var(--blau); color: #fff; padding: 12px 16px 14px;
+    padding-top: max(12px, env(safe-area-inset-top));
     position: sticky; top: 0; z-index: 5;
   }
+  .kopf-zeile { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   header h1 { margin: 0; font-size: 18px; font-weight: 600; }
   header .gesamt { font-size: 26px; font-weight: 700; margin-top: 2px; }
   header .sub { font-size: 13px; opacity: .85; }
+  .icon-btn {
+    width: 42px; height: 42px; margin: 0; padding: 0; border-radius: 12px;
+    background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; }
   main { max-width: 640px; margin: 0 auto; padding: 12px; }
   .karte {
     background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 12px;
@@ -55,6 +62,12 @@
   button.hell { background: var(--blau-hell); color: var(--blau); margin-top: 0; }
   button.klein { width: auto; padding: 8px 12px; font-size: 14px; margin: 0; }
   button.rot { background: #fee2e2; color: var(--rot); }
+  .euro-box {
+    padding: 12px; border-radius: 10px; background: var(--bg); color: var(--text);
+    font-variant-numeric: tabular-nums; min-height: 47px; display: flex; align-items: center; white-space: nowrap;
+  }
+
+  /* Balken (Kategorien, Budget) */
   .balken-zeile {
     display: grid; grid-template-columns: 110px 1fr auto; gap: 8px; align-items: center;
     padding: 6px 4px; border-radius: 8px; cursor: pointer; font-size: 14px;
@@ -62,11 +75,32 @@
   .balken-zeile.aktiv { background: var(--blau-hell); }
   .balken-spur { background: var(--bg); border-radius: 6px; height: 22px; overflow: hidden; position: relative; display: block; }
   .balken { background: var(--blau); position: absolute; left: 0; top: 0; bottom: 0; overflow: hidden; border-radius: 6px 0 0 6px; transition: width .3s; }
+  .balken.warn { background: var(--rot); }
   .pct { position: absolute; top: 0; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: center;
          font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); pointer-events: none; }
   .balken .pct { right: auto; color: #fff; }
   .balken-wert { font-variant-numeric: tabular-nums; font-size: 13px; text-align: right; min-width: 78px; }
   .balken-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .balken-zeile.abhebung { grid-template-columns: 1fr auto; margin-top: 6px; border-top: 1px dashed var(--linie); border-radius: 0 0 8px 8px; padding-top: 10px; color: var(--grau); }
+
+  .eur { font-size: 15px; font-weight: 500; opacity: .85; white-space: nowrap; }
+  header .eur { font-size: 16px; }
+  .bar-wert { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .bar-wert.negativ { color: var(--rot); }
+  .hinweis { font-size: 13px; color: var(--grau); margin: 8px 0 0; }
+  .hinweis.warnung, .warnung { color: var(--rot); }
+  .hinweis button.klein { margin-top: 8px; display: block; }
+
+  /* Reiter */
+  .tabs-karte { padding: 0; overflow: hidden; }
+  .tabs { display: flex; border-bottom: 1px solid var(--linie); overflow-x: auto; }
+  .tab {
+    flex: 1 1 auto; margin: 0; border-radius: 0; background: transparent; color: var(--grau);
+    padding: 13px 6px; font-size: 13px; border-bottom: 3px solid transparent; white-space: nowrap;
+  }
+  .tab.aktiv { color: var(--blau); border-bottom-color: var(--blau); }
+  .tab-inhalt { padding: 14px; }
+
   .filterleiste { display: flex; gap: 10px; margin-bottom: 8px; }
   .filterleiste > div { flex: 1; min-width: 0; }
   .filterleiste label { margin-top: 0; }
@@ -74,26 +108,48 @@
     display: grid; grid-template-columns: 1fr auto; gap: 4px 10px;
     padding: 12px 0; border-top: 1px solid var(--linie);
   }
-  .eintrag:first-of-type { border-top: 0; }
+  .liste > .eintrag:first-child { border-top: 0; }
   .eintrag .betrag { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
   .eintrag .meta { font-size: 13px; color: var(--grau); }
   .eintrag .kat { display: inline-block; background: var(--blau-hell); color: var(--blau); border-radius: 20px; padding: 1px 9px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  .eintrag .kat.abh { background: #e2e8f0; color: #475569; }
   .eintrag .beschr { grid-column: 1 / 2; word-break: break-word; }
   .eintrag .aktionen { grid-column: 2 / 3; display: flex; gap: 6px; justify-content: flex-end; align-items: flex-start; }
-  .eintrag .kat.abh { background: #e2e8f0; color: #475569; }
-  .balken-zeile.abhebung { grid-template-columns: 1fr auto; margin-top: 6px; border-top: 1px dashed var(--linie); border-radius: 0 0 8px 8px; padding-top: 10px; color: var(--grau); }
-  .eur { font-size: 15px; font-weight: 500; opacity: .85; white-space: nowrap; }
-  header .eur { font-size: 16px; }
-  .bar-wert { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .bar-wert.negativ { color: var(--rot); }
-  .hinweis.warnung { color: var(--rot); }
-  .hinweis button.klein { margin-top: 8px; display: block; }
   .leer { color: var(--grau); text-align: center; padding: 18px 0; }
-  .hinweis { font-size: 13px; color: var(--grau); margin: 8px 0 0; }
+
+  /* Zeilen in Zahlungsmittel / Abrechnung */
+  .zm { padding: 12px 0; border-top: 1px solid var(--linie); }
+  .zm:first-child { border-top: 0; padding-top: 0; }
+  .zm-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .zm-name { font-weight: 700; }
+  .zm-wert { font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; }
+  .zm-sub { font-size: 13px; color: var(--grau); margin-top: 2px; }
+  .rz { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--linie); font-variant-numeric: tabular-nums; }
+  .rz:first-child { border-top: 0; }
+  .rz > b, .rz > span:last-child { white-space: nowrap; }
+  .rz.sub { padding: 2px 0 2px 14px; border-top: 0; font-size: 13px; color: var(--grau); }
+  .ergebnis { text-align: center; background: var(--blau-hell); border-radius: 12px; padding: 16px 10px; margin-bottom: 12px; color: var(--blau); font-weight: 600; }
+  .ergebnis .gross { font-size: 30px; font-weight: 800; display: block; margin-top: 2px; }
+  .tag-zeile { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; align-items: center; padding: 5px 0; font-size: 14px; }
+  .tag-zeile .t { color: var(--grau); font-size: 13px; }
+
+  details summary { cursor: pointer; font-weight: 600; color: var(--blau); padding: 8px 0; }
+  .kat-eintrag { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid var(--linie); gap: 10px; }
+  .kat-eintrag:first-child { border-top: 0; }
+
+  /* Suche */
+  .suche { position: fixed; inset: 0; z-index: 30; background: var(--bg); overflow-y: auto; padding: 12px; padding-top: max(12px, env(safe-area-inset-top)); }
+  .suche-inner { max-width: 640px; margin: 0 auto; }
+  .suche-kopf { display: flex; gap: 8px; }
+  .suche-kopf input { flex: 1; min-width: 0; }
+  .suche-filter { display: flex; gap: 8px; }
+  .suche-filter > div { flex: 1; min-width: 0; }
+  .suche-info { font-size: 14px; color: var(--grau); margin: 12px 2px; }
+
   .toast {
     position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(80px);
     background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px;
-    transition: transform .25s; z-index: 20; max-width: 90%;
+    transition: transform .25s; z-index: 50; max-width: 90%;
   }
   .toast.sichtbar { transform: translateX(-50%) translateY(0); }
   .abbrechen { display: none; }
@@ -103,7 +159,12 @@
 <body>
 
 <header>
-  <h1>Reise-Ausgaben</h1>
+  <div class="kopf-zeile">
+    <h1>Reise-Ausgaben</h1>
+    <button type="button" class="icon-btn" id="sucheBtn" aria-label="Suche">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+    </button>
+  </div>
   <div class="gesamt" id="gesamt">0,00 ₱</div>
   <div class="sub" id="gesamtSub">Keine Ausgaben</div>
 </header>
@@ -126,6 +187,16 @@
       <select id="kategorie" required></select>
       <label for="zahlung">Zahlungsmittel</label>
       <select id="zahlung" required></select>
+      <div class="zeile">
+        <div>
+          <label for="kurs">Kurs (₱ für 1 €)</label>
+          <input type="number" id="kurs" inputmode="decimal" step="any" min="0.0001" required>
+        </div>
+        <div>
+          <label>Entspricht</label>
+          <div class="euro-box" id="euroVorschau">–</div>
+        </div>
+      </div>
       <label for="beschreibung">Beschreibung</label>
       <textarea id="beschreibung" rows="2" placeholder="z. B. Abendessen am Strand"></textarea>
       <button type="submit" id="speichern">Speichern</button>
@@ -146,25 +217,79 @@
     <p class="hinweis">Tippe auf eine Kategorie, um die Liste zu filtern.</p>
   </section>
 
-  <section class="karte">
-    <h2>Ausgaben</h2>
-    <div class="filterleiste">
-      <div>
-        <label for="filter">Kategorie</label>
-        <select id="filter"></select>
+  <section class="karte" id="budgetKarte">
+    <h2>Reisebudget</h2>
+    <div id="budgetInfo"></div>
+    <details id="budgetDetails">
+      <summary>Budget und Reisezeitraum einstellen</summary>
+      <div class="zeile">
+        <div>
+          <label for="budgetBetrag">Budget</label>
+          <input type="number" id="budgetBetrag" inputmode="decimal" step="0.01" min="0" placeholder="z. B. 3000">
+        </div>
+        <div>
+          <label for="budgetWaehrung">Währung</label>
+          <select id="budgetWaehrung">
+            <option value="EUR">€ (Euro)</option>
+            <option value="PHP">₱ (Pesos)</option>
+          </select>
+        </div>
       </div>
-      <div>
-        <label for="sortierung">Sortierung</label>
-        <select id="sortierung">
-          <option value="datum-neu">Neueste zuerst</option>
-          <option value="datum-alt">Älteste zuerst</option>
-          <option value="betrag-hoch">Teuerste zuerst</option>
-          <option value="betrag-tief">Günstigste zuerst</option>
-          <option value="kategorie">Kategorie A–Z</option>
-        </select>
+      <div class="zeile">
+        <div>
+          <label for="budgetStart">Reisebeginn</label>
+          <input type="date" id="budgetStart">
+        </div>
+        <div>
+          <label for="budgetEnde">Reiseende</label>
+          <input type="date" id="budgetEnde">
+        </div>
       </div>
+      <button type="button" id="budgetSpeichern">Budget speichern</button>
+      <p class="hinweis">Leeres Budget entfernt das Budget wieder.</p>
+    </details>
+  </section>
+
+  <section class="karte tabs-karte">
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab aktiv" data-tab="ausgaben">Ausgaben</button>
+      <button type="button" class="tab" data-tab="zahlung">Zahlungsmittel</button>
+      <button type="button" class="tab" data-tab="tag">Pro Tag</button>
+      <button type="button" class="tab" data-tab="abrechnung">Abrechnung</button>
     </div>
-    <div id="liste"></div>
+
+    <div class="tab-inhalt" id="tab-ausgaben">
+      <div class="filterleiste">
+        <div>
+          <label for="filter">Kategorie</label>
+          <select id="filter"></select>
+        </div>
+        <div>
+          <label for="sortierung">Sortierung</label>
+          <select id="sortierung">
+            <option value="datum-neu">Neueste zuerst</option>
+            <option value="datum-alt">Älteste zuerst</option>
+            <option value="betrag-hoch">Teuerste zuerst</option>
+            <option value="betrag-tief">Günstigste zuerst</option>
+            <option value="kategorie">Kategorie A–Z</option>
+          </select>
+        </div>
+      </div>
+      <div id="liste" class="liste"></div>
+    </div>
+    <div class="tab-inhalt" id="tab-zahlung" hidden></div>
+    <div class="tab-inhalt" id="tab-tag" hidden></div>
+    <div class="tab-inhalt" id="tab-abrechnung" hidden></div>
+  </section>
+
+  <section class="karte">
+    <h2>Eigene Kategorien</h2>
+    <div id="katListe"></div>
+    <div class="zeile" style="margin-top:8px">
+      <div style="flex:2"><input type="text" id="katNeu" maxlength="24" placeholder="Neue Kategorie, z. B. Souvenirs"></div>
+      <div style="flex:1"><button type="button" class="hell" id="katAdd" style="margin-top:0;padding:12px 8px">Hinzufügen</button></div>
+    </div>
+    <p class="hinweis">Du kannst auch im Formular bei „Kategorie“ ganz unten „＋ Neue Kategorie“ wählen.</p>
   </section>
 
   <section class="karte">
@@ -175,9 +300,25 @@
     </div>
     <button class="hell" id="importBtn" type="button" style="margin-top:10px">Backup laden</button>
     <input type="file" id="importDatei" accept=".json,application/json" hidden>
-    <p class="hinweis">Deine Daten liegen nur auf diesem Handy. Sichere sie ab und zu, falls du Browserdaten löschst.</p>
+    <p class="hinweis">Deine Daten liegen nur auf diesem Handy. Sichere sie ab und zu, falls du Browserdaten löschst. Das Backup enthält auch Budget und eigene Kategorien.</p>
   </section>
 </main>
+
+<div class="suche" id="suche" hidden>
+  <div class="suche-inner">
+    <div class="suche-kopf">
+      <input type="search" id="sucheText" placeholder="Beschreibung durchsuchen …" autocomplete="off">
+      <button type="button" class="hell klein" id="sucheZu" style="padding:0 16px">Schließen</button>
+    </div>
+    <div class="suche-filter">
+      <div><label for="sucheKat">Kategorie</label><select id="sucheKat"></select></div>
+      <div><label for="sucheVon">Von</label><input type="date" id="sucheVon"></div>
+      <div><label for="sucheBis">Bis</label><input type="date" id="sucheBis"></div>
+    </div>
+    <div class="suche-info" id="sucheInfo"></div>
+    <div class="karte"><div id="sucheListe" class="liste"></div></div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -186,96 +327,218 @@
   'use strict';
 
   var ABHEBUNG = 'Bargeldabhebung'; // zählt nicht zur Statistik, nur Dokumentation
-  var STAT_KATEGORIEN = ['Essen & Trinken', 'Unterkunft', 'Transport', 'Aktivitäten', 'Einkaufen', 'Sonstiges'];
-  var KATEGORIEN = STAT_KATEGORIEN.concat([ABHEBUNG]);
+  var STANDARD_KATEGORIEN = ['Essen & Trinken', 'Unterkunft', 'Transport', 'Aktivitäten', 'Einkaufen', 'Sonstiges'];
   var ZAHLUNGSMITTEL = ['Bar', 'KK Sabine', 'KK Tobi'];
-  var PESO_PRO_EURO = 70; // ungefährer Kurs (1 € ≈ 70 ₱); bei Bedarf hier anpassen
-  var SPEICHER_KEY = 'reiseausgaben.v1';
-
-  var ausgaben = laden();
-  var bearbeiteId = null;
-  var filterKat = '';
+  var STANDARD_KURS = 70; // Rückfall für alte Einträge ohne Kurs (1 € ≈ 70 ₱)
+  var KEY = 'reiseausgaben.v1';
+  var KEY_EINST = 'reiseausgaben.einstellungen.v1';
 
   var $ = function (id) { return document.getElementById(id); };
 
   // ---------- Speicher ----------
-  function laden() {
+  function ladenAusgaben() {
     try {
-      var roh = localStorage.getItem(SPEICHER_KEY);
+      var roh = localStorage.getItem(KEY);
       var daten = roh ? JSON.parse(roh) : [];
       return Array.isArray(daten) ? daten : [];
     } catch (e) { return []; }
   }
-  function speichern() {
+  function sauberKategorien(liste) {
+    var aus = [];
+    (Array.isArray(liste) ? liste : []).forEach(function (k) {
+      if (typeof k !== 'string') return;
+      k = k.trim();
+      if (!k || k.length > 24 || k === ABHEBUNG) return;
+      if (STANDARD_KATEGORIEN.indexOf(k) >= 0 || aus.indexOf(k) >= 0) return;
+      aus.push(k);
+    });
+    return aus;
+  }
+  function sauberBudget(b) {
+    if (!b || typeof b !== 'object' || !(b.betrag > 0) || !isFinite(b.betrag)) return null;
+    return {
+      betrag: b.betrag,
+      waehrung: b.waehrung === 'PHP' ? 'PHP' : 'EUR',
+      start: typeof b.start === 'string' ? b.start : '',
+      ende: typeof b.ende === 'string' ? b.ende : ''
+    };
+  }
+  function ladenEinst() {
+    var e = { kategorien: [], budget: null, letzterKurs: null };
     try {
-      localStorage.setItem(SPEICHER_KEY, JSON.stringify(ausgaben));
-    } catch (e) {
-      toast('Speichern nicht möglich – Browser blockiert den Speicher.');
-    }
+      var roh = localStorage.getItem(KEY_EINST);
+      var d = roh ? JSON.parse(roh) : {};
+      e.kategorien = sauberKategorien(d.kategorien);
+      e.budget = sauberBudget(d.budget);
+      e.letzterKurs = (d.letzterKurs > 0 && isFinite(d.letzterKurs)) ? d.letzterKurs : null;
+    } catch (err) {}
+    return e;
+  }
+  var ausgaben = ladenAusgaben();
+  var einst = ladenEinst();
+
+  function speichern() {
+    try { localStorage.setItem(KEY, JSON.stringify(ausgaben)); }
+    catch (e) { toast('Speichern nicht möglich – Browser blockiert den Speicher.'); }
+  }
+  function speichernEinst() {
+    try { localStorage.setItem(KEY_EINST, JSON.stringify(einst)); }
+    catch (e) { toast('Einstellungen konnten nicht gespeichert werden.'); }
+  }
+
+  // ---------- Kategorien ----------
+  function statKategorien() { return STANDARD_KATEGORIEN.concat(einst.kategorien); }
+  function alleKategorien() { return statKategorien().concat([ABHEBUNG]); }
+  // Kategorien aus importierten oder alten Einträgen automatisch aufnehmen
+  function kategorienAbgleichen() {
+    var geaendert = false;
+    ausgaben.forEach(function (a) {
+      if (alleKategorien().indexOf(a.kategorie) < 0 && a.kategorie && a.kategorie.length <= 24) {
+        einst.kategorien.push(a.kategorie); geaendert = true;
+      }
+    });
+    if (geaendert) speichernEinst();
+  }
+  function kategorieHinzufuegen(name) {
+    name = String(name || '').trim();
+    if (!name) return { fehler: 'Bitte einen Namen eingeben.' };
+    if (name.length > 24) return { fehler: 'Maximal 24 Zeichen.' };
+    var vorhanden = alleKategorien().some(function (k) { return k.toLowerCase() === name.toLowerCase(); });
+    if (vorhanden) return { fehler: 'Diese Kategorie gibt es schon.' };
+    einst.kategorien.push(name);
+    speichernEinst();
+    return { name: name };
   }
 
   // ---------- Helfer ----------
   function heute() {
     var d = new Date();
-    var m = String(d.getMonth() + 1).padStart(2, '0');
-    var t = String(d.getDate()).padStart(2, '0');
-    return d.getFullYear() + '-' + m + '-' + t;
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
-  function geld(n) {
-    return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₱';
-  }
-  function euroText(n) {
-    return ' <span class="eur">(≈ ' + (n / PESO_PRO_EURO).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €)</span>';
-  }
+  function runden(n) { var r = Math.round(n * 100) / 100; return r === 0 ? 0 : r; }
+  function zahl(n) { return runden(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function geld(n) { return zahl(n) + ' ₱'; }
+  function euroFmt(n) { return zahl(n) + ' €'; }
+  function euroText(e) { return ' <span class="eur">(≈ ' + euroFmt(e) + ')</span>'; }
+  function kursFmt(k) { return k.toLocaleString('de-DE', { maximumFractionDigits: 3 }); }
   function datumAnzeige(iso) {
     var t = iso.split('-');
     return t.length === 3 ? t[2] + '.' + t[1] + '.' + t[0] : iso;
+  }
+  function tageZwischen(a, b) {
+    var x = a.split('-').map(Number), y = b.split('-').map(Number);
+    return Math.round((Date.UTC(y[0], y[1] - 1, y[2]) - Date.UTC(x[0], x[1] - 1, x[2])) / 86400000);
+  }
+  function tagPlus(iso, n) {
+    var x = iso.split('-').map(Number);
+    var d = new Date(Date.UTC(x[0], x[1] - 1, x[2] + n));
+    return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+  }
+  function wochentag(iso) {
+    var x = iso.split('-').map(Number);
+    var d = new Date(Date.UTC(x[0], x[1] - 1, x[2]));
+    return d.toLocaleDateString('de-DE', { weekday: 'short', timeZone: 'UTC' }).replace('.', '');
   }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  function neueId() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  }
+  function neueId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   var toastTimer;
   function toast(text) {
     var el = $('toast');
     el.textContent = text;
     el.classList.add('sichtbar');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('sichtbar'); }, 2400);
+    toastTimer = setTimeout(function () { el.classList.remove('sichtbar'); }, 2600);
+  }
+  function istAbh(a) { return a.kategorie === ABHEBUNG; }
+  function kursVon(a) { return a.kurs > 0 ? a.kurs : STANDARD_KURS; }
+  function euroVon(a) { return a.betrag / kursVon(a); }
+  function summePeso(liste) { return liste.reduce(function (s, a) { return s + a.betrag; }, 0); }
+  function summeEuro(liste) { return liste.reduce(function (s, a) { return s + euroVon(a); }, 0); }
+
+  // Balken mit Beschriftung, die an der Füllkante die Farbe wechselt (dunkel auf grau, weiß auf blau)
+  function balkenSpur(breite, label, klasse) {
+    var fuellung = breite > 0
+      ? '<span class="balken ' + (klasse || '') + '" style="width:' + breite + '%"><span class="pct" style="width:' + (10000 / breite) + '%">' + label + '</span></span>'
+      : '';
+    return '<span class="balken-spur"><span class="pct">' + label + '</span>' + fuellung + '</span>';
   }
 
   // ---------- Dropdowns ----------
+  function optionen(liste) {
+    return liste.map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('');
+  }
+  var letzteKategorie = '';
   function dropdownsFuellen() {
-    var opt = KATEGORIEN.map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('');
-    $('kategorie').innerHTML = opt;
-    $('filter').innerHTML = '<option value="">Alle</option>' + opt;
-    $('zahlung').innerHTML = ZAHLUNGSMITTEL.map(function (z) { return '<option>' + esc(z) + '</option>'; }).join('');
+    var vK = $('kategorie').value, vF = $('filter').value, vS = $('sucheKat').value;
+    var alle = alleKategorien();
+    $('kategorie').innerHTML = optionen(alle) + '<option value="__neu__">＋ Neue Kategorie …</option>';
+    $('filter').innerHTML = '<option value="">Alle</option>' + optionen(alle);
+    $('sucheKat').innerHTML = '<option value="">Alle</option>' + optionen(alle);
+    if (!$('zahlung').options.length) {
+      $('zahlung').innerHTML = optionen(ZAHLUNGSMITTEL);
+    }
+    if (alle.indexOf(vK) >= 0) $('kategorie').value = vK;
+    if (alle.indexOf(vF) >= 0) $('filter').value = vF; else filterKat = '';
+    if (alle.indexOf(vS) >= 0) $('sucheKat').value = vS;
+    letzteKategorie = $('kategorie').value;
   }
 
   // ---------- Formular ----------
+  var bearbeiteId = null;
+  var filterKat = '';
+
+  function startKurs() { return einst.letzterKurs || STANDARD_KURS; }
+
+  function vorschau() {
+    var b = parseFloat(String($('betrag').value).replace(',', '.'));
+    var k = parseFloat(String($('kurs').value).replace(',', '.'));
+    $('euroVorschau').textContent = (b > 0 && k > 0) ? '≈ ' + euroFmt(b / k) : '–';
+  }
   function formZuruecksetzen() {
     bearbeiteId = null;
     $('form').reset();
     $('datum').value = heute();
+    $('kurs').value = startKurs();
+    letzteKategorie = $('kategorie').value;
     $('formTitel').textContent = 'Neue Ausgabe';
     $('speichern').textContent = 'Speichern';
     $('formKarte').classList.remove('bearbeiten');
+    vorschau();
   }
+  $('betrag').addEventListener('input', vorschau);
+  $('kurs').addEventListener('input', vorschau);
+
+  $('kategorie').addEventListener('change', function () {
+    if ($('kategorie').value !== '__neu__') { letzteKategorie = $('kategorie').value; return; }
+    var name = window.prompt('Name der neuen Kategorie:');
+    if (name === null) { $('kategorie').value = letzteKategorie; return; }
+    var r = kategorieHinzufuegen(name);
+    if (r.fehler) { toast(r.fehler); $('kategorie').value = letzteKategorie; return; }
+    dropdownsFuellen();
+    $('kategorie').value = r.name;
+    letzteKategorie = r.name;
+    zeichnen();
+    toast('Kategorie „' + r.name + '“ angelegt');
+  });
 
   $('form').addEventListener('submit', function (e) {
     e.preventDefault();
     var betrag = parseFloat(String($('betrag').value).replace(',', '.'));
+    var kurs = parseFloat(String($('kurs').value).replace(',', '.'));
     if (!isFinite(betrag) || betrag <= 0) { toast('Bitte einen gültigen Betrag eingeben.'); return; }
+    if (!isFinite(kurs) || kurs <= 0) { toast('Bitte einen gültigen Kurs eingeben.'); return; }
+    if ($('kategorie').value === '__neu__') { toast('Bitte eine Kategorie wählen.'); return; }
     var eintrag = {
       id: bearbeiteId || neueId(),
       datum: $('datum').value,
       betrag: Math.round(betrag * 100) / 100,
       kategorie: $('kategorie').value,
       zahlung: $('zahlung').value,
+      kurs: kurs,
       beschreibung: $('beschreibung').value.trim()
     };
     if (bearbeiteId) {
@@ -285,16 +548,16 @@
       ausgaben.push(eintrag);
       toast('Ausgabe gespeichert');
     }
-    speichern();
+    einst.letzterKurs = kurs;
+    speichern(); speichernEinst();
     var datumMerken = eintrag.datum;
     formZuruecksetzen();
     $('datum').value = datumMerken; // praktisch, wenn mehrere Ausgaben am selben Tag erfasst werden
     zeichnen();
   });
-
   $('abbrechen').addEventListener('click', formZuruecksetzen);
 
-  // ---------- Anzeige ----------
+  // ---------- Listen ----------
   function gefiltert() {
     return ausgaben.filter(function (a) { return !filterKat || a.kategorie === filterKat; });
   }
@@ -312,14 +575,365 @@
     });
     return kopie;
   }
+  function eintragHtml(a) {
+    var meta = esc(datumAnzeige(a.datum)) + (a.zahlung ? ' · ' + esc(a.zahlung) : '') + (a.kurs > 0 ? ' · Kurs ' + kursFmt(a.kurs) : '');
+    return '<div class="eintrag" data-id="' + esc(a.id) + '">' +
+      '<div class="meta"><span class="kat' + (istAbh(a) ? ' abh' : '') + '">' + esc(a.kategorie) + '</span>' + meta + '</div>' +
+      '<div class="betrag">' + geld(a.betrag) + '</div>' +
+      '<div class="beschr">' + (a.beschreibung ? esc(a.beschreibung) : '<span class="meta">–</span>') + '</div>' +
+      '<div class="aktionen">' +
+      '<button type="button" class="klein hell" data-aktion="edit">Ändern</button>' +
+      '<button type="button" class="klein rot" data-aktion="del">Löschen</button>' +
+      '</div></div>';
+  }
+  function listeKlick(e) {
+    var btn = e.target.closest('button[data-aktion]');
+    if (!btn) return;
+    var id = btn.closest('.eintrag').getAttribute('data-id');
+    var a = ausgaben.filter(function (x) { return x.id === id; })[0];
+    if (!a) return;
+    if (btn.getAttribute('data-aktion') === 'del') {
+      if (confirm('Diese Ausgabe (' + geld(a.betrag) + ') löschen?')) {
+        ausgaben = ausgaben.filter(function (x) { return x.id !== id; });
+        speichern(); zeichnen(); toast('Gelöscht');
+      }
+    } else {
+      if (!$('suche').hidden) schliesseSuche();
+      bearbeiteId = id;
+      $('datum').value = a.datum;
+      $('betrag').value = a.betrag;
+      $('kategorie').value = a.kategorie;
+      letzteKategorie = a.kategorie;
+      $('zahlung').value = a.zahlung || ZAHLUNGSMITTEL[0];
+      $('kurs').value = a.kurs > 0 ? a.kurs : startKurs();
+      $('beschreibung').value = a.beschreibung || '';
+      $('formTitel').textContent = 'Ausgabe ändern';
+      $('speichern').textContent = 'Änderung speichern';
+      $('formKarte').classList.add('bearbeiten');
+      vorschau();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+  $('liste').addEventListener('click', listeKlick);
+  $('sucheListe').addEventListener('click', listeKlick);
 
+  // ---------- Reiter ----------
+  var aktiverTab = 'ausgaben';
+  function tabWechseln(name) {
+    aktiverTab = name;
+    ['ausgaben', 'zahlung', 'tag', 'abrechnung'].forEach(function (t) {
+      $('tab-' + t).hidden = (t !== name);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+      b.classList.toggle('aktiv', b.getAttribute('data-tab') === name);
+    });
+  }
+  document.querySelector('.tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('.tab');
+    if (b) tabWechseln(b.getAttribute('data-tab'));
+  });
+
+  // Reiter „Zahlungsmittel“
+  function renderZahlungsmittel() {
+    var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
+    var html = ZAHLUNGSMITTEL.map(function (m) {
+      var ausg = ohneAbh.filter(function (a) { return a.zahlung === m; });
+      var abh = ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === m; });
+      var sub = ausg.length + (ausg.length === 1 ? ' Ausgabe' : ' Ausgaben');
+      if (m !== 'Bar' && abh.length) sub += ' · Abhebungen: ' + geld(summePeso(abh)) + ' (≈ ' + euroFmt(summeEuro(abh)) + ')';
+      return '<div class="zm"><div class="zm-kopf"><span class="zm-name">' + esc(m) + '</span>' +
+        '<span class="zm-wert">' + geld(summePeso(ausg)) + euroText(summeEuro(ausg)) + '</span></div>' +
+        '<div class="zm-sub">' + sub + '</div></div>';
+    }).join('');
+    var ohneZ = ohneAbh.filter(function (a) { return !a.zahlung; });
+    if (ohneZ.length) {
+      html += '<div class="zm"><div class="zm-kopf"><span class="zm-name">Ohne Zahlungsmittel</span>' +
+        '<span class="zm-wert">' + geld(summePeso(ohneZ)) + euroText(summeEuro(ohneZ)) + '</span></div>' +
+        '<div class="zm-sub">' + ohneZ.length + (ohneZ.length === 1 ? ' älterer Eintrag' : ' ältere Einträge') + '</div></div>';
+    }
+    html += '<div class="zm"><div class="zm-kopf"><span class="zm-name">Gesamt</span>' +
+      '<span class="zm-wert">' + geld(summePeso(ohneAbh)) + euroText(summeEuro(ohneAbh)) + '</span></div>' +
+      '<div class="zm-sub">ohne Bargeldabhebungen</div></div>';
+    $('tab-zahlung').innerHTML = html;
+  }
+
+  // Reiter „Pro Tag“
+  function renderProTag() {
+    var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
+    if (!ohneAbh.length) { $('tab-tag').innerHTML = '<div class="leer">Noch keine Ausgaben erfasst.</div>'; return; }
+    var proTag = {};
+    ohneAbh.forEach(function (a) { proTag[a.datum] = (proTag[a.datum] || 0) + a.betrag; });
+    var daten = Object.keys(proTag).sort();
+    var von = daten[0], bis = daten[daten.length - 1];
+    var anzahl = tageZwischen(von, bis) + 1;
+    var max = 0, teuer = von;
+    daten.forEach(function (d) { if (proTag[d] > max) { max = proTag[d]; teuer = d; } });
+    var summe = summePeso(ohneAbh);
+    var html = '<div class="rz"><span>Durchschnitt pro Tag (' + anzahl + (anzahl === 1 ? ' Tag' : ' Tage') + ')</span><b>' + geld(summe / anzahl) + '</b></div>' +
+      '<div class="rz"><span>Teuerster Tag (' + esc(datumAnzeige(teuer).slice(0, 5)) + ')</span><b>' + geld(max) + '</b></div>' +
+      '<div style="height:8px"></div>';
+    for (var i = anzahl - 1; i >= 0; i--) {
+      var d = tagPlus(von, i);
+      var w = proTag[d] || 0;
+      html += '<div class="tag-zeile"><span class="t">' + esc(wochentag(d)) + ' ' + esc(datumAnzeige(d).slice(0, 5)) + '</span>' +
+        balkenSpur(max > 0 ? (w / max) * 100 : 0, '') +
+        '<span class="balken-wert">' + geld(w) + '</span></div>';
+    }
+    $('tab-tag').innerHTML = html;
+  }
+
+  // Reiter „Abrechnung“ (alles in Euro, Kurs je Eintrag)
+  function renderAbrechnung() {
+    var zaehlt = ausgaben.filter(function (a) { return !istAbh(a) && a.zahlung; });
+    var ohneZ = ausgaben.filter(function (a) { return !istAbh(a) && !a.zahlung; });
+    var kS = 0, kT = 0, bar = 0;
+    zaehlt.forEach(function (a) {
+      var e = euroVon(a);
+      if (a.zahlung === 'KK Sabine') kS += e;
+      else if (a.zahlung === 'KK Tobi') kT += e;
+      else bar += e;
+    });
+    var abhS = summeEuro(ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === 'KK Sabine'; }));
+    var abhT = summeEuro(ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === 'KK Tobi'; }));
+    var keineAbh = (abhS + abhT) <= 0;
+    var anteilS = keineAbh ? 0.5 : abhS / (abhS + abhT);
+    var barS = bar * anteilS, barT = bar - barS;
+    var paidS = kS + barS, paidT = kT + barT;
+    var gesamt = paidS + paidT, haelfte = gesamt / 2;
+    var saldo = runden(paidS - haelfte);
+
+    var kopf;
+    if (!zaehlt.length) {
+      kopf = '<div class="ergebnis">Noch nichts abzurechnen<span class="gross">0,00 €</span></div>';
+    } else if (saldo === 0) {
+      kopf = '<div class="ergebnis">Ihr seid quitt<span class="gross">0,00 €</span></div>';
+    } else if (saldo > 0) {
+      kopf = '<div class="ergebnis">Tobi schuldet Sabine<span class="gross">' + euroFmt(saldo) + '</span></div>';
+    } else {
+      kopf = '<div class="ergebnis">Sabine schuldet Tobi<span class="gross">' + euroFmt(-saldo) + '</span></div>';
+    }
+    var html = kopf +
+      '<div class="rz"><span>Gesamtausgaben</span><b>' + euroFmt(gesamt) + '</b></div>' +
+      '<div class="rz"><span>Anteil je Person (50 %)</span><b>' + euroFmt(haelfte) + '</b></div>' +
+      '<div class="rz"><span>Sabine hat bezahlt</span><b>' + euroFmt(paidS) + '</b></div>' +
+      '<div class="rz sub"><span>Karte (KK Sabine)</span><span>' + euroFmt(kS) + '</span></div>' +
+      '<div class="rz sub"><span>Bar-Anteil</span><span>' + euroFmt(barS) + '</span></div>' +
+      '<div class="rz"><span>Tobi hat bezahlt</span><b>' + euroFmt(paidT) + '</b></div>' +
+      '<div class="rz sub"><span>Karte (KK Tobi)</span><span>' + euroFmt(kT) + '</span></div>' +
+      '<div class="rz sub"><span>Bar-Anteil</span><span>' + euroFmt(barT) + '</span></div>';
+
+    var notizen = [];
+    if (bar > 0 && keineAbh) {
+      notizen.push('<div class="warnung">Es sind keine Abhebungen mit KK Sabine oder KK Tobi erfasst. Die Bar-Ausgaben werden deshalb 50/50 gewertet.</div>');
+    } else if (bar > 0) {
+      notizen.push('Bar-Ausgaben (' + euroFmt(bar) + ') sind nach den Abhebungen zugeordnet: Sabine ' +
+        Math.round(anteilS * 100) + ' %, Tobi ' + Math.round((1 - anteilS) * 100) + ' %.');
+    }
+    if (ohneZ.length) {
+      notizen.push('<span class="warnung">' + ohneZ.length + (ohneZ.length === 1 ? ' Eintrag hat' : ' Einträge haben') +
+        ' kein Zahlungsmittel und fehlen in der Abrechnung.</span> Setze sie im Kasten „Bargeldbestand“ auf „Bar“ oder ändere sie einzeln.');
+    }
+    var rest = bargeldbestand();
+    if (rest.peso > 0) {
+      notizen.push('Noch vorhandenes Bargeld (' + geld(rest.peso) + ') ist nicht eingerechnet.');
+    }
+    html += notizen.map(function (n) { return '<p class="hinweis">' + n + '</p>'; }).join('');
+    $('tab-abrechnung').innerHTML = html;
+  }
+
+  // ---------- Bargeldbestand ----------
+  function bargeldbestand() {
+    var abh = ausgaben.filter(istAbh);
+    var bar = ausgaben.filter(function (a) { return !istAbh(a) && a.zahlung === 'Bar'; });
+    return {
+      abgehoben: summePeso(abh), barBezahlt: summePeso(bar),
+      peso: runden(summePeso(abh) - summePeso(bar)),
+      euro: runden(summeEuro(abh) - summeEuro(bar))
+    };
+  }
+  function renderBargeld() {
+    var b = bargeldbestand();
+    $('barWert').innerHTML = geld(b.peso) + euroText(b.euro);
+    $('barWert').classList.toggle('negativ', b.peso < 0);
+    $('barDetail').textContent = 'Abgehoben ' + geld(b.abgehoben) + ' − bar bezahlt ' + geld(b.barBezahlt);
+    var ohneZahlung = ausgaben.filter(function (a) { return !istAbh(a) && !a.zahlung; }).length;
+    var hinweis = '';
+    if (b.peso < 0) {
+      hinweis += '<div class="warnung hinweis">Bestand im Minus: Es fehlt eine Abhebung, oder ein Eintrag steht fälschlich auf „Bar“.</div>';
+    }
+    if (ohneZahlung > 0) {
+      hinweis += ohneZahlung + (ohneZahlung === 1 ? ' älterer Eintrag hat' : ' ältere Einträge haben') +
+        ' noch kein Zahlungsmittel und ' + (ohneZahlung === 1 ? 'zählt' : 'zählen') + ' nicht mit.' +
+        '<button type="button" class="klein hell" id="barZuweisen">Alle auf „Bar“ setzen</button>';
+    }
+    $('barHinweis').innerHTML = hinweis;
+  }
+  $('barKarte').addEventListener('click', function (e) {
+    if (!e.target.closest('#barZuweisen')) return;
+    var offen = ausgaben.filter(function (a) { return !istAbh(a) && !a.zahlung; });
+    if (!offen.length) return;
+    if (confirm(offen.length + ' Einträge ohne Zahlungsmittel auf „Bar“ setzen?')) {
+      offen.forEach(function (a) { a.zahlung = 'Bar'; });
+      speichern(); zeichnen(); toast('Auf „Bar“ gesetzt');
+    }
+  });
+
+  // ---------- Budget ----------
+  function renderBudget() {
+    var b = einst.budget;
+    if (!b) {
+      $('budgetInfo').innerHTML = '<p class="hinweis" style="margin-top:0">Noch kein Budget festgelegt. Trage unten Budget und Reisezeitraum ein, dann siehst du Rest, Tagesschnitt und Hochrechnung.</p>';
+      return;
+    }
+    var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
+    var euroModus = b.waehrung === 'EUR';
+    var fmt = euroModus ? euroFmt : geld;
+    var ausgegeben = euroModus ? summeEuro(ohneAbh) : summePeso(ohneAbh);
+    var rest = b.betrag - ausgegeben;
+    var pct = ausgegeben / b.betrag * 100;
+    var pctText = (pct > 0 && pct < 1 ? '<1' : Math.round(pct)) + ' %';
+    var h = balkenSpur(Math.min(100, pct), pctText, pct > 100 ? 'warn' : '');
+    h += '<div style="height:8px"></div>';
+    h += '<div class="rz"><span>Budget</span><b>' + fmt(b.betrag) + '</b></div>';
+    h += '<div class="rz"><span>Ausgegeben</span><b>' + fmt(ausgegeben) + '</b></div>';
+    h += '<div class="rz"><span>' + (rest < 0 ? 'Überschritten um' : 'Noch übrig') + '</span><b' + (rest < 0 ? ' class="warnung"' : '') + '>' + fmt(Math.abs(rest)) + '</b></div>';
+
+    var datenListe = ohneAbh.map(function (a) { return a.datum; }).sort();
+    var start = b.start || datenListe[0] || '';
+    var heuteStr = heute();
+    var ende = b.ende;
+    if (start && heuteStr < start) {
+      h += '<p class="hinweis">Die Reise beginnt am ' + esc(datumAnzeige(start)) + '.</p>';
+    } else if (start) {
+      var bisTag = (ende && heuteStr > ende) ? ende : heuteStr;
+      var tage = Math.max(1, tageZwischen(start, bisTag) + 1);
+      var schnitt = ausgegeben / tage;
+      h += '<div class="rz"><span>Ø pro Tag (' + tage + (tage === 1 ? ' Tag' : ' Tage') + ')</span><b>' + fmt(schnitt) + '</b></div>';
+      if (ende && start <= ende) {
+        if (heuteStr <= ende) {
+          var uebrig = tageZwischen(heuteStr, ende) + 1;
+          if (rest > 0) {
+            h += '<div class="rz"><span>Verfügbar pro Tag (' + uebrig + (uebrig === 1 ? ' Tag' : ' Tage') + ' übrig)</span><b>' + fmt(rest / uebrig) + '</b></div>';
+          }
+          var gesamtTage = tageZwischen(start, ende) + 1;
+          var prog = schnitt * gesamtTage;
+          var ok = prog <= b.betrag;
+          h += '<div class="rz"><span>Hochrechnung bis Reiseende</span><b' + (ok ? '' : ' class="warnung"') + '>' + fmt(prog) + '</b></div>';
+          h += '<p class="hinweis' + (ok ? '' : ' warnung') + '">' + (ok
+            ? 'Bei diesem Tempo bleibt ihr im Budget (rund ' + fmt(b.betrag - prog) + ' Reserve).'
+            : 'Bei diesem Tempo wird das Budget um rund ' + fmt(prog - b.betrag) + ' überschritten.') + '</p>';
+        } else {
+          h += '<p class="hinweis">Die Reise ist seit dem ' + esc(datumAnzeige(ende)) + ' beendet.</p>';
+        }
+      }
+    }
+    $('budgetInfo').innerHTML = h;
+  }
+  $('budgetSpeichern').addEventListener('click', function () {
+    var txt = String($('budgetBetrag').value).trim();
+    if (!txt) {
+      einst.budget = null; speichernEinst(); zeichnen(); toast('Budget entfernt'); return;
+    }
+    var betrag = parseFloat(txt.replace(',', '.'));
+    if (!isFinite(betrag) || betrag <= 0) { toast('Bitte ein gültiges Budget eingeben.'); return; }
+    var start = $('budgetStart').value, ende = $('budgetEnde').value;
+    if (start && ende && ende < start) { toast('Das Reiseende liegt vor dem Beginn.'); return; }
+    einst.budget = { betrag: betrag, waehrung: $('budgetWaehrung').value, start: start, ende: ende };
+    speichernEinst(); zeichnen(); toast('Budget gespeichert');
+  });
+  function budgetFelderFuellen() {
+    var b = einst.budget;
+    $('budgetBetrag').value = b ? b.betrag : '';
+    $('budgetWaehrung').value = b ? b.waehrung : 'EUR';
+    $('budgetStart').value = b ? b.start : '';
+    $('budgetEnde').value = b ? b.ende : '';
+    $('budgetDetails').open = !b;
+  }
+
+  // ---------- Eigene Kategorien (Verwaltung) ----------
+  function renderKategorienKarte() {
+    if (!einst.kategorien.length) {
+      $('katListe').innerHTML = '<p class="hinweis" style="margin-top:0">Noch keine eigenen Kategorien.</p>';
+      return;
+    }
+    $('katListe').innerHTML = einst.kategorien.map(function (k) {
+      return '<div class="kat-eintrag"><span>' + esc(k) + '</span>' +
+        '<button type="button" class="klein rot" data-kat-del="' + esc(k) + '">Löschen</button></div>';
+    }).join('');
+  }
+  $('katListe').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-kat-del]');
+    if (!btn) return;
+    var name = btn.getAttribute('data-kat-del');
+    var genutzt = ausgaben.some(function (a) { return a.kategorie === name; });
+    if (genutzt) { toast('„' + name + '“ wird noch bei Ausgaben verwendet.'); return; }
+    if (!confirm('Kategorie „' + name + '“ löschen?')) return;
+    einst.kategorien = einst.kategorien.filter(function (k) { return k !== name; });
+    speichernEinst(); dropdownsFuellen(); zeichnen();
+  });
+  function katHinzufuegenKlick() {
+    var r = kategorieHinzufuegen($('katNeu').value);
+    if (r.fehler) { toast(r.fehler); return; }
+    $('katNeu').value = '';
+    dropdownsFuellen(); zeichnen();
+    toast('Kategorie „' + r.name + '“ angelegt');
+  }
+  $('katAdd').addEventListener('click', katHinzufuegenKlick);
+  $('katNeu').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); katHinzufuegenKlick(); } });
+
+  // ---------- Suche ----------
+  function norm(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+  function sucheTreffer() {
+    var woerter = norm($('sucheText').value).split(/\s+/).filter(Boolean);
+    var k = $('sucheKat').value, von = $('sucheVon').value, bis = $('sucheBis').value;
+    var treffer = ausgaben.filter(function (a) {
+      if (k && a.kategorie !== k) return false;
+      if (von && a.datum < von) return false;
+      if (bis && a.datum > bis) return false;
+      var text = norm(a.beschreibung);
+      return woerter.every(function (w) { return text.indexOf(w) >= 0; });
+    });
+    treffer.sort(function (a, b) { return b.datum.localeCompare(a.datum) || b.id.localeCompare(a.id); });
+    return treffer;
+  }
+  function renderSuche() {
+    var t = sucheTreffer();
+    var stat = ($('sucheKat').value === ABHEBUNG) ? t : t.filter(function (a) { return !istAbh(a); });
+    $('sucheInfo').textContent = t.length + (t.length === 1 ? ' Treffer' : ' Treffer') + (t.length ? ' · Summe ' + geld(summePeso(stat)) : '') +
+      (stat.length !== t.length ? ' (ohne Abhebungen)' : '');
+    $('sucheListe').innerHTML = t.length ? t.map(eintragHtml).join('') : '<div class="leer">Nichts gefunden.</div>';
+  }
+  function oeffneSuche() {
+    if (!$('suche').hidden) return;
+    $('suche').hidden = false;
+    document.body.style.overflow = 'hidden';
+    try { history.pushState({ suche: true }, ''); } catch (e) {}
+    renderSuche();
+    setTimeout(function () { $('sucheText').focus(); }, 50);
+  }
+  function schliesseSuche(ueberZurueck) {
+    if ($('suche').hidden) return;
+    $('suche').hidden = true;
+    document.body.style.overflow = '';
+    if (!ueberZurueck && history.state && history.state.suche) { try { history.back(); } catch (e) {} }
+  }
+  $('sucheBtn').addEventListener('click', oeffneSuche);
+  $('sucheZu').addEventListener('click', function () { schliesseSuche(false); });
+  window.addEventListener('popstate', function () { schliesseSuche(true); });
+  ['sucheText', 'sucheKat', 'sucheVon', 'sucheBis'].forEach(function (id) {
+    $(id).addEventListener('input', renderSuche);
+    $(id).addEventListener('change', renderSuche);
+  });
+
+  // ---------- Anzeige ----------
   function zeichnen() {
     // Kopf: Abhebungen zählen nicht zur Statistik (außer man filtert gezielt darauf)
     var liste = gefiltert();
     var nurAbhebung = (filterKat === ABHEBUNG);
-    var statListe = nurAbhebung ? liste : liste.filter(function (a) { return a.kategorie !== ABHEBUNG; });
-    var summe = statListe.reduce(function (s, a) { return s + a.betrag; }, 0);
-    $('gesamt').innerHTML = geld(summe) + euroText(summe);
+    var statListe = nurAbhebung ? liste : liste.filter(function (a) { return !istAbh(a); });
+    $('gesamt').innerHTML = geld(summePeso(statListe)) + euroText(summeEuro(statListe));
     var anzahl = statListe.length;
     var zaehler = anzahl + (anzahl === 1 ? ' Ausgabe' : ' Ausgaben');
     if (nurAbhebung) {
@@ -332,12 +946,10 @@
 
     // Balken (nur Ausgaben, ohne Abhebungen)
     var proKat = {};
-    STAT_KATEGORIEN.forEach(function (k) { proKat[k] = 0; });
-    var abgehoben = 0, anzahlAbh = 0, barBezahlt = 0, ohneZahlung = 0;
+    statKategorien().forEach(function (k) { proKat[k] = 0; });
+    var abgehoben = 0, anzahlAbh = 0;
     ausgaben.forEach(function (a) {
-      if (a.kategorie === ABHEBUNG) { abgehoben += a.betrag; anzahlAbh++; return; }
-      if (a.zahlung === 'Bar') barBezahlt += a.betrag;
-      else if (!a.zahlung) ohneZahlung++;
+      if (istAbh(a)) { abgehoben += a.betrag; anzahlAbh++; return; }
       proKat[a.kategorie] = (proKat[a.kategorie] || 0) + a.betrag;
     });
     var max = Math.max.apply(null, Object.keys(proKat).map(function (k) { return proKat[k]; }).concat([0]));
@@ -349,65 +961,32 @@
     }
     $('balken').innerHTML = Object.keys(proKat).map(function (k) {
       var breite = max > 0 ? (proKat[k] / max) * 100 : 0;
-      var label = prozent(proKat[k]);
-      // Das weiße Label im Balken ist so breit wie die ganze Spur, damit es an derselben Stelle liegt wie das dunkle
-      var fuellung = breite > 0
-        ? '<span class="balken" style="width:' + breite + '%"><span class="pct" style="width:' + (10000 / breite) + '%">' + label + '</span></span>'
-        : '';
       return '<div class="balken-zeile' + (k === filterKat ? ' aktiv' : '') + '" data-kat="' + esc(k) + '">' +
         '<span class="balken-name">' + esc(k) + '</span>' +
-        '<span class="balken-spur"><span class="pct">' + label + '</span>' + fuellung + '</span>' +
+        balkenSpur(breite, prozent(proKat[k])) +
         '<span class="balken-wert">' + geld(proKat[k]) + '</span></div>';
     }).join('') +
       '<div class="balken-zeile abhebung' + (nurAbhebung ? ' aktiv' : '') + '" data-kat="' + esc(ABHEBUNG) + '">' +
       '<span class="balken-name">Abgehoben (' + anzahlAbh + '×, nicht in Statistik)</span>' +
       '<span class="balken-wert">' + geld(abgehoben) + '</span></div>';
 
-    // Bargeld-Bestand = Abhebungen minus alles, was bar bezahlt wurde (rückwirkend aus allen Einträgen)
-    var bestand = Math.round((abgehoben - barBezahlt) * 100) / 100;
-    $('barWert').innerHTML = geld(bestand) + euroText(bestand);
-    $('barWert').classList.toggle('negativ', bestand < 0);
-    $('barDetail').textContent = 'Abgehoben ' + geld(abgehoben) + ' − bar bezahlt ' + geld(barBezahlt);
-    var hinweis = '';
-    if (bestand < 0) {
-      hinweis += '<div class="warnung hinweis">Bestand im Minus: Es fehlt eine Abhebung, oder ein Eintrag steht fälschlich auf „Bar“.</div>';
-    }
-    if (ohneZahlung > 0) {
-      hinweis += ohneZahlung + (ohneZahlung === 1 ? ' älterer Eintrag hat' : ' ältere Einträge haben') +
-        ' noch kein Zahlungsmittel und ' + (ohneZahlung === 1 ? 'zählt' : 'zählen') + ' nicht mit.' +
-        '<button type="button" class="klein hell" id="barZuweisen">Alle auf „Bar“ setzen</button>';
-    }
-    $('barHinweis').innerHTML = hinweis;
+    renderBargeld();
+    renderBudget();
+    renderKategorienKarte();
 
-    // Liste
+    // Reiter „Ausgaben“
     var s = sortiert(liste);
     if (!s.length) {
       $('liste').innerHTML = '<div class="leer">' +
         (ausgaben.length ? 'Keine Ausgaben in dieser Kategorie.' : 'Noch keine Ausgaben erfasst.') + '</div>';
     } else {
-      $('liste').innerHTML = s.map(function (a) {
-        return '<div class="eintrag" data-id="' + esc(a.id) + '">' +
-          '<div class="meta"><span class="kat' + (a.kategorie === ABHEBUNG ? ' abh' : '') + '">' + esc(a.kategorie) + '</span>' +
-            esc(datumAnzeige(a.datum)) + (a.zahlung ? ' · ' + esc(a.zahlung) : '') + '</div>' +
-          '<div class="betrag">' + geld(a.betrag) + '</div>' +
-          '<div class="beschr">' + (a.beschreibung ? esc(a.beschreibung) : '<span class="meta">–</span>') + '</div>' +
-          '<div class="aktionen">' +
-          '<button type="button" class="klein hell" data-aktion="edit">Ändern</button>' +
-          '<button type="button" class="klein rot" data-aktion="del">Löschen</button>' +
-          '</div></div>';
-      }).join('');
+      $('liste').innerHTML = s.map(eintragHtml).join('');
     }
+    renderZahlungsmittel();
+    renderProTag();
+    renderAbrechnung();
+    if (!$('suche').hidden) renderSuche();
   }
-
-  $('barKarte').addEventListener('click', function (e) {
-    if (!e.target.closest('#barZuweisen')) return;
-    var offen = ausgaben.filter(function (a) { return a.kategorie !== ABHEBUNG && !a.zahlung; });
-    if (!offen.length) return;
-    if (confirm(offen.length + ' Einträge ohne Zahlungsmittel auf „Bar“ setzen?')) {
-      offen.forEach(function (a) { a.zahlung = 'Bar'; });
-      speichern(); zeichnen(); toast('Auf „Bar“ gesetzt');
-    }
-  });
 
   $('balken').addEventListener('click', function (e) {
     var zeile = e.target.closest('.balken-zeile');
@@ -415,36 +994,11 @@
     var k = zeile.getAttribute('data-kat');
     filterKat = (filterKat === k) ? '' : k;
     $('filter').value = filterKat;
+    tabWechseln('ausgaben');
     zeichnen();
   });
-
   $('filter').addEventListener('change', function () { filterKat = $('filter').value; zeichnen(); });
   $('sortierung').addEventListener('change', zeichnen);
-
-  $('liste').addEventListener('click', function (e) {
-    var btn = e.target.closest('button[data-aktion]');
-    if (!btn) return;
-    var id = btn.closest('.eintrag').getAttribute('data-id');
-    var a = ausgaben.filter(function (x) { return x.id === id; })[0];
-    if (!a) return;
-    if (btn.getAttribute('data-aktion') === 'del') {
-      if (confirm('Diese Ausgabe (' + geld(a.betrag) + ') löschen?')) {
-        ausgaben = ausgaben.filter(function (x) { return x.id !== id; });
-        speichern(); zeichnen(); toast('Gelöscht');
-      }
-    } else {
-      bearbeiteId = id;
-      $('datum').value = a.datum;
-      $('betrag').value = a.betrag;
-      $('kategorie').value = a.kategorie;
-      $('zahlung').value = a.zahlung || ZAHLUNGSMITTEL[0];
-      $('beschreibung').value = a.beschreibung || '';
-      $('formTitel').textContent = 'Ausgabe ändern';
-      $('speichern').textContent = 'Änderung speichern';
-      $('formKarte').classList.add('bearbeiten');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  });
 
   // ---------- Export / Import ----------
   function download(name, inhalt, typ) {
@@ -455,24 +1009,23 @@
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
   }
-
   $('exportJson').addEventListener('click', function () {
     if (!ausgaben.length) { toast('Noch nichts zu sichern.'); return; }
-    download('ausgaben-backup-' + heute() + '.json', JSON.stringify(ausgaben, null, 2), 'application/json');
+    var paket = { format: 'reiseausgaben', version: 2, ausgaben: ausgaben, einstellungen: einst };
+    download('ausgaben-backup-' + heute() + '.json', JSON.stringify(paket, null, 2), 'application/json');
   });
-
   $('exportCsv').addEventListener('click', function () {
     if (!ausgaben.length) { toast('Noch nichts zu exportieren.'); return; }
-    var zeilen = [['Datum', 'Betrag (PHP)', 'Kategorie', 'Zahlungsmittel', 'Beschreibung']];
+    var zeilen = [['Datum', 'Betrag (PHP)', 'Kategorie', 'Zahlungsmittel', 'Kurs (PHP je EUR)', 'Betrag (EUR)', 'Beschreibung']];
     sortiert(ausgaben).forEach(function (a) {
-      zeilen.push([a.datum, String(a.betrag).replace('.', ','), a.kategorie, a.zahlung || '', a.beschreibung || '']);
+      zeilen.push([a.datum, String(a.betrag).replace('.', ','), a.kategorie, a.zahlung || '',
+        a.kurs > 0 ? String(a.kurs).replace('.', ',') : '', String(runden(euroVon(a))).replace('.', ','), a.beschreibung || '']);
     });
     var csv = '﻿' + zeilen.map(function (z) {
       return z.map(function (f) { return '"' + String(f).replace(/"/g, '""') + '"'; }).join(';');
     }).join('\r\n');
     download('ausgaben-' + heute() + '.csv', csv, 'text/csv;charset=utf-8');
   });
-
   $('importBtn').addEventListener('click', function () { $('importDatei').click(); });
   $('importDatei').addEventListener('change', function () {
     var datei = this.files[0];
@@ -481,18 +1034,30 @@
     leser.onload = function () {
       try {
         var daten = JSON.parse(leser.result);
-        if (!Array.isArray(daten)) throw new Error('format');
-        var gueltig = daten.filter(function (a) {
+        var rohListe = Array.isArray(daten) ? daten : daten.ausgaben; // altes Format: reine Liste
+        if (!Array.isArray(rohListe)) throw new Error('format');
+        var gueltig = rohListe.filter(function (a) {
           return a && typeof a.datum === 'string' && typeof a.betrag === 'number' && isFinite(a.betrag) &&
                  typeof a.kategorie === 'string';
         }).map(function (a) {
-          return { id: String(a.id || neueId()), datum: a.datum, betrag: a.betrag,
-                   kategorie: a.kategorie, zahlung: String(a.zahlung || ''), beschreibung: String(a.beschreibung || '') };
+          var e = { id: String(a.id || neueId()), datum: a.datum, betrag: a.betrag,
+                    kategorie: a.kategorie, zahlung: String(a.zahlung || ''), beschreibung: String(a.beschreibung || '') };
+          if (a.kurs > 0 && isFinite(a.kurs)) e.kurs = a.kurs;
+          return e;
         });
         if (!gueltig.length) throw new Error('leer');
         if (!confirm(gueltig.length + ' Ausgaben laden? Die aktuelle Liste wird ersetzt.')) return;
         ausgaben = gueltig;
-        speichern(); zeichnen(); toast(gueltig.length + ' Ausgaben geladen');
+        var neu = (!Array.isArray(daten) && daten.einstellungen) ? daten.einstellungen : null;
+        if (neu) {
+          einst.kategorien = sauberKategorien(neu.kategorien);
+          einst.budget = sauberBudget(neu.budget);
+          if (neu.letzterKurs > 0 && isFinite(neu.letzterKurs)) einst.letzterKurs = neu.letzterKurs;
+        }
+        kategorienAbgleichen();
+        speichern(); speichernEinst();
+        dropdownsFuellen(); budgetFelderFuellen(); formZuruecksetzen(); zeichnen();
+        toast(gueltig.length + ' Ausgaben geladen');
       } catch (e) {
         toast('Datei konnte nicht gelesen werden.');
       }
@@ -502,7 +1067,9 @@
   });
 
   // ---------- Start ----------
+  kategorienAbgleichen();
   dropdownsFuellen();
+  budgetFelderFuellen();
   formZuruecksetzen();
   zeichnen();
 
@@ -510,7 +1077,6 @@
   if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persist().catch(function () {});
   }
-
   // Offline-Fähigkeit
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(function () {});
