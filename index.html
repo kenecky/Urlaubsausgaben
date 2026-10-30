@@ -79,6 +79,10 @@
   .eintrag .aktionen { grid-column: 2 / 3; display: flex; gap: 6px; justify-content: flex-end; align-items: flex-start; }
   .eintrag .kat.abh { background: #e2e8f0; color: #475569; }
   .balken-zeile.abhebung { grid-template-columns: 1fr auto; margin-top: 6px; border-top: 1px dashed var(--linie); border-radius: 0 0 8px 8px; padding-top: 10px; color: var(--grau); }
+  .bar-wert { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .bar-wert.negativ { color: var(--rot); }
+  .hinweis.warnung { color: var(--rot); }
+  .hinweis button.klein { margin-top: 8px; display: block; }
   .leer { color: var(--grau); text-align: center; padding: 18px 0; }
   .hinweis { font-size: 13px; color: var(--grau); margin: 8px 0 0; }
   .toast {
@@ -122,6 +126,13 @@
       <button type="submit" id="speichern">Speichern</button>
       <button type="button" class="hell abbrechen" id="abbrechen" style="margin-top:8px">Abbrechen</button>
     </form>
+  </section>
+
+  <section class="karte" id="barKarte">
+    <h2>Bargeld</h2>
+    <div class="bar-wert" id="barWert">0,00 ₱</div>
+    <div class="hinweis" id="barDetail"></div>
+    <div class="hinweis" id="barHinweis"></div>
   </section>
 
   <section class="karte">
@@ -313,9 +324,11 @@
     // Balken (nur Ausgaben, ohne Abhebungen)
     var proKat = {};
     STAT_KATEGORIEN.forEach(function (k) { proKat[k] = 0; });
-    var abgehoben = 0, anzahlAbh = 0;
+    var abgehoben = 0, anzahlAbh = 0, barBezahlt = 0, ohneZahlung = 0;
     ausgaben.forEach(function (a) {
       if (a.kategorie === ABHEBUNG) { abgehoben += a.betrag; anzahlAbh++; return; }
+      if (a.zahlung === 'Bar') barBezahlt += a.betrag;
+      else if (!a.zahlung) ohneZahlung++;
       proKat[a.kategorie] = (proKat[a.kategorie] || 0) + a.betrag;
     });
     var max = Math.max.apply(null, Object.keys(proKat).map(function (k) { return proKat[k]; }).concat([0]));
@@ -329,6 +342,22 @@
       '<div class="balken-zeile abhebung' + (nurAbhebung ? ' aktiv' : '') + '" data-kat="' + esc(ABHEBUNG) + '">' +
       '<span class="balken-name">Abgehoben (' + anzahlAbh + '×, nicht in Statistik)</span>' +
       '<span class="balken-wert">' + geld(abgehoben) + '</span></div>';
+
+    // Bargeld-Bestand = Abhebungen minus alles, was bar bezahlt wurde (rückwirkend aus allen Einträgen)
+    var bestand = Math.round((abgehoben - barBezahlt) * 100) / 100;
+    $('barWert').textContent = geld(bestand);
+    $('barWert').classList.toggle('negativ', bestand < 0);
+    $('barDetail').textContent = 'Abgehoben ' + geld(abgehoben) + ' − bar bezahlt ' + geld(barBezahlt);
+    var hinweis = '';
+    if (bestand < 0) {
+      hinweis += '<div class="warnung hinweis">Bestand im Minus: Es fehlt eine Abhebung, oder ein Eintrag steht fälschlich auf „Bar“.</div>';
+    }
+    if (ohneZahlung > 0) {
+      hinweis += ohneZahlung + (ohneZahlung === 1 ? ' älterer Eintrag hat' : ' ältere Einträge haben') +
+        ' noch kein Zahlungsmittel und ' + (ohneZahlung === 1 ? 'zählt' : 'zählen') + ' nicht mit.' +
+        '<button type="button" class="klein hell" id="barZuweisen">Alle auf „Bar“ setzen</button>';
+    }
+    $('barHinweis').innerHTML = hinweis;
 
     // Liste
     var s = sortiert(liste);
@@ -349,6 +378,16 @@
       }).join('');
     }
   }
+
+  $('barKarte').addEventListener('click', function (e) {
+    if (!e.target.closest('#barZuweisen')) return;
+    var offen = ausgaben.filter(function (a) { return a.kategorie !== ABHEBUNG && !a.zahlung; });
+    if (!offen.length) return;
+    if (confirm(offen.length + ' Einträge ohne Zahlungsmittel auf „Bar“ setzen?')) {
+      offen.forEach(function (a) { a.zahlung = 'Bar'; });
+      speichern(); zeichnen(); toast('Auf „Bar“ gesetzt');
+    }
+  });
 
   $('balken').addEventListener('click', function (e) {
     var zeile = e.target.closest('.balken-zeile');
