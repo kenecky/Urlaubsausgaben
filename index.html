@@ -77,6 +77,8 @@
   .eintrag .kat { display: inline-block; background: var(--blau-hell); color: var(--blau); border-radius: 20px; padding: 1px 9px; font-size: 12px; font-weight: 600; margin-right: 6px; }
   .eintrag .beschr { grid-column: 1 / 2; word-break: break-word; }
   .eintrag .aktionen { grid-column: 2 / 3; display: flex; gap: 6px; justify-content: flex-end; align-items: flex-start; }
+  .eintrag .kat.abh { background: #e2e8f0; color: #475569; }
+  .balken-zeile.abhebung { grid-template-columns: 1fr auto; margin-top: 6px; border-top: 1px dashed var(--linie); border-radius: 0 0 8px 8px; padding-top: 10px; color: var(--grau); }
   .leer { color: var(--grau); text-align: center; padding: 18px 0; }
   .hinweis { font-size: 13px; color: var(--grau); margin: 8px 0 0; }
   .toast {
@@ -113,6 +115,8 @@
       </div>
       <label for="kategorie">Kategorie</label>
       <select id="kategorie" required></select>
+      <label for="zahlung">Zahlungsmittel</label>
+      <select id="zahlung" required></select>
       <label for="beschreibung">Beschreibung</label>
       <textarea id="beschreibung" rows="2" placeholder="z. B. Abendessen am Strand"></textarea>
       <button type="submit" id="speichern">Speichern</button>
@@ -165,7 +169,10 @@
 (function () {
   'use strict';
 
-  var KATEGORIEN = ['Essen & Trinken', 'Unterkunft', 'Transport', 'Aktivitäten', 'Einkaufen', 'Sonstiges'];
+  var ABHEBUNG = 'Bargeldabhebung'; // zählt nicht zur Statistik, nur Dokumentation
+  var STAT_KATEGORIEN = ['Essen & Trinken', 'Unterkunft', 'Transport', 'Aktivitäten', 'Einkaufen', 'Sonstiges'];
+  var KATEGORIEN = STAT_KATEGORIEN.concat([ABHEBUNG]);
+  var ZAHLUNGSMITTEL = ['Bar', 'KK Sabine', 'KK Tobi'];
   var SPEICHER_KEY = 'reiseausgaben.v1';
 
   var ausgaben = laden();
@@ -226,6 +233,7 @@
     var opt = KATEGORIEN.map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('');
     $('kategorie').innerHTML = opt;
     $('filter').innerHTML = '<option value="">Alle</option>' + opt;
+    $('zahlung').innerHTML = ZAHLUNGSMITTEL.map(function (z) { return '<option>' + esc(z) + '</option>'; }).join('');
   }
 
   // ---------- Formular ----------
@@ -247,6 +255,7 @@
       datum: $('datum').value,
       betrag: Math.round(betrag * 100) / 100,
       kategorie: $('kategorie').value,
+      zahlung: $('zahlung').value,
       beschreibung: $('beschreibung').value.trim()
     };
     if (bearbeiteId) {
@@ -285,18 +294,28 @@
   }
 
   function zeichnen() {
-    // Kopf
+    // Kopf: Abhebungen zählen nicht zur Statistik (außer man filtert gezielt darauf)
     var liste = gefiltert();
-    var summe = liste.reduce(function (s, a) { return s + a.betrag; }, 0);
+    var nurAbhebung = (filterKat === ABHEBUNG);
+    var statListe = nurAbhebung ? liste : liste.filter(function (a) { return a.kategorie !== ABHEBUNG; });
+    var summe = statListe.reduce(function (s, a) { return s + a.betrag; }, 0);
     $('gesamt').textContent = geld(summe);
-    var anzahl = liste.length;
-    $('gesamtSub').textContent = (filterKat ? filterKat + ' · ' : 'Alle Kategorien · ') +
-      anzahl + (anzahl === 1 ? ' Ausgabe' : ' Ausgaben');
+    var anzahl = statListe.length;
+    var zaehler = anzahl + (anzahl === 1 ? ' Ausgabe' : ' Ausgaben');
+    if (nurAbhebung) {
+      $('gesamtSub').textContent = 'Bargeldabhebungen · ' + anzahl + (anzahl === 1 ? ' Abhebung' : ' Abhebungen') + ' (nicht in Statistik)';
+    } else if (filterKat) {
+      $('gesamtSub').textContent = filterKat + ' · ' + zaehler;
+    } else {
+      $('gesamtSub').textContent = 'Alle Kategorien · ' + zaehler + ' (ohne Abhebungen)';
+    }
 
-    // Balken (immer über alle Ausgaben)
+    // Balken (nur Ausgaben, ohne Abhebungen)
     var proKat = {};
-    KATEGORIEN.forEach(function (k) { proKat[k] = 0; });
+    STAT_KATEGORIEN.forEach(function (k) { proKat[k] = 0; });
+    var abgehoben = 0, anzahlAbh = 0;
     ausgaben.forEach(function (a) {
+      if (a.kategorie === ABHEBUNG) { abgehoben += a.betrag; anzahlAbh++; return; }
       proKat[a.kategorie] = (proKat[a.kategorie] || 0) + a.betrag;
     });
     var max = Math.max.apply(null, Object.keys(proKat).map(function (k) { return proKat[k]; }).concat([0]));
@@ -306,7 +325,10 @@
         '<span class="balken-name">' + esc(k) + '</span>' +
         '<span class="balken-spur"><span class="balken" style="display:block;width:' + breite + '%"></span></span>' +
         '<span class="balken-wert">' + geld(proKat[k]) + '</span></div>';
-    }).join('');
+    }).join('') +
+      '<div class="balken-zeile abhebung' + (nurAbhebung ? ' aktiv' : '') + '" data-kat="' + esc(ABHEBUNG) + '">' +
+      '<span class="balken-name">Abgehoben (' + anzahlAbh + '×, nicht in Statistik)</span>' +
+      '<span class="balken-wert">' + geld(abgehoben) + '</span></div>';
 
     // Liste
     var s = sortiert(liste);
@@ -316,7 +338,8 @@
     } else {
       $('liste').innerHTML = s.map(function (a) {
         return '<div class="eintrag" data-id="' + esc(a.id) + '">' +
-          '<div class="meta"><span class="kat">' + esc(a.kategorie) + '</span>' + esc(datumAnzeige(a.datum)) + '</div>' +
+          '<div class="meta"><span class="kat' + (a.kategorie === ABHEBUNG ? ' abh' : '') + '">' + esc(a.kategorie) + '</span>' +
+            esc(datumAnzeige(a.datum)) + (a.zahlung ? ' · ' + esc(a.zahlung) : '') + '</div>' +
           '<div class="betrag">' + geld(a.betrag) + '</div>' +
           '<div class="beschr">' + (a.beschreibung ? esc(a.beschreibung) : '<span class="meta">–</span>') + '</div>' +
           '<div class="aktionen">' +
@@ -355,6 +378,7 @@
       $('datum').value = a.datum;
       $('betrag').value = a.betrag;
       $('kategorie').value = a.kategorie;
+      $('zahlung').value = a.zahlung || ZAHLUNGSMITTEL[0];
       $('beschreibung').value = a.beschreibung || '';
       $('formTitel').textContent = 'Ausgabe ändern';
       $('speichern').textContent = 'Änderung speichern';
@@ -380,9 +404,9 @@
 
   $('exportCsv').addEventListener('click', function () {
     if (!ausgaben.length) { toast('Noch nichts zu exportieren.'); return; }
-    var zeilen = [['Datum', 'Betrag (PHP)', 'Kategorie', 'Beschreibung']];
+    var zeilen = [['Datum', 'Betrag (PHP)', 'Kategorie', 'Zahlungsmittel', 'Beschreibung']];
     sortiert(ausgaben).forEach(function (a) {
-      zeilen.push([a.datum, String(a.betrag).replace('.', ','), a.kategorie, a.beschreibung || '']);
+      zeilen.push([a.datum, String(a.betrag).replace('.', ','), a.kategorie, a.zahlung || '', a.beschreibung || '']);
     });
     var csv = '﻿' + zeilen.map(function (z) {
       return z.map(function (f) { return '"' + String(f).replace(/"/g, '""') + '"'; }).join(';');
@@ -404,7 +428,7 @@
                  typeof a.kategorie === 'string';
         }).map(function (a) {
           return { id: String(a.id || neueId()), datum: a.datum, betrag: a.betrag,
-                   kategorie: a.kategorie, beschreibung: String(a.beschreibung || '') };
+                   kategorie: a.kategorie, zahlung: String(a.zahlung || ''), beschreibung: String(a.beschreibung || '') };
         });
         if (!gueltig.length) throw new Error('leer');
         if (!confirm(gueltig.length + ' Ausgaben laden? Die aktuelle Liste wird ersetzt.')) return;
