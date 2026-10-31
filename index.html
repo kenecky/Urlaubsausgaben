@@ -64,6 +64,8 @@
   button.klein { width: auto; padding: 8px 12px; font-size: 14px; margin: 0; }
   button.rot { background: #fee2e2; color: var(--rot); }
   input.abgeleitet { background: var(--bg); }
+  input:disabled { background: var(--bg); color: var(--grau); -webkit-text-fill-color: var(--grau); opacity: 1; }
+  .check.gesperrt { opacity: .6; cursor: default; }
   .wert-peso { display: block; }
   .wert-euro { display: block; font-size: 11.5px; font-weight: 400; color: var(--grau); line-height: 1.25; }
   .rz > b { text-align: right; }
@@ -220,7 +222,7 @@
         </div>
       </div>
       <p class="hinweis" id="rechenHinweis" style="margin:6px 0 0"></p>
-      <p class="hinweis" id="barKursHinweis" style="margin:6px 0 0" hidden>Bar-Zahlung: Der Kurs wird automatisch aus den Bargeldabhebungen berechnet. Die älteste Abhebung wird zuerst aufgebraucht, danach die nächste.</p>
+      <p class="hinweis" id="barKursHinweis" style="margin:6px 0 0" hidden>Bar-Zahlung: Kurs und Euro-Betrag werden automatisch aus den Bargeldabhebungen berechnet (die älteste Abhebung zuerst) und sind gesperrt.</p>
       <label for="beschreibung">Beschreibung</label>
       <textarea id="beschreibung" rows="2" placeholder="z. B. Abendessen am Strand"></textarea>
       <label class="check"><input type="checkbox" id="geprueft"> Bereits mit Umrechnungskurs eingetragen</label>
@@ -500,10 +502,10 @@
   // Bar-Ausgaben: Der Euro-Wert ergibt sich aus den Bargeldabhebungen nach dem FIFO-Prinzip.
   // Die älteste Abhebung wird zuerst aufgebraucht, danach die nächste (jeweils mit ihrem eigenen Kurs).
   var fifoEuro = {}, fifoUeberhang = {};
-  function berechneFifo() {
-    fifoEuro = {}; fifoUeberhang = {};
+  function fifoBerechnen(liste) {
+    var euroMap = {}, ueber = {};
     var lose = [], bars = [];
-    ausgaben.forEach(function (a, i) {
+    liste.forEach(function (a, i) {
       if (a.kategorie === ABHEBUNG) lose.push({ a: a, i: i });
       else if (a.zahlung === 'Bar') bars.push({ a: a, i: i });
     });
@@ -524,12 +526,18 @@
         // mehr bar bezahlt als abgehoben: letzten bekannten Abhebekurs verwenden
         var satz = topf.length ? topf[topf.length - 1].satz : 1 / (b.a.kurs > 0 ? b.a.kurs : STANDARD_KURS);
         euro += brauche * satz;
-        fifoUeberhang[b.a.id] = true;
+        ueber[b.a.id] = true;
       }
-      fifoEuro[b.a.id] = euro;
+      euroMap[b.a.id] = euro;
     });
+    return { euro: euroMap, ueberhang: ueber };
+  }
+  function berechneFifo() {
+    var r = fifoBerechnen(ausgaben);
+    fifoEuro = r.euro; fifoUeberhang = r.ueberhang;
   }
   function istBarAusgabe(a) { return a.kategorie !== ABHEBUNG && a.zahlung === 'Bar'; }
+  function istGeprueft(a) { return a.geprueft === true || istBarAusgabe(a); }
   function euroVon(a) {
     if (istBarAusgabe(a) && fifoEuro[a.id] !== undefined) return fifoEuro[a.id];
     return eigenEuro(a);
@@ -575,6 +583,7 @@
   // Pesos, Euro und Kurs hängen zusammen (₱ = € × Kurs). Zwei der drei Werte sind von Hand eingegeben,
   // der dritte wird berechnet. `anker` merkt sich die zwei zuletzt von Hand geänderten Werte (ältester zuerst).
   var anker = ['kurs'];
+  var barAktiv = false, geprueftMerken = false;
   var FELD = { php: 'betrag', eur: 'abgebucht', kurs: 'kurs' };
   function feldZahl(id) { return parseFloat(String($(id).value).replace(',', '.')); }
   function kursRunden(k) { return Math.round(k * 10000) / 10000; }
@@ -583,6 +592,7 @@
       a.every(function (x) { return x === 'php' || x === 'eur' || x === 'kurs'; });
   }
   function berechne() {
+    if (istBarModus()) { barVorschau(); return; }
     var dritter = null;
     if (anker.length === 2) {
       dritter = ['php', 'eur', 'kurs'].filter(function (x) { return anker.indexOf(x) < 0; })[0];
@@ -605,16 +615,46 @@
   // Ein Feld wurde von Hand geändert. Es bleibt fest, der dritte Wert wird berechnet:
   // - Pesos und Euro eingegeben: der Kurs ergibt sich daraus.
   // - Kurs geändert, obwohl beide Währungen von Hand stammen: der zuletzt eingegebene Währungswert bleibt.
-  // Bei Bar-Ausgaben entfällt die Kurs-Eingabe: der Kurs kommt aus den Abhebungen (FIFO)
+  // Bar-Ausgaben: Kurs und Euro-Betrag kommen aus den Abhebungen (FIFO) und sind gesperrt
+  function istBarModus() { return $('zahlung').value === 'Bar' && $('kategorie').value !== ABHEBUNG; }
+  function barVorschau() {
+    var b = feldZahl('betrag');
+    if (!(b > 0)) { $('kurs').value = ''; $('abgebucht').value = ''; return; }
+    var virt = { id: '__vorschau__', datum: $('datum').value || heute(), betrag: b, kategorie: 'Vorschau', zahlung: 'Bar' };
+    var liste = ausgaben.slice();
+    var idx = bearbeiteId ? liste.findIndex(function (a) { return a.id === bearbeiteId; }) : -1;
+    if (idx >= 0) liste[idx] = virt; else liste.push(virt);
+    var euro = fifoBerechnen(liste).euro['__vorschau__'];
+    if (euro > 0) {
+      $('abgebucht').value = euro.toFixed(2);
+      $('kurs').value = kursRunden(b / euro);
+    }
+  }
   function kursBereichUmschalten() {
-    var bar = $('zahlung').value === 'Bar' && $('kategorie').value !== ABHEBUNG;
-    $('kursZeile').hidden = bar;
+    var bar = istBarModus();
+    $('kurs').disabled = bar;
+    $('abgebucht').disabled = bar;
     $('rechenHinweis').hidden = bar;
     $('barKursHinweis').hidden = !bar;
-    $('kurs').required = !bar;
+    var cb = $('geprueft');
+    if (bar) {
+      if (!barAktiv) geprueftMerken = cb.checked;
+      cb.checked = true; cb.disabled = true;
+    } else {
+      if (barAktiv) {
+        cb.checked = geprueftMerken;
+        // von Bar auf eine andere Zahlungsart gewechselt: Kursfelder zurücksetzen
+        $('kurs').value = startKurs(); $('abgebucht').value = ''; anker = ['kurs'];
+      }
+      cb.disabled = false;
+    }
+    cb.closest('label').classList.toggle('gesperrt', bar);
+    barAktiv = bar;
+    berechne();
   }
   $('zahlung').addEventListener('change', kursBereichUmschalten);
   $('kategorie').addEventListener('change', kursBereichUmschalten);
+  $('datum').addEventListener('input', function () { if (istBarModus()) barVorschau(); });
   function beruehrt(f) {
     var rest = anker.filter(function (x) { return x !== f; });
     if (rest.length > 1) {
@@ -631,6 +671,7 @@
     $('kurs').value = startKurs();
     anker = ['kurs'];
     letzteKategorie = $('kategorie').value;
+    barAktiv = false;
     kursBereichUmschalten();
     $('formTitel').textContent = 'Neue Ausgabe';
     $('speichern').textContent = 'Speichern';
@@ -720,8 +761,8 @@
   }
   function eintragHtml(a) {
     var meta = esc(datumAnzeige(a.datum)) + (a.zahlung ? ' · ' + esc(a.zahlung) : '') + (istBarAusgabe(a) ? ' · Kurs ' + kursFmt(kursEff(a)) + ' (Abhebung)' : (a.kurs > 0 ? ' · Kurs ' + kursFmt(a.kurs) : '')) +
-      (!istBarAusgabe(a) && a.abgebucht > 0 ? ' · ' + euroFmt(a.abgebucht) + ' abgebucht' : '') + (!istAbh(a) && istPauschal(a) ? ' · Gesamtreise' : '') + (a.geprueft ? ' · ✓' : '');
-    return '<div class="eintrag' + (a.geprueft ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' +
+      (!istBarAusgabe(a) && a.abgebucht > 0 ? ' · ' + euroFmt(a.abgebucht) + ' abgebucht' : '') + (!istAbh(a) && istPauschal(a) ? ' · Gesamtreise' : '') + (istGeprueft(a) ? ' · ✓' : '');
+    return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' +
       '<div class="meta"><span class="kat' + (istAbh(a) ? ' abh' : '') + '">' + esc(a.kategorie) + '</span>' + meta + '</div>' +
       '<div class="betrag">' + wertEuro(a.betrag, euroVon(a)) + '</div>' +
       '<div class="beschr">' + (a.beschreibung ? esc(a.beschreibung) : '<span class="meta">–</span>') + '</div>' +
@@ -753,13 +794,13 @@
       $('kurs').value = a.kurs > 0 ? kursRunden(a.kurs) : startKurs();
       $('abgebucht').value = a.abgebucht > 0 ? a.abgebucht : '';
       $('beschreibung').value = a.beschreibung || '';
-      $('geprueft').checked = !!a.geprueft;
+      $('geprueft').checked = istGeprueft(a);
       $('pauschal').checked = a.pauschal === true;
       $('formTitel').textContent = 'Ausgabe ändern';
       $('speichern').textContent = 'Änderung speichern';
       $('formKarte').classList.add('bearbeiten');
       karteUmschalten('formKarte', false);
-      berechne();
+      barAktiv = false;
       kursBereichUmschalten();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1260,7 +1301,7 @@
     var zeilen = [['Datum', 'Betrag (PHP)', 'Kategorie', 'Zahlungsmittel', 'Kurs (PHP je EUR)', 'Betrag (EUR)', 'Kurs eingetragen', 'Gesamtreise', 'Beschreibung']];
     sortiert(ausgaben).forEach(function (a) {
       zeilen.push([a.datum, String(a.betrag).replace('.', ','), a.kategorie, a.zahlung || '',
-        kursEff(a) > 0 ? String(Math.round(kursEff(a) * 10000) / 10000).replace('.', ',') : '', String(runden(euroVon(a))).replace('.', ','), a.geprueft ? 'ja' : 'nein', istPauschal(a) ? 'ja' : 'nein', a.beschreibung || '']);
+        kursEff(a) > 0 ? String(Math.round(kursEff(a) * 10000) / 10000).replace('.', ',') : '', String(runden(euroVon(a))).replace('.', ','), istGeprueft(a) ? 'ja' : 'nein', istPauschal(a) ? 'ja' : 'nein', a.beschreibung || '']);
     });
     var csv = '﻿' + zeilen.map(function (z) {
       return z.map(function (f) { return '"' + String(f).replace(/"/g, '""') + '"'; }).join(';');
