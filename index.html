@@ -65,6 +65,8 @@
   button.rot { background: #fee2e2; color: var(--rot); }
   input.abgeleitet { background: var(--bg); }
   input:disabled { background: var(--bg); color: var(--grau); -webkit-text-fill-color: var(--grau); opacity: 1; }
+  #formKarte.bearbeiten #schnell { display: none; }
+  .unsicher { border-color: #f59e0b !important; background: #fffbeb !important; }
   .check.gesperrt { opacity: .6; cursor: default; }
   .wert-peso { display: block; }
   .wert-euro { display: block; font-size: 11.5px; font-weight: 400; color: var(--grau); line-height: 1.25; }
@@ -196,6 +198,12 @@
 <main>
   <section class="karte" id="formKarte">
     <h2 id="formTitel">Neue Ausgabe</h2>
+    <div id="schnell">
+      <label for="freitext">Schnelleingabe</label>
+      <input type="text" id="freitext" placeholder="z. B. 2 Bier in Coron am 31.10.2026 für 500 php" autocomplete="off">
+      <button type="button" class="hell" id="freitextBtn" style="margin-top:8px">Ins Formular übernehmen</button>
+      <p class="hinweis" id="freitextInfo" style="margin:6px 0 4px"></p>
+    </div>
     <form id="form" autocomplete="off">
       <div class="zeile">
         <div>
@@ -677,6 +685,8 @@
     $('speichern').textContent = 'Speichern';
     $('formKarte').classList.remove('bearbeiten');
     berechne();
+    ['betrag', 'datum', 'kategorie', 'zahlung'].forEach(function (id) { $(id).classList.remove('unsicher'); });
+    $('freitextInfo').innerHTML = '';
   }
   $('betrag').addEventListener('input', function () { beruehrt('php'); });
   $('abgebucht').addEventListener('input', function () { beruehrt('eur'); });
@@ -736,6 +746,7 @@
     speichern(); speichernEinst();
     var datumMerken = eintrag.datum;
     formZuruecksetzen();
+    $('freitext').value = '';
     $('datum').value = datumMerken; // praktisch, wenn mehrere Ausgaben am selben Tag erfasst werden
     zeichnen();
   });
@@ -1352,6 +1363,214 @@
     };
     leser.readAsText(datei);
     this.value = '';
+  });
+
+  // ---------- Schnelleingabe (Freitext, ohne KI: feste Regeln) ----------
+  function normT(t) {
+    return String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 's');
+  }
+  var MON = { jan: 1, feb: 2, mar: 3, apr: 4, mai: 5, jun: 6, jul: 7, aug: 8, sep: 9, okt: 10, nov: 11, dez: 12 };
+  var NUM_SRC = '(?<n>\\d{1,3}(?:[.,]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)';
+  var PRAEFIX = '(?:(?:fur|fuer|kostet|kosten|ca\\.?|circa|etwa)\\s*)?';
+  var BETRAG_PHP = [
+    new RegExp(PRAEFIX + NUM_SRC + '\\s*(?:php|₱|pesos?)(?![a-z])'),
+    new RegExp(PRAEFIX + '(?:php|₱)\\s*' + NUM_SRC)
+  ];
+  var BETRAG_EUR = [
+    new RegExp(PRAEFIX + NUM_SRC + '\\s*(?:€|eur(?:o|os)?)(?![a-z])'),
+    new RegExp(PRAEFIX + '(?:€|eur(?:o|os)?)\\s*' + NUM_SRC)
+  ];
+  var KAT_REGELN = [
+    ['Bargeldabhebung', 'abhebung|abgehoben|abheben|atm\\b|geldautomat'],
+    ['Unterkunft', 'hotel|hostel|unterkunft|zimmer|ubernachtung|uebernachtung|nacht\\b|nachte|naechte|airbnb|resort|bungalow|homestay|apartment|appartement|ferienwohnung|camping|cabin|bett\\b'],
+    ['Aktivitäten', 'bootstour|bootsausflug|tour|ausflug|eintritt|ticket|tauchen|tauchgang|dive|schnorchel|snorkel|island ?hopping|inselhopping|kajak|kayak|massage|spa\\b|museum|nationalpark|wanderung|kurs\\b|aktivitat|canyoneering|surf|yoga|wasserfall|entrance|guide|lagune'],
+    ['Transport', 'taxi|tricycle|trike|bus\\b|fahre|faehre|ferry|boot|boat|flug|flight|jeepney|grab\\b|uber|roller|motorrad|motorbike|scooter|benzin|tanken|sprit|auto\\b|mietwagen|van\\b|shuttle|maut|transfer|fahrt|zug\\b|bahn|habal|transport|gepack'],
+    ['Einkaufen', 'einkauf|souvenir|kleidung|shirt|sonnencreme|mucken|muecken|apotheke|supermarkt|mall\\b|shop|geschenk|magnet|tasche|schuhe|shampoo|drogerie|simkarte|sim\\b|powerbank|kabel|batterie|sonnenbrille|badehose'],
+    ['Essen & Trinken', 'bier|wein|cocktail|drink|getrank|getraenk|cola|wasser|kaffee|coffee|tee\\b|essen|fruhstuck|fruehstueck|mittag|abend|dinner|lunch|breakfast|snack|restaurant|cafe|pizza|burger|reis|fisch|fleisch|obst|eis\\b|eiscreme|smoothie|saft|mango|mojito|margarita|san miguel|red horse|rum\\b|shake|nudeln|pasta|suppe|grill|bbq|kokos|buffet|imbiss|brot|kuchen|frucht']
+  ].map(function (r) { return [r[0], new RegExp('\\b(?:' + normT(r[1]) + ')', 'g')]; });
+
+  function zahlAusText(t) {
+    t = String(t).replace(/\s/g, '');
+    var punkt = t.indexOf('.') >= 0, komma = t.indexOf(',') >= 0;
+    if (punkt && komma) {
+      if (t.lastIndexOf(',') > t.lastIndexOf('.')) t = t.replace(/\./g, '').replace(',', '.');
+      else t = t.replace(/,/g, '');
+    } else if (komma) {
+      if (/^[1-9]\d{0,2}(,\d{3})+$/.test(t)) t = t.replace(/,/g, ''); // 1,500 = Tausender
+      else t = t.replace(',', '.');
+    } else if (punkt) {
+      if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, ''); // 1.500 = Tausender
+    }
+    var n = parseFloat(t);
+    return isFinite(n) ? n : NaN;
+  }
+  function isoDatum(y, m, d) {
+    var dt = new Date(Date.UTC(y, m - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null;
+    return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  }
+
+  // Liefert { datum, php, eur, zahlung, kategorie, beschreibung, unsicher: {feld: true}, notizen: [] }
+  function parseFreitext(roh) {
+    var orig = String(roh).trim();
+    var masked = normT(orig);
+    var cuts = [];
+    var res = { datum: null, php: null, eur: null, zahlung: 'Bar', kategorie: null, beschreibung: '', unsicher: {}, notizen: [] };
+    function maskieren(von, bis) {
+      masked = masked.slice(0, von) + new Array(bis - von + 1).join(' ') + masked.slice(bis);
+      cuts.push([von, bis]);
+    }
+    function ersterTreffer(liste) {
+      var best = null;
+      liste.forEach(function (re) { var m = re.exec(masked); if (m && (!best || m.index < best.index)) best = m; });
+      return best;
+    }
+    var heuteIso = heute(), jahrHeute = Number(heuteIso.slice(0, 4));
+    function ohneJahr(m, d) {
+      var iso = isoDatum(jahrHeute, m, d);
+      if (iso && iso > tagPlus(heuteIso, 180)) iso = isoDatum(jahrHeute - 1, m, d);
+      return iso;
+    }
+    var m;
+
+    // --- Datum ---
+    var reText = /(?:\bam\s+)?\b(\d{1,2})\.?\s*(jan(?:uar)?|feb(?:ruar)?|mar(?:z)?|apr(?:il)?|mai|jun(?:i)?|jul(?:i)?|aug(?:ust)?|sep(?:t(?:ember)?)?|okt(?:ober)?|nov(?:ember)?|dez(?:ember)?)\b(?:\s*(\d{4})\b)?/;
+    m = reText.exec(masked);
+    if (m) {
+      var d1 = Number(m[1]), mo1 = MON[m[2].slice(0, 3)];
+      var iso1 = m[3] ? isoDatum(Number(m[3]), mo1, d1) : ohneJahr(mo1, d1);
+      if (iso1) { res.datum = iso1; maskieren(m.index, m.index + m[0].length); }
+    }
+    if (!res.datum) {
+      var reNum = /(?:\bam\s+)?(?<![\d.,\/-])(\d{1,2})[./-](\d{1,2})(?:[./-](\d{4}|\d{2}))?\.?(?!\d)/g;
+      while ((m = reNum.exec(masked))) {
+        var rest = masked.slice(m.index + m[0].length);
+        if (/^\s*(?:php|₱|pesos?|€|eur)/.test(rest)) continue; // sieht nach Betrag aus
+        var d2 = Number(m[1]), mo2 = Number(m[2]);
+        var iso2 = m[3] ? isoDatum(m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]), mo2, d2) : ohneJahr(mo2, d2);
+        if (iso2) { res.datum = iso2; maskieren(m.index, m.index + m[0].length); break; }
+      }
+    }
+    if (!res.datum) {
+      m = /\b(?:am\s+)?(vorgestern|gestern|heute)\b/.exec(masked);
+      if (m) {
+        res.datum = tagPlus(heuteIso, m[1] === 'heute' ? 0 : (m[1] === 'gestern' ? -1 : -2));
+        maskieren(m.index, m.index + m[0].length);
+      }
+    }
+
+    // --- Betrag ---
+    m = ersterTreffer(BETRAG_PHP);
+    if (m) { res.php = zahlAusText(m.groups.n); maskieren(m.index, m.index + m[0].length); }
+    m = ersterTreffer(BETRAG_EUR);
+    if (m) { res.eur = zahlAusText(m.groups.n); maskieren(m.index, m.index + m[0].length); }
+    if (res.php === null && res.eur === null) {
+      m = new RegExp('(?:fur|fuer|kostet|kosten|ca\\.?|circa|=)\\s*' + NUM_SRC).exec(masked);
+      if (m) {
+        res.php = zahlAusText(m.groups.n); maskieren(m.index, m.index + m[0].length);
+        res.unsicher.betrag = true; res.notizen.push('Betrag: keine Währung angegeben, Pesos angenommen');
+      }
+    }
+    if (res.php === null && res.eur === null) {
+      var reAlle = new RegExp(NUM_SRC, 'g'), kand = [];
+      while ((m = reAlle.exec(masked))) kand.push({ wert: zahlAusText(m.groups.n), von: m.index, bis: m.index + m[0].length });
+      var groesster = kand.reduce(function (b, k) { return (!b || k.wert > b.wert) ? k : b; }, null);
+      var letzter = kand.length ? kand[kand.length - 1] : null;
+      var treffer = null;
+      if (groesster && groesster.wert >= 20) treffer = groesster;                            // Mengen wie „2 Bier“ sind klein
+      else if (letzter && /^\s*$/.test(masked.slice(letzter.bis))) treffer = letzter;       // Zahl am Ende
+      if (treffer) {
+        res.php = treffer.wert; maskieren(treffer.von, treffer.bis);
+        res.unsicher.betrag = true; res.notizen.push('Betrag: keine Währung angegeben, Pesos angenommen');
+      }
+    }
+    if (res.php === null && res.eur === null) { res.unsicher.betrag = true; res.notizen.push('Betrag nicht erkannt'); }
+
+    // --- Zahlungsmittel ---
+    var gefunden = [];
+    function zahlungSuchen(re, wert) {
+      var mm = re.exec(masked);
+      if (mm) { gefunden.push(wert); maskieren(mm.index, mm.index + mm[0].length); }
+    }
+    zahlungSuchen(/(?<![a-z])ing(?![a-z])|gemeinschaftskonto|gemeinsames konto|gemeinschaftskarte/, 'ING');
+    zahlungSuchen(/(?:(?:mit|per|uber|von|bezahlt von|bezahlt mit)\s+)?(?:kk|karte|kreditkarte|card)\s+(?:von\s+)?sabine|sabines?\s+(?:kk|karte|kreditkarte)|sabine\s+(?:hat\s+)?(?:bezahlt|gezahlt)/, 'KK Sabine');
+    zahlungSuchen(/(?:(?:mit|per|uber|von|bezahlt von|bezahlt mit)\s+)?(?:kk|karte|kreditkarte|card)\s+(?:von\s+)?tobi|tobis?\s+(?:kk|karte|kreditkarte)|tobi\s+(?:hat\s+)?(?:bezahlt|gezahlt)/, 'KK Tobi');
+    if (gefunden.length === 0) zahlungSuchen(/(?:in\s+|mit\s+)?(?<![a-z])(?:bar|cash|bargeld)(?![a-z])/, 'Bar');
+    if (gefunden.length === 0) {
+      var kk = /(?:mit\s+)?(?<![a-z])(?:kreditkarte|karte|card|kk)(?![a-z])/.exec(masked);
+      if (kk) {
+        maskieren(kk.index, kk.index + kk[0].length);
+        res.unsicher.zahlung = true; res.notizen.push('Zahlungsmittel: „Karte“ ohne Namen, bitte wählen');
+      }
+    }
+    if (gefunden.length) res.zahlung = gefunden[0];
+    if (gefunden.length > 1) { res.unsicher.zahlung = true; res.notizen.push('Zahlungsmittel: mehrere genannt'); }
+
+    // --- Kategorie ---
+    var beste = null, bestePunkte = 0;
+    KAT_REGELN.forEach(function (r) {
+      var punkte = (masked.match(r[1]) || []).length;
+      if (punkte > bestePunkte) { beste = r[0]; bestePunkte = punkte; }
+    });
+    einst.kategorien.forEach(function (k) {
+      var wurzel = normT(k).slice(0, Math.max(4, normT(k).length - 1)).replace(/[^a-z0-9 ]/g, '');
+      if (wurzel && new RegExp('\\b' + wurzel).test(masked) && bestePunkte < 2) { beste = k; bestePunkte = 2; }
+    });
+    if (!beste) {
+      beste = 'Sonstiges'; res.unsicher.kategorie = true;
+      res.notizen.push('Kategorie: nichts erkannt, „Sonstiges“ gewählt');
+    }
+    res.kategorie = beste;
+    if (beste === ABHEBUNG && !gefunden.length && !res.unsicher.zahlung) {
+      res.unsicher.zahlung = true; res.notizen.push('Zahlungsmittel: bitte die Karte der Abhebung wählen');
+    }
+
+    // --- Beschreibung: Originaltext ohne die erkannten Teile ---
+    cuts.sort(function (a, b) { return a[0] - b[0]; });
+    var teile = [], pos = 0;
+    cuts.forEach(function (c) { if (c[0] > pos) teile.push(orig.slice(pos, c[0])); pos = Math.max(pos, c[1]); });
+    teile.push(orig.slice(pos));
+    var b = teile.join(' ').replace(/\s+/g, ' ').trim();
+    var verbinder = /^(?:(?:für|fuer|am|mit|bezahlt|per|von|und|in|bar|cash|ca\.?|circa)(?=\s|$)|[,;:\-–()\s])+/i;
+    b = b.replace(verbinder, '').replace(/(?:(?:für|fuer|am|mit|bezahlt|per|von|und|bar|cash)(?=\s|$)|[,;:\-–()\s])+$/i, '').trim();
+    res.beschreibung = b ? b.charAt(0).toUpperCase() + b.slice(1) : '';
+    return res;
+  }
+
+  function freitextUebernehmen() {
+    var text = $('freitext').value.trim();
+    if (!text) { toast('Bitte erst einen Satz eintippen.'); return; }
+    var r = parseFreitext(text);
+    formZuruecksetzen();
+    $('datum').value = r.datum || heute();
+    $('kategorie').value = r.kategorie;
+    letzteKategorie = r.kategorie;
+    $('zahlung').value = r.zahlung;
+    kursBereichUmschalten();
+    if (r.php !== null) { $('betrag').value = r.php; beruehrt('php'); }
+    if (r.eur !== null) {
+      if (!istBarModus()) {
+        $('abgebucht').value = r.eur.toFixed(2); beruehrt('eur');
+        if (r.php === null) { r.unsicher.betrag = true; r.notizen.push('Pesobetrag aus Euro × Kurs ' + kursFmt(startKurs()) + ' berechnet'); }
+      } else if (r.php === null) {
+        $('betrag').value = (Math.round(r.eur * startKurs() * 100) / 100); beruehrt('php');
+        r.unsicher.betrag = true; r.notizen.push('Bar: Euro mit Kurs ' + kursFmt(startKurs()) + ' in Pesos umgerechnet, bitte Pesobetrag prüfen');
+      }
+    }
+    $('beschreibung').value = r.beschreibung;
+    Object.keys(r.unsicher).forEach(function (f) { $(f).classList.add('unsicher'); });
+    var erkannt = [];
+    if (r.php !== null) erkannt.push(geld(r.php));
+    if (r.eur !== null) erkannt.push(euroFmt(r.eur));
+    erkannt.push(datumAnzeige($('datum').value), r.kategorie, r.zahlung);
+    $('freitextInfo').innerHTML = 'Erkannt: ' + esc(erkannt.join(' · ')) +
+      (r.notizen.length ? '<br><span class="warnung">Bitte prüfen: ' + esc(r.notizen.join('; ')) + '</span>' : '') +
+      '<br>Prüfe das Formular und tippe auf „Speichern“.';
+  }
+  $('freitextBtn').addEventListener('click', freitextUebernehmen);
+  $('freitext').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); freitextUebernehmen(); } });
+  ['betrag', 'datum', 'kategorie', 'zahlung'].forEach(function (id) {
+    ['input', 'change'].forEach(function (ev) { $(id).addEventListener(ev, function () { $(id).classList.remove('unsicher'); }); });
   });
 
   // ---------- Auf- und zuklappbare Karten ----------
