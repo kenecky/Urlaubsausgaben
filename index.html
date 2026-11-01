@@ -187,8 +187,8 @@
   .tabs-karte.zu > h2 { padding-bottom: 14px; }
   .tabs { display: flex; border-bottom: 1px solid var(--linie); overflow-x: auto; }
   .tab {
-    flex: 1 0 auto; margin: 0; border-radius: 0; background: transparent; color: var(--grau);
-    padding: 13px 6px; font-size: 13px; border-bottom: 3px solid transparent; white-space: nowrap;
+    width: auto; flex: 1 1 auto; margin: 0; border-radius: 0; background: transparent; color: var(--grau);
+    padding: 13px 3px; font-size: 12px; border-bottom: 3px solid transparent; white-space: nowrap;
   }
   .tab.aktiv { color: var(--blau-text); border-bottom-color: var(--blau-text); }
   .tab-inhalt { padding: 14px; }
@@ -928,14 +928,15 @@
     var r = rueckScroll;
     rueckScroll = null;
     if (!r) return;
-    window.scrollTo(0, r.y);
-    var kandidaten = Array.prototype.filter.call(document.querySelectorAll('main .eintrag[data-id="' + id + '"]'), function (el) { return el.offsetParent !== null; });
-    var ziel = kandidaten[0];
+    var ziel = Array.prototype.filter.call(document.querySelectorAll('main .eintrag[data-id="' + id + '"]'), function (el) { return el.offsetParent !== null; })[0];
+    var top = r.y;
     if (ziel) {
       // Hat sich die Liste verschoben (z. B. neues Datum), den geänderten Eintrag in die Mitte holen
       var rect = ziel.getBoundingClientRect(), kopfH = document.querySelector('header').offsetHeight;
-      if (rect.top < kopfH || rect.bottom > window.innerHeight) ziel.scrollIntoView({ block: 'center' });
+      var absTop = rect.top + window.scrollY;
+      if (absTop - r.y < kopfH || absTop - r.y + rect.height > window.innerHeight) top = absTop - (window.innerHeight - rect.height) / 2;
     }
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); // genauso weich wie das Hochscrollen
   }
   var loeschStapel = [], undoTimer;
   function undoZeigen() {
@@ -1129,11 +1130,12 @@
       .sort(function (x, y) { return summePeso(gruppen[y]) - summePeso(gruppen[x]); });
     if (gruppen.__ohne__) keys.push('__ohne__');
     var gesamt = summePeso(ohneAbh);
+    var maxSumme = Math.max.apply(null, keys.map(function (k) { return summePeso(gruppen[k]); }));
     var html = keys.map(function (k) {
       var liste = gruppen[k], offen = !!offenOrt[k];
       var name = k === '__ohne__' ? 'Ohne Ort' : k;
-      var sub = liste.length + (liste.length === 1 ? ' Ausgabe' : ' Ausgaben') + ' · ' + prozentText(summePeso(liste), gesamt) +
-        (k === '__ohne__' ? ' · hier fehlt noch der Ort' : '');
+      var sub = liste.length + (liste.length === 1 ? ' Ausgabe' : ' Ausgaben') + (k === '__ohne__' ? ' · hier fehlt noch der Ort' : '') +
+        '<div style="margin-top:6px">' + balkenSpur(maxSumme > 0 ? summePeso(liste) / maxSumme * 100 : 0, prozentText(summePeso(liste), gesamt)) + '</div>';
       return '<div class="zm"><div class="zm-klick" data-ort="' + esc(k) + '" role="button" aria-expanded="' + offen + '">' +
         '<div class="zm-kopf"><span class="zm-name">' + pfeil(offen) + esc(name) + '</span>' +
         '<span class="zm-wert">' + wertEuro(summePeso(liste), summeEuro(liste)) + '</span></div>' +
