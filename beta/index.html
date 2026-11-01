@@ -349,11 +349,13 @@
 </header>
 
 <main id="startseite" hidden>
+  <div class="zeile" id="startAktionen" style="margin-bottom:12px">
+    <div><button type="button" id="reiseNeuBtn" style="margin-top:0">＋ Neue Reise</button></div>
+    <div><button type="button" class="hell" id="vergleichBtn" style="margin-top:0">Reisen vergleichen</button></div>
+  </div>
   <section class="karte" id="reisenKarte">
     <h2 style="margin-bottom:6px">Meine Reisen</h2>
     <div id="reisenListe"></div>
-    <button type="button" id="reiseNeuBtn">＋ Neue Reise</button>
-    <button type="button" class="hell" id="vergleichBtn" style="margin-top:8px">Reisen vergleichen</button>
   </section>
 
   <section class="karte" id="weltKarte">
@@ -2480,7 +2482,8 @@
     laender.sort(function (x, y) { return (x.von || '').localeCompare(y.von || ''); });
     return { id: m.id, name: String(m.name || 'Reise').slice(0, 60), laender: laender, start: strDatum(m.start), ende: strDatum(m.ende),
              status: m.status === 'abgeschlossen' ? 'abgeschlossen' : 'aktiv', erstellt: m.erstellt > 0 ? m.erstellt : Date.now(),
-             abgeschlossenAm: m.abgeschlossenAm > 0 ? m.abgeschlossenAm : 0 };
+             abgeschlossenAm: m.abgeschlossenAm > 0 ? m.abgeschlossenAm : 0,
+             notiz: typeof m.notiz === 'string' ? m.notiz.slice(0, 2000) : '', verrechnet: m.verrechnet === true };
   }
   function indexLaden() {
     try { var d = JSON.parse(localStorage.getItem(IDX_KEY)); return Array.isArray(d) ? d.map(reiseSauber).filter(Boolean) : []; } catch (e) { return []; }
@@ -2578,7 +2581,7 @@
       return '<div class="reise-eintrag" data-reise="' + esc(m.id) + '" role="button">' +
         '<div class="re-kopf"><span class="re-flagge">' + (m.laender.length ? m.laender.map(function (x) { return flagge(x.code); }).join('') : '🌍') + '</span><span class="re-name">' + esc(m.name) + '</span>' +
         '<span class="re-status s-' + st + '">' + STATUS_TEXT[st] + '</span></div>' +
-        '<div class="re-zeit">' + (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) : 'ohne Zeitraum') + (tage ? ' · ' + tage + (tage === 1 ? ' Tag' : ' Tage') : '') + '</div>' +
+        '<div class="re-zeit">' + (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) : 'ohne Zeitraum') + (tage ? ' · ' + tage + (tage === 1 ? ' Tag' : ' Tage') : '') + (m.status === 'abgeschlossen' ? (m.verrechnet ? ' · ✓ verrechnet' : ' · Verrechnung offen') : '') + (m.notiz ? ' · 📝' : '') + '</div>' +
         '<div class="re-summe">' + euroFmt(k.euro) + ' · ' + k.anzahl + (k.anzahl === 1 ? ' Ausgabe' : ' Ausgaben') + '</div></div>';
     }).join('') : '<div class="leer">Noch keine Reise. Lege deine erste Reise an.</div>';
     var laufend = liste.filter(function (m) { return reiseStatus(m) === 'laeuft'; }).length;
@@ -2782,16 +2785,28 @@
     punkte.push({ w: false, t: 'Verrechnung: ' + saldoText(st) });
     return punkte;
   }
+  function notizHtml() {
+    return '<label class="check" style="margin:10px 0 4px"><input type="checkbox" id="abVerrechnet"' + (reise.verrechnet ? ' checked' : '') + '> <span>Verrechnung ist erledigt</span></label>' +
+      '<label for="abNotiz">Notiz zur Reise</label>' +
+      '<textarea id="abNotiz" rows="3" maxlength="2000" placeholder="z. B. Verrechnung per Überweisung am 25.11. erledigt">' + esc(reise.notiz || '') + '</textarea>';
+  }
+  $('abschlussKarte').addEventListener('change', function (e) {
+    if (!reise) return;
+    if (e.target.id === 'abNotiz') { reise.notiz = e.target.value.slice(0, 2000); indexSpeichern(); toast('Notiz gespeichert'); }
+    else if (e.target.id === 'abVerrechnet') { reise.verrechnet = e.target.checked; indexSpeichern(); toast(reise.verrechnet ? 'Verrechnung als erledigt markiert' : 'Verrechnung wieder offen'); }
+  });
   function abschlussRendern() {
     var box = $('abschlussInhalt');
     if (!reise) { box.innerHTML = ''; return; }
     if (gesperrt()) {
       box.innerHTML = '<p class="hinweis" style="margin-top:0">Abgeschlossen am ' + esc(zeitStempel(reise.abgeschlossenAm || Date.now())) + '. Die Reise ist schreibgeschützt.</p>' +
-        '<button type="button" class="hell" data-ab="bericht" style="margin-top:0">Abschlussbericht</button>' +
+        notizHtml() +
+        '<button type="button" class="hell" data-ab="bericht" style="margin-top:12px">Abschlussbericht</button>' +
         '<button type="button" class="rot" data-ab="oeffnen" style="margin-top:8px">Reise wieder öffnen …</button>';
     } else {
       box.innerHTML = '<p class="hinweis" style="margin-top:0">Wenn ihr zurück seid: erst prüfen, dann abschließen. Danach ist die Reise nur noch lesbar. Wieder öffnen geht jederzeit nach Rückfrage.</p>' +
-        '<button type="button" data-ab="check" style="margin-top:0">Abschluss-Check starten</button>' +
+        notizHtml() +
+        '<button type="button" data-ab="check" style="margin-top:12px">Abschluss-Check starten</button>' +
         '<button type="button" class="hell" data-ab="bericht" style="margin-top:8px">Zwischenstand als Bericht</button>' +
         '<div id="checkListe"></div>';
     }
@@ -2853,13 +2868,15 @@
     var kats = Object.keys(st.proKat).sort(function (a, b) { return st.proKat[b] - st.proKat[a]; });
     if (kats.length) abschn.push({ t: 'Nach Kategorie', z: kats.map(function (k) { return [k, euroFmt(st.proKat[k]) + ' (' + prozent(st.proKat[k], st.euro) + ')']; }) });
     var zeilen = [['Sabine hat vorgestreckt', euroFmt(st.vorS)], ['Tobi hat vorgestreckt', euroFmt(st.vorT)], ['Abhebungen über ING', euroFmt(st.wI)], ['Restbargeld', euroFmt(st.rest) + ' (bei: ' + (einst.restbei === 'beide' ? 'beiden je zur Hälfte' : einst.restbei) + ')'], ['Ergebnis', saldoText(st)]];
+    zeilen.push(['Verrechnung erledigt', reise.verrechnet ? 'ja' : 'nein']);
     abschn.push({ t: 'Verrechnung', z: zeilen });
+    if (reise.notiz && reise.notiz.trim()) abschn.push({ t: 'Notiz', z: [['', reise.notiz.trim()]] });
     var bg = bargeldProWaehrung().filter(function (b) { return b.rest !== 0; });
     if (bg.length) abschn.push({ t: 'Restbargeld je Währung', z: bg.map(function (b) { return [b.code, zahl(b.rest) + ' ' + b.symbol]; }) });
     var html = '<h3>' + esc(reise.name) + '</h3><div class="kopfzeile">' + esc(zeitraum) + '<br>' + esc(laender) + '<br>' + esc(stand) + '</div>' +
-      abschn.map(function (a) { return '<h3>' + esc(a.t) + '</h3>' + a.z.map(function (r) { return '<div class="rz' + (r[0] === 'Gesamtausgaben' || r[0] === 'Ergebnis' ? ' gross' : '') + '"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>'; }).join(''); }).join('');
+      abschn.map(function (a) { return '<h3>' + esc(a.t) + '</h3>' + a.z.map(function (r) { if (!r[0]) return '<div class="rz" style="white-space:pre-wrap">' + esc(r[1]) + '</div>'; return '<div class="rz' + (r[0] === 'Gesamtausgaben' || r[0] === 'Ergebnis' ? ' gross' : '') + '"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>'; }).join(''); }).join('');
     var text = reise.name + '\n' + zeitraum + '\n' + laender + '\n' + stand + '\n' +
-      abschn.map(function (a) { return '\n' + a.t.toUpperCase() + '\n' + a.z.map(function (r) { return r[0] + ': ' + r[1]; }).join('\n'); }).join('\n');
+      abschn.map(function (a) { return '\n' + a.t.toUpperCase() + '\n' + a.z.map(function (r) { return r[0] ? r[0] + ': ' + r[1] : r[1]; }).join('\n'); }).join('\n');
     return { html: html, text: text };
   }
   var berichtAktuell = null;
