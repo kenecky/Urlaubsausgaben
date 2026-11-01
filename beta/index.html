@@ -141,7 +141,10 @@
   .weltkarte { position: relative; touch-action: none; border-radius: 12px; overflow: hidden; background: var(--blau-hell); }
   .weltkarte svg { display: block; width: 100%; height: auto; }
   .wk-land { fill: #cbd5e1; stroke: #fff; stroke-width: .6; }
-  html[data-thema="dunkel"] .wk-land { fill: #334155; stroke: #0f172a; }
+  html[data-thema="dunkel"] .weltkarte { background: #0a101c; }
+  html[data-thema="dunkel"] .wk-land { fill: #2f3b4e; stroke: #0a101c; }
+  html[data-thema="dunkel"] .wk-land.besucht { fill: #4f9cf9; }
+  html[data-thema="dunkel"] .wk-land.geplant { fill: #d9890b; }
   .wk-land.besucht { fill: var(--blau); cursor: pointer; }
   .wk-land.geplant { fill: #f59e0b; cursor: pointer; }
   .wk-zoom { position: absolute; right: 6px; top: 6px; display: flex; flex-direction: column; gap: 4px; }
@@ -2607,23 +2610,57 @@
   $('wkPlus').addEventListener('click', function () { wkZoom(1.6); });
   $('wkMinus').addEventListener('click', function () { wkZoom(1 / 1.6); });
   $('wkReset').addEventListener('click', function () { wkAnsicht = { x: 0, y: 0, w: 1000, h: 520 }; wkViewBox(); });
-  // Ziehen mit dem Finger
-  var wkZog = false, wkStart = null;
+  // Ziehen mit einem Finger, Zoomen mit zwei Fingern
+  var wkZog = false, wkPtr = {}, wkGeste = null;
+  function wkPunkte() { return Object.keys(wkPtr).map(function (k) { return wkPtr[k]; }); }
+  function wkGesteNeu() {
+    var pts = wkPunkte(), r = $('wkSvg').getBoundingClientRect();
+    if (pts.length >= 2) {
+      var dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+      var mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
+      wkGeste = { zwei: true, d: Math.sqrt(dx * dx + dy * dy) || 1, w: wkAnsicht.w, x: wkAnsicht.x, y: wkAnsicht.y,
+        fx: (mx - r.left) / r.width, fy: (my - r.top) / r.height, mx: mx, my: my };
+    } else if (pts.length === 1) {
+      wkGeste = { zwei: false, px: pts[0].x, py: pts[0].y, x: wkAnsicht.x, y: wkAnsicht.y };
+    } else wkGeste = null;
+  }
   $('wkBox').addEventListener('pointerdown', function (ev) {
     if (ev.target.closest('.wk-zoom')) return;
-    wkStart = { px: ev.clientX, py: ev.clientY, x: wkAnsicht.x, y: wkAnsicht.y, bewegt: false };
+    wkPtr[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+    wkGesteNeu();
   });
   window.addEventListener('pointermove', function (ev) {
-    if (!wkStart) return;
-    var dx = ev.clientX - wkStart.px, dy = ev.clientY - wkStart.py;
-    if (!wkStart.bewegt && Math.abs(dx) + Math.abs(dy) < 6) return;
-    wkStart.bewegt = true; wkZog = true;
-    var r = $('wkSvg').getBoundingClientRect(), f = wkAnsicht.w / r.width;
-    wkAnsicht.x = Math.max(0, Math.min(1000 - wkAnsicht.w, wkStart.x - dx * f));
-    wkAnsicht.y = Math.max(0, Math.min(520 - wkAnsicht.h, wkStart.y - dy * f));
-    wkViewBox();
+    if (!wkPtr[ev.pointerId] || !wkGeste) return;
+    wkPtr[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+    var r = $('wkSvg').getBoundingClientRect(), g = wkGeste, pts = wkPunkte();
+    if (g.zwei && pts.length >= 2) {
+      var dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      var nw = Math.min(1000, Math.max(80, g.w * g.d / d)), nh = nw * 0.52;
+      var mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
+      // Punkt unter den Fingern bleibt unter den Fingern
+      var px = g.x + g.fx * g.w, py = g.y + g.fy * (g.w * 0.52);
+      var fx = (mx - r.left) / r.width, fy = (my - r.top) / r.height;
+      wkAnsicht.w = nw; wkAnsicht.h = nh;
+      wkAnsicht.x = Math.max(0, Math.min(1000 - nw, px - fx * nw));
+      wkAnsicht.y = Math.max(0, Math.min(520 - nh, py - fy * nh));
+      wkZog = true; wkViewBox();
+    } else if (!g.zwei) {
+      var ex = ev.clientX - g.px, ey = ev.clientY - g.py;
+      if (!wkZog && Math.abs(ex) + Math.abs(ey) < 6) return;
+      wkZog = true;
+      var f = wkAnsicht.w / r.width;
+      wkAnsicht.x = Math.max(0, Math.min(1000 - wkAnsicht.w, g.x - ex * f));
+      wkAnsicht.y = Math.max(0, Math.min(520 - wkAnsicht.h, g.y - ey * f));
+      wkViewBox();
+    }
   });
-  window.addEventListener('pointerup', function () { wkStart = null; setTimeout(function () { wkZog = false; }, 0); });
+  function wkLos(ev) {
+    if (!wkPtr[ev.pointerId]) return;
+    delete wkPtr[ev.pointerId]; wkGesteNeu();
+    if (!wkPunkte().length) setTimeout(function () { wkZog = false; }, 0);
+  }
+  window.addEventListener('pointerup', wkLos);
+  window.addEventListener('pointercancel', wkLos);
   $('wkBox').addEventListener('wheel', function (ev) { ev.preventDefault(); wkZoom(ev.deltaY < 0 ? 1.2 : 1 / 1.2); }, { passive: false });
 
   // Ansicht wechseln
