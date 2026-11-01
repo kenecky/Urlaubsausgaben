@@ -147,8 +147,10 @@
   html[data-thema="dunkel"] .wk-land.geplant { fill: #d9890b; }
   .wk-land.besucht { fill: var(--blau); cursor: pointer; }
   .wk-land.geplant { fill: #f59e0b; cursor: pointer; }
-  .wk-zoom { position: absolute; right: 6px; top: 6px; display: flex; flex-direction: column; gap: 4px; }
-  .wk-zoom button { width: 34px; height: 34px; padding: 0; margin: 0; font-size: 18px; line-height: 1; }
+  .wk-kopf { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .wk-kopf h2 { margin: 0; }
+  .wk-zoom { display: flex; flex-direction: row; gap: 6px; }
+  .wk-zoom button { width: 36px; height: 36px; padding: 0; margin: 0; font-size: 18px; line-height: 1; }
   .wk-legende { font-size: 12.5px; color: var(--grau); margin: 8px 0 0; display: flex; gap: 14px; flex-wrap: wrap; }
   .wk-punkt { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
   .wk-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
@@ -359,9 +361,9 @@
   </section>
 
   <section class="karte" id="weltKarte">
-    <h2 style="margin-bottom:8px">Weltkarte</h2>
-    <div class="weltkarte" id="wkBox"><svg id="wkSvg" viewBox="0 0 1000 520" aria-label="Weltkarte"></svg>
+    <div class="wk-kopf"><h2>Weltkarte</h2>
       <div class="wk-zoom"><button type="button" id="wkPlus" aria-label="Vergrößern">＋</button><button type="button" id="wkMinus" aria-label="Verkleinern">−</button><button type="button" id="wkReset" aria-label="Zurücksetzen">⤾</button></div></div>
+    <div class="weltkarte" id="wkBox"><svg id="wkSvg" viewBox="0 0 1000 520" aria-label="Weltkarte"></svg></div>
     <div class="wk-legende"><span><i class="wk-punkt" style="background:var(--blau)"></i>besucht</span><span><i class="wk-punkt" style="background:#f59e0b"></i>geplant</span><span id="wkZahl"></span></div>
     <div class="wk-chips" id="wkChips"></div>
     <div class="wk-auswahl" id="wkAuswahl" hidden></div>
