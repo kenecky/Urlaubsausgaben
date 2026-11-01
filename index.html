@@ -879,13 +879,18 @@
     if (!barModus) einst.letzterKurs = kursRunden(kurs);
     if (!bearbeiteId && ort) einst.letzterOrt = ort; // nur bei neuen Einträgen merken
     speichern(); speichernEinst();
-    var datumMerken = eintrag.datum;
+    var datumMerken = eintrag.datum, editId = bearbeiteId;
     formZuruecksetzen();
     $('freitext').value = '';
     $('datum').value = datumMerken; // praktisch, wenn mehrere Ausgaben am selben Tag erfasst werden
     zeichnen();
+    if (editId) zurueckScrollen(editId);
   });
-  $('abbrechen').addEventListener('click', formZuruecksetzen);
+  $('abbrechen').addEventListener('click', function () {
+    var id = bearbeiteId;
+    formZuruecksetzen();
+    if (id) zurueckScrollen(id);
+  });
 
   // ---------- Listen ----------
   function gefiltert() {
@@ -916,6 +921,21 @@
       '<button type="button" class="klein hell" data-aktion="edit">Ändern</button>' +
       '<button type="button" class="klein rot" data-aktion="del">Löschen</button>' +
       '</div></div>';
+  }
+  // Nach „Ändern“ springt die Seite nach oben zum Formular. Nach Speichern oder Abbrechen geht es an die alte Stelle zurück.
+  var rueckScroll = null;
+  function zurueckScrollen(id) {
+    var r = rueckScroll;
+    rueckScroll = null;
+    if (!r) return;
+    window.scrollTo(0, r.y);
+    var kandidaten = Array.prototype.filter.call(document.querySelectorAll('main .eintrag[data-id="' + id + '"]'), function (el) { return el.offsetParent !== null; });
+    var ziel = kandidaten[0];
+    if (ziel) {
+      // Hat sich die Liste verschoben (z. B. neues Datum), den geänderten Eintrag in die Mitte holen
+      var rect = ziel.getBoundingClientRect(), kopfH = document.querySelector('header').offsetHeight;
+      if (rect.top < kopfH || rect.bottom > window.innerHeight) ziel.scrollIntoView({ block: 'center' });
+    }
   }
   var loeschStapel = [], undoTimer;
   function undoZeigen() {
@@ -948,6 +968,7 @@
       if (bearbeiteId === id) formZuruecksetzen();
       speichern(); speichernEinst(); zeichnen(); undoZeigen();
     } else {
+      rueckScroll = { y: window.scrollY };
       if (!$('suche').hidden) schliesseSuche();
       bearbeiteId = id;
       $('datum').value = a.datum;
