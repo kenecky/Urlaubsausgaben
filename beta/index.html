@@ -153,6 +153,7 @@
   .karte.zu .wk-zoom { display: none; }
   .wk-kopf { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
   .wk-kopf h2 { margin: 0; }
+  .x-btn { width: 36px; height: 36px; padding: 0; margin: 0; font-size: 17px; line-height: 1; flex: none; }
   .wk-zoom { display: flex; flex-direction: row; gap: 6px; }
   .wk-zoom button { width: 36px; height: 36px; padding: 0; margin: 0; font-size: 18px; line-height: 1; }
   .wk-legende { font-size: 12.5px; color: var(--grau); margin: 8px 0 0; display: flex; gap: 14px; flex-wrap: wrap; }
@@ -374,7 +375,7 @@
   </section>
 
   <section class="karte" id="vergleichKarte" hidden>
-    <h2>Reisen vergleichen</h2>
+    <div class="wk-kopf"><h2>Reisen vergleichen</h2><button type="button" class="hell x-btn" id="vglX" aria-label="Schließen">✕</button></div>
     <div class="wk-chips" id="vglChips"></div>
     <div class="vgl-wrap" id="vglTabelle"></div>
     <button type="button" class="hell" id="vglZu" style="margin-top:10px">Schließen</button>
@@ -2978,6 +2979,7 @@
     if (!zu) { vergleichRendern(); $('vergleichKarte').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   });
   $('vglZu').addEventListener('click', function () { $('vergleichKarte').hidden = true; });
+  $('vglX').addEventListener('click', function () { $('vergleichKarte').hidden = true; });
   $('vglChips').addEventListener('click', function (e) {
     var b = e.target.closest('[data-vgl]'); if (!b) return;
     var id = b.getAttribute('data-vgl'), i = vglAuswahl.indexOf(id);
