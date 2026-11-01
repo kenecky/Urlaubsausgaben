@@ -1,6 +1,6 @@
 // Service Worker: speichert die App beim ersten Öffnen, danach läuft sie offline.
 // Bei Änderungen an der App die Versionsnummer erhöhen, damit Handys die neue Fassung laden.
-var CACHE = 'reisen-beta-v1';
+var CACHE = 'reisen-beta-v2';
 var DATEIEN = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
@@ -20,6 +20,7 @@ self.addEventListener('activate', function (e) {
 // Zuerst Netz (frische Version), bei fehlendem Internet aus dem Cache.
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
+  if (new URL(e.request.url).origin !== self.location.origin) return; // z. B. Kurs-Abfragen nicht zwischenspeichern
   e.respondWith(
     fetch(e.request).then(function (antwort) {
       var kopie = antwort.clone();

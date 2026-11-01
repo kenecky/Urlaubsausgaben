@@ -151,6 +151,11 @@
   html[data-thema="dunkel"] .re-status.s-beendet { background: #78350f; color: #fde68a; }
   .re-zeit { font-size: 13px; color: var(--grau); margin-top: 4px; }
   .re-summe { font-size: 14px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .land-zeile { padding: 10px 0; border-top: 1px solid var(--linie); }
+  .land-zeile:first-child { border-top: 0; padding-top: 0; }
+  .land-kopf { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .land-kopf b { flex: 1; min-width: 0; }
+  .bar-wert.multi { font-size: 22px; }
   .wert-peso { display: block; }
   .wert-euro { display: block; font-size: 11.5px; font-weight: 400; color: var(--grau); line-height: 1.25; }
   .rz > b { text-align: right; }
@@ -314,6 +319,7 @@
     <div id="nrKursBlock">
       <label for="nrKurs" id="nrKursLabel">Startkurs</label>
       <input type="number" id="nrKurs" inputmode="decimal" step="any" min="0.0001">
+      <button type="button" class="klein hell" id="nrKursOnline" style="margin-top:6px">↻ Aktuellen Kurs online holen</button>
       <p class="hinweis" id="nrKursHinweis" style="margin:4px 0 0">Ungefährer Richtwert. Du kannst ihn später bei jeder Ausgabe ändern.</p>
     </div>
     <button type="button" id="nrAnlegen">Reise anlegen</button>
@@ -353,6 +359,10 @@
       <label for="ort">Ort</label>
       <input type="text" id="ort" list="orteListe" maxlength="40" placeholder="z. B. Coron" autocomplete="off">
       <datalist id="orteListe"></datalist>
+      <div id="waehrungBlock" hidden>
+        <label for="waehrung">Währung</label>
+        <select id="waehrung"></select>
+      </div>
       <label for="kategorie">Kategorie</label>
       <select id="kategorie" required></select>
       <label for="zahlung">Zahlungsmittel</label>
@@ -368,6 +378,7 @@
         </div>
       </div>
       <p class="hinweis" id="rechenHinweis" style="margin:6px 0 0"></p>
+      <button type="button" class="klein hell" id="kursOnlineBtn" style="margin-top:8px">↻ Kurs online holen</button>
       <p class="hinweis" id="barKursHinweis" style="margin:6px 0 0" hidden>Bar-Zahlung: Kurs und Euro-Betrag werden automatisch aus den Bargeldabhebungen berechnet (die älteste Abhebung zuerst) und sind gesperrt.</p>
       <label for="beschreibung">Beschreibung</label>
       <textarea id="beschreibung" rows="2" placeholder="z. B. Abendessen am Strand"></textarea>
@@ -380,13 +391,14 @@
 
   <section class="karte" id="barKarte">
     <h2>Bargeldbestand</h2>
-    <div class="bar-wert" id="barWert">0,00 ₱</div>
+    <div id="barWert"></div>
     <div class="hinweis" id="barDetail"></div>
     <div class="hinweis" id="barHinweis"></div>
   </section>
 
   <section class="karte" id="rechnerKarte">
     <h2 id="rcTitel">Peso-Euro Schnell-Check</h2>
+    <select id="rcWaehrung" hidden style="margin-bottom:6px"></select>
     <label for="rcBetrag" id="rcLabel">Betrag in philippinischen Pesos</label>
     <div class="rc-feld">
       <span class="rc-symbol" id="rcSymbol" aria-hidden="true">₱</span>
@@ -503,7 +515,21 @@
       <div><label for="rkStart">Reisebeginn</label><input type="date" id="rkStart"></div>
       <div><label for="rkEnde">Reiseende</label><input type="date" id="rkEnde"></div>
     </div>
-    <p class="hinweis" id="rkLand"></p>
+    <label>Länder und Zeiträume</label>
+    <div id="rkLaender"></div>
+    <label for="rkLandNeu">Land hinzufügen</label>
+    <select id="rkLandNeu"></select>
+    <div class="zeile">
+      <div><label for="rkLandVon">von</label><input type="date" id="rkLandVon"></div>
+      <div><label for="rkLandBis">bis</label><input type="date" id="rkLandBis"></div>
+    </div>
+    <div id="rkLandKursBlock" hidden>
+      <label for="rkLandKurs" id="rkLandKursLabel">Kurs</label>
+      <input type="number" id="rkLandKurs" inputmode="decimal" step="any" min="0.0001">
+    </div>
+    <button type="button" class="hell" id="rkLandAdd" style="margin-top:10px">Land hinzufügen</button>
+    <button type="button" class="hell" id="rkKurseOnline" style="margin-top:8px">↻ Kurse online aktualisieren</button>
+    <p class="hinweis" id="rkKurseInfo">Mehrere Länder mit verschiedenen Währungen sind möglich. Bargeldbestand und Kurs laufen dann je Währung, Summen werden in € gezeigt.</p>
     <button type="button" id="rkSpeichern">Reise speichern</button>
     <button type="button" class="rot" id="rkLoeschen" style="margin-top:8px">Reise löschen …</button>
   </section>
@@ -598,13 +624,22 @@
     }
     return aus;
   }
+  function sauberKurse(o) {
+    var aus = {};
+    if (o && typeof o === 'object' && !Array.isArray(o)) {
+      Object.keys(o).forEach(function (c) { if (/^[A-Z]{3}$/.test(c) && o[c] > 0 && isFinite(o[c])) aus[c] = o[c]; });
+    }
+    return aus;
+  }
   function einstSauber(d) {
     d = d && typeof d === 'object' ? d : {};
-    var e = { kategorien: [], budget: null, letzterKurs: null, startkurs: null, restbei: 'beide', pauschal: [], geloescht: {}, letzterOrt: '' };
+    var e = { kategorien: [], budget: null, letzterKurs: null, startkurs: null, kurse: {}, letzteWaehrung: '', restbei: 'beide', pauschal: [], geloescht: {}, letzterOrt: '' };
     e.kategorien = sauberKategorien(d.kategorien);
     e.budget = sauberBudget(d.budget);
     e.letzterKurs = (d.letzterKurs > 0 && isFinite(d.letzterKurs)) ? d.letzterKurs : null;
     e.startkurs = (d.startkurs > 0 && isFinite(d.startkurs)) ? d.startkurs : null;
+    e.kurse = sauberKurse(d.kurse);
+    e.letzteWaehrung = /^[A-Z]{3}$/.test(d.letzteWaehrung) ? d.letzteWaehrung : '';
     e.restbei = (d.restbei === 'Sabine' || d.restbei === 'Tobi') ? d.restbei : 'beide';
     e.pauschal = Array.isArray(d.pauschal) ? d.pauschal.filter(function (k) { return typeof k === 'string'; }) : [];
     e.geloescht = sauberGeloescht(d.geloescht);
@@ -657,10 +692,14 @@
   function zahl(n) { return runden(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   var lokal = { code: 'PHP', symbol: '₱', name: 'Pesos' }; // Währung der geöffneten Reise
   var euroTrip = false;                                      // Reise in einem Euro-Land: keine Umrechnung
-  function geld(n) { return zahl(n) + ' ' + lokal.symbol; }
+  var multi = false;                                         // mehrere Währungen in der Reise: Summen in €
+  var kontext = null;                                        // für Auswertungen anderer Reisen: { einst, haupt }
+  var onlineKurse = { datum: '', raten: {} };                // zuletzt online geholte Kurse
+  function geld(n) { return multi ? euroFmt(n) : zahl(n) + ' ' + lokal.symbol; }
   function euroFmt(n) { return zahl(n) + ' €'; }
   // Pesobetrag mit kleinem Euro-Betrag darunter
   function wertEuro(peso, euro) {
+    if (multi) return '<span class="wert-peso">' + euroFmt(euro) + '</span>';
     if (euroTrip) return '<span class="wert-peso">' + geld(peso) + '</span>';
     return '<span class="wert-peso">' + geld(peso) + '</span><span class="wert-euro">≈ ' + euroFmt(euro) + '</span>';
   }
@@ -669,7 +708,7 @@
     var p = wert / gesamt * 100;
     return (p < 1 ? '<1' : Math.round(p)) + ' %';
   }
-  function euroText(e) { return euroTrip ? '' : ' <span class="eur">(≈ ' + euroFmt(e) + ')</span>'; }
+  function euroText(e) { return (euroTrip || multi) ? '' : ' <span class="eur">(≈ ' + euroFmt(e) + ')</span>'; }
   function kursFmt(k) { return k.toLocaleString('de-DE', { maximumFractionDigits: 3 }); }
   function datumAnzeige(iso) {
     var t = iso.split('-');
@@ -706,7 +745,16 @@
   function istAbh(a) { return a.kategorie === ABHEBUNG; }
   // Kosten für die gesamte Reise (z. B. Flüge, Hunde): zählen zum Budget, aber nicht zum Tagesschnitt
   function istPauschal(a) { return a.pauschal === true || einst.pauschal.indexOf(a.kategorie) >= 0; }
-  function kursVon(a) { return a.kurs > 0 ? a.kurs : STANDARD_KURS; }
+  function hauptCode() { return kontext ? kontext.haupt : lokal.code; }
+  function waehrungVon(a) { return a.waehrung || hauptCode(); }
+  // Rückfall-Kurs für Einträge ohne eigenen Kurs: eigene Kurse der Reise, Startkurs, online geholt, Richtwert
+  function stdKursFuer(code) {
+    if (code === 'EUR') return 1;
+    var e = kontext ? kontext.einst : einst;
+    return (e.kurse && e.kurse[code]) || (code === hauptCode() && e.startkurs) || (onlineKurse.raten && onlineKurse.raten[code]) || DEFAULT_KURSE[code] || 1;
+  }
+  function kursVon(a) { return a.kurs > 0 ? a.kurs : stdKursFuer(waehrungVon(a)); }
+  function lokalWert(a) { return multi ? euroVon(a) : a.betrag; }
   function eigenEuro(a) { return a.abgebucht > 0 ? a.abgebucht : a.betrag / kursVon(a); }
   // Bar-Ausgaben: Der Euro-Wert ergibt sich aus den Bargeldabhebungen nach dem FIFO-Prinzip.
   // Die älteste Abhebung wird zuerst aufgebraucht, danach die nächste (jeweils mit ihrem eigenen Kurs).
@@ -720,20 +768,26 @@
     });
     function vergleich(x, y) { return x.a.datum.localeCompare(y.a.datum) || x.i - y.i; }
     lose.sort(vergleich); bars.sort(vergleich);
-    var topf = lose.map(function (l) { return { rest: l.a.betrag, satz: eigenEuro(l.a) / l.a.betrag }; });
-    var pos = 0;
+    // je Währung eine eigene Warteschlange: Bargeld in Baht wird nur mit Baht-Abhebungen verrechnet
+    var toepfe = {}, pos = {};
+    lose.forEach(function (l) {
+      var c = waehrungVon(l.a);
+      (toepfe[c] = toepfe[c] || []).push({ rest: l.a.betrag, satz: eigenEuro(l.a) / l.a.betrag });
+    });
     bars.forEach(function (b) {
+      var c = waehrungVon(b.a), topf = toepfe[c] || [];
+      pos[c] = pos[c] || 0;
       var brauche = b.a.betrag, euro = 0;
-      while (brauche > 1e-9 && pos < topf.length) {
-        var nimm = Math.min(brauche, topf[pos].rest);
-        euro += nimm * topf[pos].satz;
-        topf[pos].rest -= nimm;
+      while (brauche > 1e-9 && pos[c] < topf.length) {
+        var nimm = Math.min(brauche, topf[pos[c]].rest);
+        euro += nimm * topf[pos[c]].satz;
+        topf[pos[c]].rest -= nimm;
         brauche -= nimm;
-        if (topf[pos].rest <= 1e-9) pos++;
+        if (topf[pos[c]].rest <= 1e-9) pos[c]++;
       }
       if (brauche > 1e-9) {
         // mehr bar bezahlt als abgehoben: letzten bekannten Abhebekurs verwenden
-        var satz = topf.length ? topf[topf.length - 1].satz : 1 / (b.a.kurs > 0 ? b.a.kurs : STANDARD_KURS);
+        var satz = topf.length ? topf[topf.length - 1].satz : 1 / (b.a.kurs > 0 ? b.a.kurs : stdKursFuer(c));
         euro += brauche * satz;
         ueber[b.a.id] = true;
       }
@@ -751,8 +805,8 @@
     if (istBarAusgabe(a) && fifoEuro[a.id] !== undefined) return fifoEuro[a.id];
     return eigenEuro(a);
   }
-  function kursEff(a) { return istBarAusgabe(a) ? a.betrag / euroVon(a) : a.kurs; }
-  function summePeso(liste) { return liste.reduce(function (s, a) { return s + a.betrag; }, 0); }
+  function kursEff(a) { return istBarAusgabe(a) ? a.betrag / euroVon(a) : (a.kurs > 0 ? a.kurs : kursVon(a)); }
+  function summePeso(liste) { return multi ? summeEuro(liste) : liste.reduce(function (s, a) { return s + a.betrag; }, 0); }
   function summeEuro(liste) { return liste.reduce(function (s, a) { return s + euroVon(a); }, 0); }
 
   // Balken mit Beschriftung, die an der Füllkante die Farbe wechselt (dunkel auf grau, weiß auf blau)
@@ -788,7 +842,22 @@
   var filterKat = '';
   var nurOffen = false;
 
-  function startKurs() { return einst.letzterKurs || STANDARD_KURS; }
+  function formW() { return $('waehrung').value || lokal.code; }
+  function formEuro() { return formW() === 'EUR'; }
+  function kursFuer(code) {
+    return (einst.kurse && einst.kurse[code]) || (code === hauptCode() && einst.letzterKurs) || stdKursFuer(code);
+  }
+  function startKurs() { return kursFuer(formW()); }
+  // Währung des Landes, in dem man laut Reiseplan am gewählten Datum ist
+  function abschnittWaehrung(d) {
+    var passend = reise.laender.filter(function (l) { return (!l.von || l.von <= d) && (!l.bis || d <= l.bis); });
+    var c = passend.length ? passend[passend.length - 1].waehrung : (einst.letzteWaehrung || hauptCode());
+    return $('waehrung').querySelector('option[value="' + c + '"]') ? c : (hauptCode());
+  }
+  function waehrungLabels() {
+    $('betragLabel').textContent = 'Betrag (' + waehrungSymbol(formW()) + ')';
+    $('kursLabel').textContent = 'Kurs (' + waehrungSymbol(formW()) + ' für 1 €)';
+  }
 
   // Pesos, Euro und Kurs hängen zusammen (₱ = € × Kurs). Zwei der drei Werte sind von Hand eingegeben,
   // der dritte wird berechnet. `anker` merkt sich die zwei zuletzt von Hand geänderten Werte (ältester zuerst).
@@ -802,23 +871,24 @@
       a.every(function (x) { return x === 'php' || x === 'eur' || x === 'kurs'; });
   }
   function berechne() {
-    if (euroTrip) { $('kurs').value = 1; $('abgebucht').value = ''; $('rechenHinweis').hidden = true; return; }
+    if (formEuro()) { $('kurs').value = 1; $('abgebucht').value = ''; $('rechenHinweis').hidden = true; return; }
     if (istBarModus()) { barVorschau(); return; }
     var dritter = null;
     if (anker.length === 2) {
       dritter = ['php', 'eur', 'kurs'].filter(function (x) { return anker.indexOf(x) < 0; })[0];
     }
     var b = feldZahl('betrag'), e = feldZahl('abgebucht'), k = feldZahl('kurs');
-    var hinweis = 'Gib den Betrag in Pesos oder in Euro ein. Der andere Wert wird über den Kurs berechnet.';
+    var wn = waehrungName(formW());
+    var hinweis = 'Gib den Betrag in ' + wn + ' oder in Euro ein. Der andere Wert wird über den Kurs berechnet.';
     if (dritter === 'eur') {
       $('abgebucht').value = (b > 0 && k > 0) ? (b / k).toFixed(2) : '';
-      hinweis = 'Der Euro-Betrag wird aus Pesos ÷ Kurs berechnet. Trage hier den echten Abbuchungsbetrag ein, dann ergibt sich der Kurs.';
+      hinweis = 'Der Euro-Betrag wird aus ' + wn + ' ÷ Kurs berechnet. Trage hier den echten Abbuchungsbetrag ein, dann ergibt sich der Kurs.';
     } else if (dritter === 'php') {
       $('betrag').value = (e > 0 && k > 0) ? (e * k).toFixed(2) : '';
-      hinweis = 'Der Peso-Betrag wird aus Euro × Kurs berechnet.';
+      hinweis = 'Der Betrag in ' + wn + ' wird aus Euro × Kurs berechnet.';
     } else if (dritter === 'kurs') {
       if (b > 0 && e > 0) $('kurs').value = kursRunden(b / e);
-      hinweis = 'Der Kurs ergibt sich aus Pesos ÷ Euro. Änderst du ihn, bleibt der Euro-Betrag stehen und die Pesos werden angepasst.';
+      hinweis = 'Der Kurs ergibt sich aus ' + wn + ' ÷ Euro. Änderst du ihn, bleibt der Euro-Betrag stehen und der Betrag in ' + wn + ' wird angepasst.';
     }
     ['php', 'eur', 'kurs'].forEach(function (f) { $(FELD[f]).classList.toggle('abgeleitet', f === dritter); });
     $('rechenHinweis').textContent = hinweis;
@@ -831,7 +901,7 @@
   function barVorschau() {
     var b = feldZahl('betrag');
     if (!(b > 0)) { $('kurs').value = ''; $('abgebucht').value = ''; return; }
-    var virt = { id: '__vorschau__', datum: $('datum').value || heute(), betrag: b, kategorie: 'Vorschau', zahlung: 'Bar' };
+    var virt = { id: '__vorschau__', datum: $('datum').value || heute(), betrag: b, kategorie: 'Vorschau', zahlung: 'Bar', waehrung: formW() };
     var liste = ausgaben.slice();
     var idx = bearbeiteId ? liste.findIndex(function (a) { return a.id === bearbeiteId; }) : -1;
     if (idx >= 0) liste[idx] = virt; else liste.push(virt);
@@ -843,7 +913,8 @@
   }
   function kursBereichUmschalten() {
     var bar = istBarModus();
-    $('kursZeile').hidden = euroTrip;
+    $('kursZeile').hidden = formEuro();
+    $('kursOnlineBtn').hidden = bar || formEuro();
     $('kurs').disabled = bar;
     $('abgebucht').disabled = bar;
     $('rechenHinweis').hidden = bar;
@@ -866,7 +937,21 @@
   }
   $('zahlung').addEventListener('change', kursBereichUmschalten);
   $('kategorie').addEventListener('change', kursBereichUmschalten);
-  $('datum').addEventListener('input', function () { if (istBarModus()) barVorschau(); });
+  $('datum').addEventListener('input', function () {
+    if (multi && !bearbeiteId) {
+      var c = abschnittWaehrung($('datum').value);
+      if ($('waehrung').value !== c) { $('waehrung').value = c; waehrungGeaendert(); return; }
+    }
+    if (istBarModus()) barVorschau();
+  });
+  // Währung des Eintrags gewechselt: Beschriftungen, Kurs-Vorgabe und Rechnung neu
+  function waehrungGeaendert() {
+    waehrungLabels();
+    $('kurs').value = startKurs(); $('abgebucht').value = '';
+    anker = feldZahl('betrag') > 0 ? ['kurs', 'php'] : ['kurs'];
+    kursBereichUmschalten();
+  }
+  $('waehrung').addEventListener('change', waehrungGeaendert);
   function beruehrt(f) {
     var rest = anker.filter(function (x) { return x !== f; });
     if (rest.length > 1) {
@@ -880,6 +965,8 @@
     bearbeiteId = null;
     $('form').reset();
     $('datum').value = heute();
+    if (reise) $('waehrung').value = abschnittWaehrung($('datum').value);
+    waehrungLabels();
     $('kurs').value = startKurs();
     $('ort').value = einst.letzterOrt || '';
     anker = ['kurs'];
@@ -914,8 +1001,8 @@
     e.preventDefault();
     var betrag = feldZahl('betrag'), kurs = feldZahl('kurs'), euro = feldZahl('abgebucht');
     var barModus = $('zahlung').value === 'Bar' && $('kategorie').value !== ABHEBUNG;
-    if (euroTrip) { kurs = 1; euro = 0; anker = ['kurs', 'php']; }
-    if (!(betrag > 0)) { toast('Bitte einen gültigen Betrag (₱ oder €) eingeben.'); return; }
+    if (formEuro()) { kurs = 1; euro = 0; anker = ['kurs', 'php']; }
+    if (!(betrag > 0)) { toast('Bitte einen gültigen Betrag (' + waehrungSymbol(formW()) + ' oder €) eingeben.'); return; }
     if (!barModus) {
       if (anker.indexOf('kurs') < 0) {
         // Pesos und Euro wurden eingegeben: der Kurs ergibt sich daraus
@@ -933,6 +1020,7 @@
       kategorie: $('kategorie').value,
       zahlung: $('zahlung').value,
       beschreibung: $('beschreibung').value.trim(),
+      waehrung: formW(),
       geaendert: Date.now()
     };
     var ort = $('ort').value.trim().slice(0, 40);
@@ -951,7 +1039,11 @@
       ausgaben.push(eintrag);
       toast('Ausgabe gespeichert');
     }
-    if (!barModus) einst.letzterKurs = kursRunden(kurs);
+    if (!barModus && formW() !== 'EUR') {
+      einst.kurse[formW()] = kursRunden(kurs);
+      if (formW() === hauptCode()) einst.letzterKurs = kursRunden(kurs);
+    }
+    einst.letzteWaehrung = formW();
     if (!bearbeiteId && ort) einst.letzterOrt = ort; // nur bei neuen Einträgen merken
     speichern(); speichernEinst();
     var datumMerken = eintrag.datum, editId = bearbeiteId;
@@ -977,20 +1069,26 @@
     kopie.sort(function (a, b) {
       switch (modus) {
         case 'datum-alt': return a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id);
-        case 'betrag-hoch': return b.betrag - a.betrag;
-        case 'betrag-tief': return a.betrag - b.betrag;
+        case 'betrag-hoch': return lokalWert(b) - lokalWert(a);
+        case 'betrag-tief': return lokalWert(a) - lokalWert(b);
         case 'kategorie': return a.kategorie.localeCompare(b.kategorie, 'de') || b.datum.localeCompare(a.datum);
         default: return b.datum.localeCompare(a.datum) || b.id.localeCompare(a.id);
       }
     });
     return kopie;
   }
+  // Betrag in der Währung des Eintrags, darunter klein der Euro-Wert
+  function eintragBetragHtml(a) {
+    var c = waehrungVon(a);
+    if (c === 'EUR') return '<span class="wert-peso">' + euroFmt(a.betrag) + '</span>';
+    return '<span class="wert-peso">' + zahl(a.betrag) + ' ' + esc(waehrungSymbol(c)) + '</span><span class="wert-euro">≈ ' + euroFmt(euroVon(a)) + '</span>';
+  }
   function eintragHtml(a) {
     var meta = esc(datumAnzeige(a.datum)) + (a.ort ? ' · ' + esc(a.ort) : '') + (a.zahlung ? ' · ' + esc(a.zahlung) : '') + (istBarAusgabe(a) ? ' · Kurs ' + kursFmt(kursEff(a)) + ' (Abhebung)' : (a.kurs > 0 ? ' · Kurs ' + kursFmt(a.kurs) : '')) +
       (!istBarAusgabe(a) && a.abgebucht > 0 ? ' · ' + euroFmt(a.abgebucht) + ' abgebucht' : '') + (!istAbh(a) && istPauschal(a) ? ' · Gesamtreise' : '') + (istGeprueft(a) ? ' · ✓' : '');
     return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' +
       '<div class="meta"><span class="kat' + (istAbh(a) ? ' abh' : '') + '">' + esc(a.kategorie) + '</span>' + meta + '</div>' +
-      '<div class="betrag">' + wertEuro(a.betrag, euroVon(a)) + '</div>' +
+      '<div class="betrag">' + eintragBetragHtml(a) + '</div>' +
       '<div class="beschr">' + (a.beschreibung ? esc(a.beschreibung) : '<span class="meta">–</span>') + '</div>' +
       '<div class="aktionen">' +
       '<button type="button" class="klein hell" data-aktion="edit">Ändern</button>' +
@@ -1049,6 +1147,10 @@
       bearbeiteId = id;
       $('datum').value = a.datum;
       anker = gueltigerAnker(a.anker) ? a.anker.slice() : (a.abgebucht > 0 ? ['php', 'eur'] : ['php', 'kurs']);
+      var aw = waehrungVon(a);
+      if (!$('waehrung').querySelector('option[value="' + aw + '"]')) { var o = document.createElement('option'); o.value = aw; o.textContent = waehrungSymbol(aw) + ' ' + waehrungName(aw) + ' (' + aw + ')'; $('waehrung').appendChild(o); }
+      $('waehrung').value = aw;
+      waehrungLabels();
       $('betrag').value = a.betrag;
       $('kategorie').value = a.kategorie;
       letzteKategorie = a.kategorie;
@@ -1112,7 +1214,7 @@
       var ausg = ohneAbh.filter(function (a) { return a.zahlung === m; });
       var abh = ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === m; });
       var sub = ausg.length + (ausg.length === 1 ? ' Ausgabe' : ' Ausgaben');
-      if (m !== 'Bar' && abh.length) sub += ' · Abhebungen: ' + geld(summePeso(abh)) + (euroTrip ? '' : ' (≈ ' + euroFmt(summeEuro(abh)) + ')');
+      if (m !== 'Bar' && abh.length) sub += ' · Abhebungen: ' + geld(summePeso(abh)) + ((euroTrip || multi) ? '' : ' (≈ ' + euroFmt(summeEuro(abh)) + ')');
       return zeile(m, m, ausg, abh, sub);
     }).join('');
     var ohneZ = ohneAbh.filter(function (a) { return !a.zahlung; });
@@ -1151,7 +1253,7 @@
     }
     var proTag = {}, proTagE = {};
     tagListe.forEach(function (a) {
-      proTag[a.datum] = (proTag[a.datum] || 0) + a.betrag;
+      proTag[a.datum] = (proTag[a.datum] || 0) + lokalWert(a);
       proTagE[a.datum] = (proTagE[a.datum] || 0) + euroVon(a);
     });
     var daten = Object.keys(proTag).sort();
@@ -1310,23 +1412,30 @@
   });
 
   // ---------- Bargeldbestand ----------
-  function bargeldbestand() {
-    var abh = ausgaben.filter(istAbh);
-    var bar = ausgaben.filter(function (a) { return !istAbh(a) && a.zahlung === 'Bar'; });
-    return {
-      abgehoben: summePeso(abh), barBezahlt: summePeso(bar),
-      peso: runden(summePeso(abh) - summePeso(bar)),
-      euro: runden(summeEuro(abh) - summeEuro(bar))
-    };
+  function bargeldProWaehrung() {
+    var codes = [];
+    ausgaben.forEach(function (a) { if (istAbh(a) || istBarAusgabe(a)) { var c = waehrungVon(a); if (codes.indexOf(c) < 0) codes.push(c); } });
+    return codes.map(function (c) {
+      var abh = ausgaben.filter(function (a) { return istAbh(a) && waehrungVon(a) === c; });
+      var bar = ausgaben.filter(function (a) { return istBarAusgabe(a) && waehrungVon(a) === c; });
+      var abhL = abh.reduce(function (s, a) { return s + a.betrag; }, 0), barL = bar.reduce(function (s, a) { return s + a.betrag; }, 0);
+      return { code: c, symbol: waehrungSymbol(c), abgehoben: abhL, barBezahlt: barL, rest: runden(abhL - barL), restEuro: runden(summeEuro(abh) - summeEuro(bar)) };
+    });
   }
   function renderBargeld() {
-    var b = bargeldbestand();
-    $('barWert').innerHTML = geld(b.peso) + euroText(b.euro);
-    $('barWert').classList.toggle('negativ', b.peso < 0);
-    $('barDetail').textContent = 'Abgehoben ' + geld(b.abgehoben) + ' − bar bezahlt ' + geld(b.barBezahlt);
+    var liste = bargeldProWaehrung();
+    if (!liste.length) liste = [{ code: lokal.code, symbol: lokal.symbol, abgehoben: 0, barBezahlt: 0, rest: 0, restEuro: 0 }];
+    var mehrere = liste.length > 1;
+    $('barWert').innerHTML = liste.map(function (b) {
+      var eur = b.code === 'EUR' ? '' : ' <span class="eur">(≈ ' + euroFmt(b.restEuro) + ')</span>';
+      return '<div class="bar-wert' + (mehrere ? ' multi' : '') + (b.rest < 0 ? ' negativ' : '') + '">' + zahl(b.rest) + ' ' + esc(b.symbol) + eur + '</div>';
+    }).join('');
+    $('barDetail').innerHTML = liste.map(function (b) {
+      return (mehrere ? esc(b.code) + ': ' : '') + 'Abgehoben ' + zahl(b.abgehoben) + ' ' + esc(b.symbol) + ' − bar bezahlt ' + zahl(b.barBezahlt) + ' ' + esc(b.symbol);
+    }).join('<br>');
     var ohneZahlung = ausgaben.filter(function (a) { return !istAbh(a) && !a.zahlung; }).length;
     var hinweis = '';
-    if (b.peso < 0) {
+    if (liste.some(function (b) { return b.rest < 0; })) {
       hinweis += '<div class="warnung hinweis">Bestand im Minus: Es fehlt eine Abhebung, oder ein Eintrag steht fälschlich auf „Bar“.</div>';
     }
     if (ohneZahlung > 0) {
@@ -1351,6 +1460,10 @@
     var b = einst.budget;
     if (!b) {
       $('budgetInfo').innerHTML = '<p class="hinweis" style="margin-top:0">Noch kein Budget festgelegt. Trage unten Budget und Reisezeitraum ein, dann siehst du Rest, Tagesschnitt und Hochrechnung.</p>';
+      return;
+    }
+    if (multi && b.waehrung === 'LOKAL') {
+      $('budgetInfo').innerHTML = '<p class="hinweis" style="margin-top:0">Mit mehreren Währungen rechnet das Budget in €. Bitte trage unten dein Budget in Euro neu ein.</p>';
       return;
     }
     var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
@@ -1517,6 +1630,11 @@
   // ---------- Anzeige ----------
   function zeichnen() {
     berechneFifo();
+    if (reise) {
+      var multiVorher = multi;
+      multiSetzen();
+      if (multiVorher !== multi) { waehrungUiSetzen(); parserEinrichten(); rechnerAnpassen(); waehrungDropdownFuellen(); }
+    }
     // Kopf: Abhebungen zählen nicht zur Statistik (außer man filtert gezielt darauf)
     var liste = gefiltert();
     var nurAbhebung = (filterKat === ABHEBUNG);
@@ -1541,8 +1659,8 @@
     var proKatE = {};
     var abgehoben = 0, abgehobenE = 0, anzahlAbh = 0;
     ausgaben.forEach(function (a) {
-      if (istAbh(a)) { abgehoben += a.betrag; abgehobenE += euroVon(a); anzahlAbh++; return; }
-      proKat[a.kategorie] = (proKat[a.kategorie] || 0) + a.betrag;
+      if (istAbh(a)) { abgehoben += lokalWert(a); abgehobenE += euroVon(a); anzahlAbh++; return; }
+      proKat[a.kategorie] = (proKat[a.kategorie] || 0) + lokalWert(a);
       proKatE[a.kategorie] = (proKatE[a.kategorie] || 0) + euroVon(a);
     });
     var max = Math.max.apply(null, Object.keys(proKat).map(function (k) { return proKat[k]; }).concat([0]));
@@ -1610,9 +1728,9 @@
   });
   $('exportCsv').addEventListener('click', function () {
     if (!ausgaben.length) { toast('Noch nichts zu exportieren.'); return; }
-    var zeilen = [['Datum', 'Ort', 'Betrag (' + lokal.code + ')', 'Kategorie', 'Zahlungsmittel', 'Kurs (' + lokal.code + ' je EUR)', 'Betrag (EUR)', 'Kurs eingetragen', 'Gesamtreise', 'Beschreibung']];
+    var zeilen = [['Datum', 'Ort', 'Betrag', 'Währung', 'Kategorie', 'Zahlungsmittel', 'Kurs (je EUR)', 'Betrag (EUR)', 'Kurs eingetragen', 'Gesamtreise', 'Beschreibung']];
     sortiert(ausgaben).forEach(function (a) {
-      zeilen.push([a.datum, a.ort || '', String(a.betrag).replace('.', ','), a.kategorie, a.zahlung || '',
+      zeilen.push([a.datum, a.ort || '', String(a.betrag).replace('.', ','), waehrungVon(a), a.kategorie, a.zahlung || '',
         kursEff(a) > 0 ? String(Math.round(kursEff(a) * 10000) / 10000).replace('.', ',') : '', String(runden(euroVon(a))).replace('.', ','), istGeprueft(a) ? 'ja' : 'nein', istPauschal(a) ? 'ja' : 'nein', a.beschreibung || '']);
     });
     var csv = '﻿' + zeilen.map(function (z) {
@@ -1630,6 +1748,7 @@
     if (a.pauschal === true) e.pauschal = true;
     if (gueltigerAnker(a.anker)) e.anker = a.anker.slice();
     if (typeof a.ort === 'string' && a.ort.trim()) e.ort = a.ort.trim().slice(0, 40);
+    if (/^[A-Z]{3}$/.test(a.waehrung)) e.waehrung = a.waehrung;
     if (a.geaendert > 0 && isFinite(a.geaendert)) e.geaendert = a.geaendert;
     return e;
   }
@@ -1670,6 +1789,7 @@
     neu.pauschal.forEach(function (k) { if (ziel.pauschal.indexOf(k) < 0) ziel.pauschal.push(k); });
     if (!ziel.budget) ziel.budget = neu.budget;
     if (!ziel.startkurs) ziel.startkurs = neu.startkurs;
+    Object.keys(neu.kurse).forEach(function (c) { if (!ziel.kurse[c]) ziel.kurse[c] = neu.kurse[c]; });
   }
   var importModus = 'merge';
   $('mergeBtn').addEventListener('click', function () { importModus = 'merge'; $('importDatei').click(); });
@@ -1747,20 +1867,22 @@
   var PRAEFIX = '(?:(?:fur|fuer|kostet|kosten|ca\\.?|circa|etwa)\\s*)?';
   var W_WOERTER = { PHP: 'php|₱|pesos?', THB: 'thb|฿|baht', IDR: 'idr|rp|rupiah', USD: 'usd|\\$|dollars?', VND: 'vnd|₫|dong', JPY: 'jpy|¥|yen',
     MYR: 'myr|rm|ringgit', SGD: 'sgd|s\\$|dollars?', GBP: 'gbp|£|pfund', CHF: 'chf|franken', AUD: 'aud|a\\$|dollars?', CAD: 'cad|c\\$|dollars?' };
-  var BETRAG_PHP = [], BETRAG_EUR = [], GUARD_RE = /^\s*(?:php|₱|pesos?|€|eur)/;
+  var BETRAG_LISTE = [], BETRAG_EUR = [], GUARD_RE = /^\s*(?:php|₱|pesos?|€|eur)/;
   function escRe(t) { return String(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   function parserEinrichten() {
     var eurMuster = '€|eur(?:o|os)?';
-    var lokalMuster = euroTrip ? eurMuster : (W_WOERTER[lokal.code] || (normT(lokal.code) + '|' + escRe(lokal.symbol)));
-    BETRAG_PHP = [
-      new RegExp(PRAEFIX + NUM_SRC + '\\s*(?:' + lokalMuster + ')(?![a-z])'),
-      new RegExp(PRAEFIX + '(?:' + lokalMuster + ')\\s*' + NUM_SRC)
-    ];
-    BETRAG_EUR = euroTrip ? [/(?!)/] : [
-      new RegExp(PRAEFIX + NUM_SRC + '\\s*(?:' + eurMuster + ')(?![a-z])'),
-      new RegExp(PRAEFIX + '(?:' + eurMuster + ')\\s*' + NUM_SRC)
-    ];
-    GUARD_RE = new RegExp('^\\s*(?:' + lokalMuster + '|' + eurMuster + ')');
+    var codes = reise ? reisewaehrungen() : [lokal.code];
+    var fremd = codes.filter(function (c) { return c !== 'EUR'; });
+    function regexe(mu) {
+      return [new RegExp(PRAEFIX + NUM_SRC + '\\s*(?:' + mu + ')(?![a-z])'), new RegExp(PRAEFIX + '(?:' + mu + ')\\s*' + NUM_SRC)];
+    }
+    BETRAG_LISTE = fremd.map(function (c) {
+      var mu = W_WOERTER[c] || (normT(c) + '|' + escRe(waehrungSymbol(c)));
+      return { code: c, mu: mu, res: regexe(mu) };
+    });
+    if (!fremd.length) BETRAG_LISTE = [{ code: 'EUR', mu: eurMuster, res: regexe(eurMuster) }];
+    BETRAG_EUR = fremd.length ? regexe(eurMuster) : [/(?!)/];
+    GUARD_RE = new RegExp('^\\s*(?:' + BETRAG_LISTE.map(function (c) { return c.mu; }).concat([eurMuster]).join('|') + ')');
   }
   var KAT_REGELN = [
     ['Bargeldabhebung', 'abhebung|abgehoben|abheben|atm\\b|geldautomat'],
@@ -1797,7 +1919,7 @@
     var orig = String(roh).trim();
     var masked = normT(orig);
     var cuts = [];
-    var res = { datum: null, php: null, eur: null, zahlung: 'Bar', kategorie: null, ort: null, beschreibung: '', unsicher: {}, notizen: [] };
+    var res = { datum: null, php: null, eur: null, waehrung: null, zahlung: 'Bar', kategorie: null, ort: null, beschreibung: '', unsicher: {}, notizen: [] };
     function maskieren(von, bis) {
       masked = masked.slice(0, von) + new Array(bis - von + 1).join(' ') + masked.slice(bis);
       cuts.push([von, bis]);
@@ -1842,15 +1964,20 @@
     }
 
     // --- Betrag ---
-    m = ersterTreffer(BETRAG_PHP);
-    if (m) { res.php = zahlAusText(m.groups.n); maskieren(m.index, m.index + m[0].length); }
+    var stdW = reise ? abschnittWaehrung(res.datum || heute()) : lokal.code;
+    var besteW = null;
+    BETRAG_LISTE.forEach(function (c) {
+      var mm = ersterTreffer(c.res);
+      if (mm && (!besteW || mm.index < besteW.m.index)) besteW = { m: mm, code: c.code };
+    });
+    if (besteW) { res.php = zahlAusText(besteW.m.groups.n); res.waehrung = besteW.code; maskieren(besteW.m.index, besteW.m.index + besteW.m[0].length); }
     m = ersterTreffer(BETRAG_EUR);
     if (m) { res.eur = zahlAusText(m.groups.n); maskieren(m.index, m.index + m[0].length); }
     if (res.php === null && res.eur === null) {
       m = new RegExp('(?:fur|fuer|kostet|kosten|ca\\.?|circa|=)\\s*' + NUM_SRC).exec(masked);
       if (m) {
         res.php = zahlAusText(m.groups.n); maskieren(m.index, m.index + m[0].length);
-        res.unsicher.betrag = true; res.notizen.push('Betrag: keine Währung angegeben, ' + lokal.name + ' angenommen');
+        res.unsicher.betrag = true; res.notizen.push('Betrag: keine Währung angegeben, ' + waehrungName(stdW) + ' angenommen');
       }
     }
     if (res.php === null && res.eur === null) {
@@ -1863,10 +1990,11 @@
       else if (letzter && /^\s*$/.test(masked.slice(letzter.bis))) treffer = letzter;       // Zahl am Ende
       if (treffer) {
         res.php = treffer.wert; maskieren(treffer.von, treffer.bis);
-        res.unsicher.betrag = true; res.notizen.push('Betrag: keine Währung angegeben, ' + lokal.name + ' angenommen');
+        res.unsicher.betrag = true; res.notizen.push('Betrag: keine Währung angegeben, ' + waehrungName(stdW) + ' angenommen');
       }
     }
     if (res.php === null && res.eur === null) { res.unsicher.betrag = true; res.notizen.push('Betrag nicht erkannt'); }
+    if (!res.waehrung) res.waehrung = stdW;
 
     // --- Zahlungsmittel ---
     var gefunden = [];
@@ -1957,22 +2085,23 @@
     $('kategorie').value = r.kategorie;
     letzteKategorie = r.kategorie;
     $('zahlung').value = r.zahlung;
-    kursBereichUmschalten();
+    if (r.waehrung && $('waehrung').querySelector('option[value="' + r.waehrung + '"]')) $('waehrung').value = r.waehrung;
+    waehrungGeaendert();
     if (r.php !== null) { $('betrag').value = r.php; beruehrt('php'); }
     if (r.eur !== null) {
       if (!istBarModus()) {
         $('abgebucht').value = r.eur.toFixed(2); beruehrt('eur');
-        if (r.php === null) { r.unsicher.betrag = true; r.notizen.push('Betrag in ' + lokal.name + ' aus Euro × Kurs ' + kursFmt(startKurs()) + ' berechnet'); }
+        if (r.php === null) { r.unsicher.betrag = true; r.notizen.push('Betrag in ' + waehrungName(formW()) + ' aus Euro × Kurs ' + kursFmt(startKurs()) + ' berechnet'); }
       } else if (r.php === null) {
         $('betrag').value = (Math.round(r.eur * startKurs() * 100) / 100); beruehrt('php');
-        r.unsicher.betrag = true; r.notizen.push('Bar: Euro mit Kurs ' + kursFmt(startKurs()) + ' in ' + lokal.name + ' umgerechnet, bitte Betrag prüfen');
+        r.unsicher.betrag = true; r.notizen.push('Bar: Euro mit Kurs ' + kursFmt(startKurs()) + ' in ' + waehrungName(formW()) + ' umgerechnet, bitte Betrag prüfen');
       }
     }
     $('beschreibung').value = r.beschreibung;
     if (r.ort) $('ort').value = r.ort;
     Object.keys(r.unsicher).forEach(function (f) { $(f).classList.add('unsicher'); });
     var erkannt = [];
-    if (r.php !== null) erkannt.push(geld(r.php));
+    if (r.php !== null) erkannt.push(zahl(r.php) + ' ' + waehrungSymbol(formW()));
     if (r.eur !== null) erkannt.push(euroFmt(r.eur));
     erkannt.push(datumAnzeige($('datum').value));
     if (r.ort) erkannt.push(r.ort);
@@ -1996,13 +2125,13 @@
   }
   function renderVerlauf() {
     var b = einst.budget;
-    var w = verlaufW || (b ? b.waehrung : 'LOKAL');
+    var w = multi ? 'EUR' : (verlaufW || (b ? b.waehrung : 'LOKAL'));
     Array.prototype.forEach.call(document.querySelectorAll('[data-vw]'), function (btn) {
       btn.classList.toggle('aktiv', btn.getAttribute('data-vw') === w);
     });
     var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
     if (!ohneAbh.length) { $('verlaufChart').innerHTML = '<div class="leer">Noch keine Ausgaben erfasst.</div>'; $('verlaufInfo').textContent = ''; return; }
-    var wert = function (a) { return w === 'EUR' ? euroVon(a) : a.betrag; };
+    var wert = function (a) { return w === 'EUR' ? euroVon(a) : lokalWert(a); };
     var fmt = w === 'EUR' ? euroFmt : geld;
     var tagListe = ohneAbh.filter(function (a) { return !istPauschal(a); });
     var alle = ohneAbh.map(function (a) { return a.datum; }).sort();
@@ -2100,27 +2229,35 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-rc]'), function (button) {
       button.addEventListener('click', function () { update(button.getAttribute('data-rc'), 'button'); });
     });
-    rechnerAnpassen = function () {
-      $('rechnerKarte').hidden = euroTrip;
-      if (euroTrip) return;
-      var php = lokal.code === 'PHP';
-      RATE = php ? 71.26 : (einst.letzterKurs || STANDARD_KURS);
+    var rcCode = null;
+    rechnerAnpassen = function (code) {
+      var codes = reise ? reisewaehrungen().filter(function (c) { return c !== 'EUR'; }) : [];
+      $('rechnerKarte').hidden = !codes.length;
+      if (!codes.length) return;
+      if (!code || codes.indexOf(code) < 0) code = (rcCode && codes.indexOf(rcCode) >= 0) ? rcCode : (codes.indexOf(hauptCode()) >= 0 ? hauptCode() : codes[0]);
+      rcCode = code;
+      $('rcWaehrung').hidden = codes.length < 2;
+      $('rcWaehrung').innerHTML = codes.map(function (c) { return '<option value="' + c + '">' + esc(waehrungName(c)) + ' (' + c + ')</option>'; }).join('');
+      $('rcWaehrung').value = code;
+      var php = code === 'PHP', sym = waehrungSymbol(code), name = waehrungName(code);
+      RATE = php ? 71.26 : kursFuer(code);
       var f = php ? 1 : RATE / 70;
       var min = php ? 20 : schoen(20 * f), max = php ? 5000 : schoen(5000 * f), step = php ? 20 : schoen(20 * f);
       slider.min = String(min); slider.max = String(max); slider.step = String(step);
       var knoepfe = [100, 500, 1000, 2000, 5000, 10000].map(function (x) { return php ? x : schoen(x * f); });
       Array.prototype.forEach.call(document.querySelectorAll('[data-rc]'), function (button, i) {
         button.setAttribute('data-rc', String(knoepfe[i]));
-        button.textContent = lokal.symbol + zahlFormat.format(knoepfe[i]);
+        button.textContent = sym + zahlFormat.format(knoepfe[i]);
       });
       var marken = php ? [20, 1000, 2500, 5000] : [min, schoen(max * 0.2), schoen(max * 0.5), max];
-      $('rcMarken').innerHTML = marken.map(function (x) { return '<span>' + zahlFormat.format(x) + ' ' + esc(lokal.code) + '</span>'; }).join('');
-      $('rcTitel').textContent = lokal.name + '-Euro Schnell-Check';
-      $('rcLabel').textContent = 'Betrag in ' + (php ? 'philippinischen Pesos' : lokal.name);
-      $('rcSymbol').textContent = lokal.symbol;
-      $('rcHinweis').textContent = 'Rechenbasis: 1 € = ' + kursFmt(RATE) + ' ' + lokal.code;
+      $('rcMarken').innerHTML = marken.map(function (x) { return '<span>' + zahlFormat.format(x) + ' ' + esc(code) + '</span>'; }).join('');
+      $('rcTitel').textContent = name + '-Euro Schnell-Check';
+      $('rcLabel').textContent = 'Betrag in ' + (php ? 'philippinischen Pesos' : name);
+      $('rcSymbol').textContent = sym;
+      $('rcHinweis').textContent = 'Rechenbasis: 1 € = ' + kursFmt(RATE) + ' ' + code;
       update(knoepfe[1], 'initial');
     };
+    $('rcWaehrung').addEventListener('change', function () { rechnerAnpassen($('rcWaehrung').value); });
     update(amountInput.value, 'initial');
   })();
 
@@ -2179,6 +2316,38 @@
     });
   }
 
+  // ---------- Kurse online (Referenzkurse der EZB über frankfurter.dev, nur wenn Internet da ist) ----------
+  function kurseHolen(codes) {
+    codes = codes.filter(function (c, i) { return c !== 'EUR' && codes.indexOf(c) === i; });
+    if (!codes.length) return Promise.resolve({ datum: '', raten: {} });
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 9000);
+    var opt = ctrl ? { signal: ctrl.signal } : {};
+    function v1() {
+      return fetch('https://api.frankfurter.dev/v1/latest?base=EUR&symbols=' + codes.join(','), opt)
+        .then(function (r) { if (!r.ok) throw new Error('v1'); return r.json(); })
+        .then(function (d) { return { datum: d.date || '', raten: d.rates || {} }; });
+    }
+    function v2() {
+      return fetch('https://api.frankfurter.dev/v2/rates?base=EUR&quotes=' + codes.join(','), opt)
+        .then(function (r) { if (!r.ok) throw new Error('v2'); return r.json(); })
+        .then(function (rows) {
+          var raten = {}, datum = '';
+          (Array.isArray(rows) ? rows : []).forEach(function (z) { if (z && z.quote && z.rate > 0) { raten[z.quote] = z.rate; datum = z.date || datum; } });
+          return { datum: datum, raten: raten };
+        });
+    }
+    return v1().catch(function () { return v2(); }).then(function (erg) {
+      clearTimeout(timer);
+      var merk = Object.assign({}, onlineKurse.raten, erg.raten);
+      onlineKurse = { datum: erg.datum || onlineKurse.datum, raten: merk };
+      globalSpeichern({ onlineKurse: onlineKurse });
+      return erg;
+    }, function (e) { clearTimeout(timer); throw e; });
+  }
+  function kursQuelleText(datum) { return 'EZB-Referenzkurs' + (datum ? ' vom ' + datumAnzeige(datum) : ''); }
+  function onlineFehler() { toast('Kein Online-Kurs möglich (Internet?). Bitte den Kurs von Hand eintragen.'); }
+
   // ---------- Reisen: Verwaltung, Startseite ----------
   var LAENDER = [["AF","Afghanistan","AFN",""],["EG","Ägypten","EGP",""],["AX","Åland","EUR",""],["AL","Albanien","ALL",""],["DZ","Algerien","DZD",""],["AS","Amerikanisch-Samoa","USD",""],["VI","Amerikanische Jungferninseln","USD",""],["AD","Andorra","EUR",""],["AO","Angola","AOA",""],["AI","Anguilla","XCD",""],["AQ","Antarktis","",""],["AG","Antigua und Barbuda","XCD",""],["GQ","Äquatorialguinea","XAF",""],["AR","Argentinien","ARS",""],["AM","Armenien","AMD",""],["AW","Aruba","AWG",""],["AC","Ascension Island","SHP",""],["AZ","Aserbaidschan","AZN",""],["ET","Äthiopien","ETB",""],["AU","Australien","AUD",""],["BS","Bahamas","BSD",""],["BH","Bahrain","BHD",""],["BD","Bangladesch","BDT",""],["BB","Barbados","BBD",""],["BY","Belarus","BYN",""],["BE","Belgien","EUR",""],["BZ","Belize","BZD",""],["BJ","Benin","XOF",""],["BM","Bermuda","BMD",""],["BT","Bhutan","BTN",""],["BO","Bolivien","BOB",""],["BQ","Bonaire","USD",""],["BA","Bosnien und Herzegowina","BAM",""],["BW","Botswana","BWP",""],["BV","Bouvetinsel","NOK",""],["BR","Brasilien","BRL",""],["VG","Britische Jungferninseln","USD",""],["IO","Britisches Territorium im Indischen Ozean","USD",""],["BN","Brunei Darussalam","BND",""],["BG","Bulgarien","EUR",""],["BF","Burkina Faso","XOF",""],["BI","Burundi","BIF",""],["CL","Chile","CLP",""],["CN","China","CNY",""],["CK","Cookinseln","NZD",""],["CR","Costa Rica","CRC",""],["CW","Curaçao","XCG",""],["DK","Dänemark","DKK",""],["DE","Deutschland","EUR",""],["DM","Dominica","XCD",""],["DO","Dominikanische Republik","DOP",""],["DJ","Dschibuti","DJF",""],["EC","Ecuador","USD",""],["SV","El Salvador","USD",""],["CI","Elfenbeinküste","XOF",""],["ER","Eritrea","ERN",""],["EE","Estland","EUR",""],["SZ","Eswatini","SZL",""],["FK","Falklandinseln","FKP",""],["FO","Färöer","DKK",""],["FJ","Fidschi","FJD",""],["FI","Finnland","EUR",""],["FR","Frankreich","EUR",""],["GF","Französisch-Guayana","EUR",""],["PF","Französisch-Polynesien","XPF",""],["TF","Französische Süd- und Antarktisgebiete","EUR",""],["GA","Gabun","XAF",""],["GM","Gambia","GMD",""],["GE","Georgien","GEL",""],["GH","Ghana","GHS",""],["GI","Gibraltar","GIP",""],["GD","Grenada","XCD",""],["GR","Griechenland","EUR",""],["GL","Grönland","DKK",""],["GP","Guadeloupe","EUR",""],["GU","Guam","USD",""],["GT","Guatemala","GTQ",""],["GG","Guernsey","GBP",""],["GN","Guinea","GNF",""],["GW","Guinea-Bissau","XOF",""],["GY","Guyana","GYD",""],["HT","Haiti","HTG",""],["HM","Heard und McDonaldinseln","AUD",""],["HN","Honduras","HNL",""],["HK","Hongkong","HKD",""],["IN","Indien","INR",""],["ID","Indonesien","IDR",""],["IM","Insel Man","GBP",""],["IQ","Irak","IQD",""],["IR","Iran","IRR",""],["IE","Irland","EUR",""],["IS","Island","ISK",""],["IL","Israel","ILS",""],["IT","Italien","EUR",""],["JM","Jamaika","JMD",""],["JP","Japan","JPY",""],["YE","Jemen","YER",""],["JE","Jersey","GBP",""],["JO","Jordanien","JOD",""],["KY","Kaimaninseln","KYD",""],["KH","Kambodscha","KHR",""],["CM","Kamerun","XAF",""],["CA","Kanada","CAD",""],["CV","Kap Verde","CVE",""],["KZ","Kasachstan","KZT",""],["QA","Katar","QAR",""],["KE","Kenia","KES",""],["KG","Kirgisistan","KGS",""],["KI","Kiribati","AUD",""],["CC","Kokosinseln","AUD",""],["CO","Kolumbien","COP",""],["KM","Komoren","KMF",""],["CD","Kongo","CDF",""],["XK","Kosovo","EUR",""],["HR","Kroatien","EUR",""],["CU","Kuba","CUP",""],["KW","Kuwait","KWD",""],["LA","Laos","LAK",""],["LS","Lesotho","LSL",""],["LV","Lettland","EUR",""],["LB","Libanon","LBP",""],["LR","Liberia","LRD",""],["LY","Libyen","LYD",""],["LI","Liechtenstein","CHF",""],["LT","Litauen","EUR",""],["LU","Luxemburg","EUR",""],["MO","Macao","MOP",""],["MG","Madagaskar","MGA",""],["MW","Malawi","MWK",""],["MY","Malaysia","MYR",""],["MV","Malediven","MVR",""],["ML","Mali","XOF",""],["MT","Malta","EUR",""],["MA","Marokko","MAD",""],["MH","Marshallinseln","USD",""],["MQ","Martinique","EUR",""],["MR","Mauretanien","MRU",""],["MU","Mauritius","MUR",""],["YT","Mayotte","EUR",""],["MX","Mexiko","MXN",""],["FM","Mikronesien","USD",""],["MD","Moldawien","MDL",""],["MC","Monaco","EUR",""],["MN","Mongolei","MNT",""],["ME","Montenegro","EUR",""],["MS","Montserrat","XCD",""],["MZ","Mosambik","MZN",""],["MM","Myanmar","MMK",""],["NA","Namibia","NAD",""],["NR","Nauru","AUD",""],["NP","Nepal","NPR",""],["NC","Neukaledonien","XPF",""],["NZ","Neuseeland","NZD",""],["NI","Nicaragua","NIO",""],["NL","Niederlande","EUR",""],["NE","Niger","XOF",""],["NG","Nigeria","NGN",""],["NU","Niue","NZD",""],["KP","Nordkorea","KPW",""],["MP","Nördliche Marianen","USD",""],["MK","Nordmazedonien","MKD",""],["NF","Norfolkinsel","AUD",""],["NO","Norwegen","NOK",""],["OM","Oman","OMR",""],["AT","Österreich","EUR",""],["TL","Osttimor","USD",""],["PK","Pakistan","PKR",""],["PW","Palau","USD",""],["PA","Panama","PAB",""],["PG","Papua-Neuguinea","PGK",""],["PY","Paraguay","PYG",""],["PE","Peru","PEN",""],["PH","Philippinen","PHP",""],["PN","Pitcairninseln","NZD",""],["PL","Polen","PLN",""],["PT","Portugal","EUR",""],["PR","Puerto Rico","USD",""],["CG","Republik Kongo","XAF",""],["RE","Réunion","EUR",""],["RW","Ruanda","RWF",""],["RO","Rumänien","RON",""],["RU","Russische Föderation","RUB",""],["BL","Saint-Barthélemy","EUR",""],["MF","Saint-Martin","EUR",""],["PM","Saint-Pierre und Miquelon","EUR",""],["SB","Salomonen","SBD",""],["ZM","Sambia","ZMW",""],["WS","Samoa","WST",""],["SM","San Marino","EUR",""],["ST","São Tomé und Príncipe","STN",""],["SA","Saudi-Arabien","SAR",""],["SE","Schweden","SEK",""],["CH","Schweiz","CHF",""],["SN","Senegal","XOF",""],["RS","Serbien","RSD",""],["SC","Seychellen","SCR",""],["SL","Sierra Leone","SLE",""],["ZW","Simbabwe","ZWG",""],["SG","Singapur","SGD",""],["SX","Sint Maarten","XCG",""],["SK","Slowakei","EUR",""],["SI","Slowenien","EUR",""],["SO","Somalia","SOS",""],["ES","Spanien","EUR",""],["LK","Sri Lanka","LKR",""],["SH","St. Helena","SHP",""],["KN","St. Kitts und Nevis","XCD",""],["LC","St. Lucia","XCD",""],["VC","St. Vincent und die Grenadinen","XCD",""],["PS","Staat Palästina","ILS",""],["ZA","Südafrika","ZAR",""],["SD","Sudan","SDG",""],["GS","Südgeorgien und die Südlichen Sandwichinseln","GBP",""],["KR","Südkorea","KRW",""],["SS","Südsudan","SSP",""],["SR","Suriname","SRD",""],["SJ","Svalbard und Jan Mayen","NOK",""],["SY","Syrien, Arabische Republik","SYP",""],["TJ","Tadschikistan","TJS",""],["TW","Taiwan","TWD",""],["TZ","Tansania, Vereinigte Republik","TZS",""],["TH","Thailand","THB",""],["TG","Togo","XOF",""],["TK","Tokelau","NZD",""],["TO","Tonga","TOP",""],["TT","Trinidad und Tobago","TTD",""],["TA","Tristan da Cunha","SHP",""],["TD","Tschad","XAF",""],["CZ","Tschechische Republik","CZK",""],["TN","Tunesien","TND",""],["TR","Türkei","TRY",""],["TM","Turkmenistan","TMT",""],["TC","Turks- und Caicosinseln","USD",""],["TV","Tuvalu","AUD",""],["UG","Uganda","UGX",""],["UA","Ukraine","UAH",""],["HU","Ungarn","HUF",""],["UM","United States Minor Outlying Islands","USD",""],["UY","Uruguay","UYU",""],["UZ","Usbekistan","UZS",""],["VU","Vanuatu","VUV",""],["VA","Vatikanstadt","EUR",""],["VE","Venezuela","VES",""],["AE","Vereinigte Arabische Emirate","AED",""],["US","Vereinigte Staaten von Amerika","USD",""],["GB","Vereinigtes Königreich","GBP",""],["VN","Vietnam","VND",""],["WF","Wallis und Futuna","XPF",""],["CX","Weihnachtsinsel","AUD",""],["EH","Westsahara","MAD",""],["CF","Zentralafrikanische Republik","XAF",""],["CY","Zypern","EUR",""]]; // [Code, Name, Währung]
   var LAND = {};
@@ -2195,12 +2364,14 @@
   var DEFAULT_KURSE = { PHP: 70, THB: 38, IDR: 18000, VND: 28000, USD: 1.1, JPY: 165, MYR: 5, SGD: 1.45, GBP: 0.85, CHF: 0.95, AUD: 1.65,
     CAD: 1.5, CNY: 7.8, KRW: 1500, INR: 92, TRY: 40, MXN: 21, ZAR: 20, HKD: 8.5, NZD: 1.8, BRL: 6, CZK: 25, PLN: 4.3, HUF: 400,
     SEK: 11.5, NOK: 11.5, DKK: 7.46, MAD: 10.8, AED: 4, EGP: 55, KHR: 4500, LAK: 24000, LKR: 330, NPR: 147, MVR: 17 };
+  var symbolCache = {};
   function waehrungSymbol(code) {
     if (code === 'EUR') return '€';
+    if (symbolCache[code]) return symbolCache[code];
     try {
       var teile = new Intl.NumberFormat('de-DE', { style: 'currency', currency: code, currencyDisplay: 'narrowSymbol' }).formatToParts(1);
       var t = teile.filter(function (x) { return x.type === 'currency'; })[0];
-      return t ? t.value : code;
+      return (symbolCache[code] = t ? t.value : code);
     } catch (e) { return code; }
   }
   function waehrungName(code) {
@@ -2219,6 +2390,7 @@
       return { code: String((l && l.code) || '').toUpperCase().slice(0, 2), name: String((l && l.name) || '').slice(0, 60),
                waehrung: String((l && l.waehrung) || 'EUR').toUpperCase().slice(0, 3), von: strDatum(l && l.von), bis: strDatum(l && l.bis) };
     }).filter(function (l) { return l.code; });
+    laender.sort(function (x, y) { return (x.von || '').localeCompare(y.von || ''); });
     return { id: m.id, name: String(m.name || 'Reise').slice(0, 60), laender: laender, start: strDatum(m.start), ende: strDatum(m.ende),
              status: m.status === 'abgeschlossen' ? 'abgeschlossen' : 'aktiv', erstellt: m.erstellt > 0 ? m.erstellt : Date.now(),
              abgeschlossenAm: m.abgeschlossenAm > 0 ? m.abgeschlossenAm : 0 };
@@ -2302,19 +2474,22 @@
     return 'laeuft';
   }
   var STATUS_TEXT = { laeuft: 'läuft', geplant: 'geplant', beendet: 'Ende erreicht', abgeschlossen: 'abgeschlossen' };
-  function kennzahlen(daten) {
-    var f = fifoBerechnen(daten.ausgaben);
-    var ohne = daten.ausgaben.filter(function (a) { return !istAbh(a); });
-    var euro = ohne.reduce(function (sum, a) { return sum + ((istBarAusgabe(a) && f.euro[a.id] !== undefined) ? f.euro[a.id] : eigenEuro(a)); }, 0);
-    return { euro: euro, anzahl: ohne.length };
+  function kennzahlen(daten, haupt) {
+    kontext = { einst: daten.einst, haupt: haupt };
+    try {
+      var f = fifoBerechnen(daten.ausgaben);
+      var ohne = daten.ausgaben.filter(function (a) { return !istAbh(a); });
+      var euro = ohne.reduce(function (sum, a) { return sum + ((istBarAusgabe(a) && f.euro[a.id] !== undefined) ? f.euro[a.id] : eigenEuro(a)); }, 0);
+      return { euro: euro, anzahl: ohne.length };
+    } finally { kontext = null; }
   }
   function startRendern() {
     var liste = reisen.slice().sort(function (a, b) { return (b.start || '').localeCompare(a.start || ''); });
     $('reisenListe').innerHTML = liste.length ? liste.map(function (m) {
-      var st = reiseStatus(m), k = kennzahlen(datenLaden(m.id)), l = m.laender[0];
+      var st = reiseStatus(m), l = m.laender[0], k = kennzahlen(datenLaden(m.id), l ? l.waehrung : 'EUR');
       var tage = (m.start && m.ende) ? tageZwischen(m.start, m.ende) + 1 : 0;
       return '<div class="reise-eintrag" data-reise="' + esc(m.id) + '" role="button">' +
-        '<div class="re-kopf"><span class="re-flagge">' + flagge(l ? l.code : '') + '</span><span class="re-name">' + esc(m.name) + '</span>' +
+        '<div class="re-kopf"><span class="re-flagge">' + (m.laender.length ? m.laender.map(function (x) { return flagge(x.code); }).join('') : '🌍') + '</span><span class="re-name">' + esc(m.name) + '</span>' +
         '<span class="re-status s-' + st + '">' + STATUS_TEXT[st] + '</span></div>' +
         '<div class="re-zeit">' + (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) : 'ohne Zeitraum') + (tage ? ' · ' + tage + (tage === 1 ? ' Tag' : ' Tage') : '') + '</div>' +
         '<div class="re-summe">' + euroFmt(k.euro) + ' · ' + k.anzahl + (k.anzahl === 1 ? ' Ausgabe' : ' Ausgaben') + '</div></div>';
@@ -2349,34 +2524,123 @@
   $('zurueckBtn').addEventListener('click', function () {
     if (history.state && history.state.reise) history.back(); else zeigeStart();
   });
+  function reisewaehrungen() {
+    var codes = [];
+    reise.laender.forEach(function (l) { if (codes.indexOf(l.waehrung) < 0) codes.push(l.waehrung); });
+    ausgaben.forEach(function (a) { var c = waehrungVon(a); if (codes.indexOf(c) < 0) codes.push(c); });
+    return codes;
+  }
+  function multiSetzen() { multi = reise ? reisewaehrungen().length > 1 : false; }
+  function waehrungDropdownFuellen() {
+    var codes = reisewaehrungen();
+    if (multi && codes.indexOf('EUR') < 0) codes.push('EUR');
+    var alt = $('waehrung').value;
+    $('waehrung').innerHTML = codes.map(function (c) {
+      return '<option value="' + c + '">' + esc(waehrungSymbol(c)) + ' ' + esc(waehrungName(c)) + ' (' + c + ')</option>';
+    }).join('');
+    if (codes.indexOf(alt) >= 0) $('waehrung').value = alt;
+    $('waehrungBlock').hidden = !multi;
+  }
   function waehrungUiSetzen() {
-    $('betragLabel').textContent = 'Betrag (' + lokal.symbol + ')';
-    $('kursLabel').textContent = 'Kurs (' + lokal.symbol + ' für 1 €)';
-    $('freitext').placeholder = 'z. B. 2 Bier in Coron am 31.10.2026 für ' + (euroTrip ? '20 €' : '500 ' + lokal.code.toLowerCase());
-    $('budgetWaehrung').innerHTML = '<option value="EUR">€ (Euro)</option>' + (euroTrip ? '' : '<option value="LOKAL">' + esc(lokal.symbol) + ' (' + esc(lokal.name) + ')</option>');
+    var einheit = (euroTrip && !multi) ? '20 €' : '500 ' + lokal.code.toLowerCase();
+    $('freitext').placeholder = 'z. B. 2 Bier in Coron am 31.10.2026 für ' + einheit;
+    var nurEuro = euroTrip || multi;
+    $('budgetWaehrung').innerHTML = '<option value="EUR">€ (Euro)</option>' + (nurEuro ? '' : '<option value="LOKAL">' + esc(lokal.symbol) + ' (' + esc(lokal.name) + ')</option>');
     $('vwLokal').textContent = lokal.symbol + ' ' + lokal.name;
-    document.querySelector('.seg').hidden = euroTrip;
+    document.querySelector('.seg').hidden = nurEuro;
   }
   function reiseFelderFuellen() {
     $('rkName').value = reise.name;
     $('rkStart').value = reise.start;
     $('rkEnde').value = reise.ende;
-    var l = reise.laender[0];
-    $('rkLand').textContent = l ? flagge(l.code) + ' ' + l.name + ' · Währung ' + lokal.symbol + ' (' + lokal.name + ')' : '';
+    laenderRendern();
+    if (!$('rkLandNeu').options.length) {
+      $('rkLandNeu').innerHTML = '<option value="">Land wählen …</option>' + LAENDER.map(function (l) {
+        return '<option value="' + l[0] + '">' + flagge(l[0]) + ' ' + esc(l[1]) + (l[2] ? ' (' + l[2] + ')' : '') + '</option>';
+      }).join('');
+    }
+    $('rkLandNeu').value = ''; $('rkLandVon').value = ''; $('rkLandBis').value = '';
+    $('rkLandKursBlock').hidden = true;
   }
+  function laenderRendern() {
+    $('rkLaender').innerHTML = reise.laender.map(function (l, i) {
+      return '<div class="land-zeile"><div class="land-kopf"><span style="font-size:22px">' + flagge(l.code) + '</span><b>' + esc(l.name) + '</b>' +
+        '<span class="hinweis" style="margin:0">' + esc(l.waehrung) + ' ' + esc(waehrungSymbol(l.waehrung)) + '</span>' +
+        (reise.laender.length > 1 ? '<button type="button" class="klein rot" data-land-del="' + i + '">Entfernen</button>' : '') + '</div>' +
+        '<div class="zeile"><div><input type="date" data-land-von="' + i + '" value="' + esc(l.von) + '" aria-label="von"></div>' +
+        '<div><input type="date" data-land-bis="' + i + '" value="' + esc(l.bis) + '" aria-label="bis"></div></div></div>';
+    }).join('');
+  }
+  // Nach Änderung der Länder: Währungen, Beschriftungen, Rechner und Anzeige neu aufbauen
+  function reiseUiAktualisieren() {
+    reise.laender.sort(function (x, y) { return (x.von || '').localeCompare(y.von || ''); });
+    indexSpeichern();
+    lokalSetzen(reise.laender[0] ? reise.laender[0].waehrung : 'EUR');
+    multiSetzen();
+    waehrungUiSetzen(); parserEinrichten(); rechnerAnpassen(); waehrungDropdownFuellen();
+    waehrungLabels();
+    laenderRendern();
+    zeichnen();
+  }
+  $('rkLaender').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-land-del]');
+    if (!b) return;
+    var i = Number(b.getAttribute('data-land-del'));
+    var l = reise.laender[i];
+    if (!l || reise.laender.length < 2) return;
+    if (!confirm('„' + l.name + '“ aus dieser Reise entfernen? Bereits eingetragene Ausgaben bleiben erhalten.')) return;
+    reise.laender.splice(i, 1);
+    reiseUiAktualisieren();
+  });
+  $('rkLaender').addEventListener('change', function (e) {
+    var von = e.target.getAttribute('data-land-von'), bis = e.target.getAttribute('data-land-bis');
+    var i = Number(von !== null ? von : bis);
+    if (!reise.laender[i]) return;
+    var wert = strDatum(e.target.value);
+    if (von !== null) reise.laender[i].von = wert; else reise.laender[i].bis = wert;
+    reiseUiAktualisieren();
+  });
+  function rkLandGeaendert() {
+    var l = LAND[$('rkLandNeu').value];
+    var neu = l && l.waehrung !== 'EUR' && !kursBekannt(l.waehrung);
+    $('rkLandKursBlock').hidden = !neu;
+    if (neu) {
+      $('rkLandKursLabel').textContent = 'Startkurs (' + waehrungSymbol(l.waehrung) + ' für 1 €)';
+      $('rkLandKurs').value = stdKursFuer(l.waehrung) !== 1 ? stdKursFuer(l.waehrung) : '';
+    }
+  }
+  function kursBekannt(code) { return code === 'EUR' || !!(einst.kurse && einst.kurse[code]) || reise.laender.some(function (l) { return l.waehrung === code; }); }
+  $('rkLandNeu').addEventListener('change', rkLandGeaendert);
+  $('rkLandAdd').addEventListener('click', function () {
+    var l = LAND[$('rkLandNeu').value];
+    if (!l) { toast('Bitte ein Land wählen.'); return; }
+    var von = $('rkLandVon').value, bis = $('rkLandBis').value;
+    if (von && bis && bis < von) { toast('Das Ende liegt vor dem Beginn.'); return; }
+    if (l.waehrung !== 'EUR' && !$('rkLandKursBlock').hidden) {
+      var k = parseFloat(String($('rkLandKurs').value).replace(',', '.'));
+      if (!(k > 0)) { toast('Bitte einen Startkurs eintragen.'); return; }
+      einst.kurse[l.waehrung] = k;
+    }
+    reise.laender.push({ code: l.code, name: l.name, waehrung: l.waehrung, von: von, bis: bis });
+    speichernEinst();
+    reiseFelderFuellen();
+    reiseUiAktualisieren();
+    toast(l.name + ' hinzugefügt');
+  });
   function reiseOeffnen(id, ohneHistory) {
     var m = reisen.filter(function (r) { return r.id === id; })[0];
     if (!m) return;
     var d = datenLaden(id);
+    kontext = null;
     reise = m; ausgaben = d.ausgaben; einst = d.einst;
     lokalSetzen(m.laender[0] ? m.laender[0].waehrung : 'EUR');
-    STANDARD_KURS = euroTrip ? 1 : (einst.startkurs || DEFAULT_KURSE[lokal.code] || 1);
+    multiSetzen();
     globalSpeichern({ aktiv: id });
     filterKat = ''; nurOffen = false; $('nurOffen').checked = false; verlaufW = null;
     offenZahlung = {}; offenTag = {}; offenOrt = {}; loeschStapel = []; $('undoBar').hidden = true;
     tabWechseln('ausgaben');
     berechneFifo();
-    waehrungUiSetzen(); parserEinrichten(); rechnerAnpassen();
+    waehrungUiSetzen(); parserEinrichten(); rechnerAnpassen(); waehrungDropdownFuellen();
     kategorienAbgleichen(); dropdownsFuellen(); budgetFelderFuellen(); reiseFelderFuellen();
     $('filter').value = '';
     formZuruecksetzen();
@@ -2439,6 +2703,37 @@
     $('neueReiseKarte').scrollIntoView({ block: 'start' });
   }
   $('reiseNeuBtn').addEventListener('click', neueReiseOeffnen);
+  $('nrKursOnline').addEventListener('click', function () {
+    var l = LAND[$('nrLand').value];
+    if (!l || l.waehrung === 'EUR') return;
+    kurseHolen([l.waehrung]).then(function (erg) {
+      if (!(erg.raten[l.waehrung] > 0)) { toast('Für ' + l.waehrung + ' gibt es keinen Online-Kurs. Bitte von Hand eintragen.'); return; }
+      $('nrKurs').value = kursRunden(erg.raten[l.waehrung]);
+      $('nrKursHinweis').textContent = kursQuelleText(erg.datum) + ' (Mittelkurs). Dein Kartenkurs kann abweichen.';
+    }).catch(onlineFehler);
+  });
+  $('kursOnlineBtn').addEventListener('click', function () {
+    var c = formW();
+    if (c === 'EUR') return;
+    kurseHolen([c]).then(function (erg) {
+      if (!(erg.raten[c] > 0)) { toast('Für ' + c + ' gibt es keinen Online-Kurs. Bitte von Hand eintragen.'); return; }
+      $('kurs').value = kursRunden(erg.raten[c]);
+      beruehrt('kurs');
+      toast(kursQuelleText(erg.datum) + ': 1 € = ' + kursFmt(erg.raten[c]) + ' ' + c);
+    }).catch(onlineFehler);
+  });
+  $('rkKurseOnline').addEventListener('click', function () {
+    var codes = reisewaehrungen().filter(function (c) { return c !== 'EUR'; });
+    if (!codes.length) { toast('In dieser Reise gibt es keine Fremdwährung.'); return; }
+    kurseHolen(codes).then(function (erg) {
+      var ok = [], fehlt = [];
+      codes.forEach(function (c) { if (erg.raten[c] > 0) { einst.kurse[c] = kursRunden(erg.raten[c]); if (c === hauptCode()) einst.letzterKurs = einst.kurse[c]; ok.push('1 € = ' + kursFmt(erg.raten[c]) + ' ' + c); } else fehlt.push(c); });
+      speichernEinst();
+      $('rkKurseInfo').textContent = (ok.length ? kursQuelleText(erg.datum) + ': ' + ok.join(' · ') + '. Das ist ab jetzt der Vorschlag für neue Ausgaben.' : 'Es kam kein Kurs an.') +
+        (fehlt.length ? ' Kein Online-Kurs für: ' + fehlt.join(', ') + ' (bitte von Hand eintragen).' : '');
+      formZuruecksetzen(); rechnerAnpassen();
+    }).catch(onlineFehler);
+  });
   $('nrAbbrechen').addEventListener('click', function () { $('neueReiseKarte').hidden = true; });
   $('nrLand').addEventListener('change', nrLandGeaendert);
   $('nrAnlegen').addEventListener('click', function () {
@@ -2455,7 +2750,7 @@
     reisen.push(m);
     indexSpeichern();
     var e = einstSauber({});
-    if (l.waehrung !== 'EUR') { e.startkurs = kurs; e.letzterKurs = kurs; }
+    if (l.waehrung !== 'EUR') { e.startkurs = kurs; e.letzterKurs = kurs; e.kurse[l.waehrung] = kurs; }
     datenSpeichernFuer(m.id, { ausgaben: [], einst: e });
     $('neueReiseKarte').hidden = true;
     reiseOeffnen(m.id);
@@ -2546,6 +2841,8 @@
 
   // ---------- Start ----------
   kartenZuklappbarMachen();
+  var gk = globalLaden().onlineKurse;
+  if (gk && gk.raten && typeof gk.raten === 'object') onlineKurse = { datum: String(gk.datum || ''), raten: sauberKurse(gk.raten) };
   migrationPruefen();
   reisen = indexLaden();
   parserEinrichten();
