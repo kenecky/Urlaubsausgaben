@@ -2611,7 +2611,32 @@
     });
     return erg;
   }
-  function wkViewBox() { var a = wkAnsicht; $('wkSvg').setAttribute('viewBox', a.x + ' ' + a.y + ' ' + a.w + ' ' + a.h); }
+  function wkViewBox() { var a = wkAnsicht; $('wkSvg').setAttribute('viewBox', a.x + ' ' + a.y + ' ' + a.w + ' ' + a.h); if (wkGezeichnet) wkChipsRendern(); }
+  // Länder-Chips: nur Länder, die im sichtbaren Kartenausschnitt liegen
+  var wkBoxen = null;
+  function wkBoxenHolen() {
+    if (wkBoxen) return wkBoxen;
+    var b = {}, gueltig = false;
+    Array.prototype.forEach.call($('wkSvg').querySelectorAll('path'), function (pa) {
+      try { var r = pa.getBBox(); if (r.width > 0) { gueltig = true; b[pa.getAttribute('data-c')] = r; } } catch (e) {}
+    });
+    if (gueltig) wkBoxen = b;
+    return b;
+  }
+  function wkImAusschnitt(c) {
+    var a = wkAnsicht;
+    if (a.w >= 999) return true;                       // nicht gezoomt: alle Länder
+    var r = wkBoxenHolen()[c];
+    if (!r) return false;                              // zu klein für die Karte: nur ohne Zoom auffindbar
+    return r.x < a.x + a.w && r.x + r.width > a.x && r.y < a.y + a.h && r.y + r.height > a.y;
+  }
+  function wkChipsRendern(info) {
+    info = info || wkLaender();
+    var codes = Object.keys(info).filter(wkImAusschnitt).sort(function (a, b) { return (LAND[a] ? LAND[a].name : a).localeCompare(LAND[b] ? LAND[b].name : b, 'de'); });
+    $('wkChips').innerHTML = codes.length ? codes.map(function (c) {
+      return '<button type="button" class="wk-chip' + (c === wkAktiv ? ' sel' : '') + '" data-land="' + c + '">' + flagge(c) + ' ' + esc(LAND[c] ? LAND[c].name : c) + '</button>';
+    }).join('') : '<span class="hinweis" style="margin:0">Im Ausschnitt ist kein Reiseland sichtbar.</span>';
+  }
   function karteRendern() {
     var svg = $('wkSvg');
     if (!wkGezeichnet) {
@@ -2624,12 +2649,9 @@
       var e = info[pa.getAttribute('data-c')];
       pa.setAttribute('class', 'wk-land' + (e ? ' ' + e.art : ''));
     });
-    var codes = Object.keys(info).sort(function (a, b) { return (LAND[a] ? LAND[a].name : a).localeCompare(LAND[b] ? LAND[b].name : b, 'de'); });
-    var besucht = codes.filter(function (c) { return info[c].art === 'besucht'; }).length;
+    var besucht = Object.keys(info).filter(function (c) { return info[c].art === 'besucht'; }).length;
     $('wkZahl').textContent = besucht ? besucht + (besucht === 1 ? ' Land besucht' : ' Länder besucht') : '';
-    $('wkChips').innerHTML = codes.map(function (c) {
-      return '<button type="button" class="wk-chip' + (c === wkAktiv ? ' sel' : '') + '" data-land="' + c + '">' + flagge(c) + ' ' + esc(LAND[c] ? LAND[c].name : c) + '</button>';
-    }).join('');
+    wkChipsRendern(info);
     $('weltKarte').hidden = !reisen.length;
     if (wkAktiv && !info[wkAktiv]) wkAktiv = '';
     wkAuswahlZeigen(info);
