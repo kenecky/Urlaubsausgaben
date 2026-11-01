@@ -152,7 +152,7 @@
   .karte.zu > .wk-kopf { margin-bottom: 0; }
   .karte.zu .wk-zoom { display: none; }
   .wk-kopf { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-  .wk-kopf h2 { margin: 0; }
+  .wk-kopf h2 { margin: 0; flex: 1; }
   .x-btn { width: 36px; height: 36px; padding: 0; margin: 0; font-size: 17px; line-height: 1; flex: none; }
   .wk-zoom { display: flex; flex-direction: row; gap: 6px; }
   .wk-zoom button { width: 36px; height: 36px; padding: 0; margin: 0; font-size: 18px; line-height: 1; }
@@ -2405,7 +2405,8 @@
       kopf.classList.add('kopf-klick');
       kopf.setAttribute('role', 'button');
       kopf.tabIndex = 0;
-      kopf.addEventListener('click', function () { karteUmschalten(id); });
+      kopfBox.style.cursor = 'pointer';
+      kopfBox.addEventListener('click', function (e) { if (e.target.closest('button')) return; karteUmschalten(id); });
       kopf.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); karteUmschalten(id); }
       });
