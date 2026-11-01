@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d4ed8">
+<meta name="color-scheme" content="light dark">
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('reiseausgaben.thema');
+    if (t !== 'hell' && t !== 'dunkel') t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dunkel' : 'hell';
+    document.documentElement.setAttribute('data-thema', t);
+  } catch (e) {}
+})();
+</script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Reise-Ausgaben (alte Version)</title>
+<style>
+  :root {
+    --blau: #1d4ed8;
+    --blau-hell: #dbeafe;
+    --text: #0f172a;
+    --grau: #64748b;
+    --linie: #e2e8f0;
+    --bg: #f1f5f9;
+    --rot: #dc2626;
+    --gruen: #15803d;
+    --blau-text: #1d4ed8;
+    --kopf: #1d4ed8;
+    --karte: #ffffff;
+    --feld-bg: #ffffff;
+    --feld-rand: #cbd5e1;
+    --erledigt: #ecfdf5;
+    --rot-hell: #fee2e2;
+    --abh-bg: #e2e8f0;
+    --abh-text: #475569;
+    --unsicher-bg: #fffbeb;
+    color-scheme: light;
+  }
+  html[data-thema="dunkel"] {
+    --blau: #2563eb;
+    --blau-hell: #1e3a8a;
+    --blau-text: #93c5fd;
+    --kopf: #1e3a8a;
+    --text: #e2e8f0;
+    --grau: #94a3b8;
+    --linie: #2b3a52;
+    --bg: #0b1220;
+    --karte: #162033;
+    --feld-bg: #0f172a;
+    --feld-rand: #475569;
+    --erledigt: #0f2e24;
+    --rot: #f87171;
+    --rot-hell: #4c1d1d;
+    --abh-bg: #334155;
+    --abh-text: #cbd5e1;
+    --unsicher-bg: #3a2f0b;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px; padding-bottom: 40px;
+  }
+  header {
+    background: var(--kopf); color: #fff; padding: 12px 16px 14px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    position: sticky; top: 0; z-index: 5;
+  }
+  .kopf-zeile { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .gesamt { font-size: 26px; font-weight: 700; margin-top: 2px; }
+  header .sub { font-size: 13px; opacity: .85; }
+  .icon-btn {
+    width: 42px; height: 42px; margin: 0; padding: 0; border-radius: 12px;
+    background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center;
+  }
+  html[data-thema="dunkel"] .ic-mond, html:not([data-thema="dunkel"]) .ic-sonne { display: none; }
+  .icon-btn svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; }
+  main { max-width: 640px; margin: 0 auto; padding: 12px; }
+  .karte {
+    background: var(--karte); border-radius: 14px; padding: 14px; margin-bottom: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  }
+  .karte h2 { margin: 0 0 10px; font-size: 15px; color: var(--grau); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  label { display: block; font-size: 13px; color: var(--grau); margin: 10px 0 4px; }
+  input, select, textarea {
+    width: 100%; font: inherit; padding: 12px; border: 1px solid var(--feld-rand);
+    border-radius: 10px; background: var(--feld-bg); color: var(--text);
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--blau); border-color: var(--blau); }
+  textarea { resize: vertical; min-height: 48px; }
+  .zeile { display: flex; gap: 10px; }
+  .zeile > div { flex: 1; min-width: 0; }
+  button {
+    font: inherit; border: 0; border-radius: 10px; padding: 13px 16px;
+    background: var(--blau); color: #fff; font-weight: 600; cursor: pointer; width: 100%;
+    margin-top: 14px;
+  }
+  button.hell { background: var(--blau-hell); color: var(--blau-text); margin-top: 0; }
+  button.klein { width: auto; padding: 8px 12px; font-size: 14px; margin: 0; }
+  button.rot { background: var(--rot-hell); color: var(--rot); }
+  input.abgeleitet { background: var(--bg); }
+  input:disabled { background: var(--bg); color: var(--grau); -webkit-text-fill-color: var(--grau); opacity: 1; }
+  #formKarte.bearbeiten #schnell { display: none; }
+  .unsicher { border-color: #f59e0b !important; background: var(--unsicher-bg) !important; }
+  #rechnerKarte input[type="range"] { padding: 0; border: 0; background: transparent; accent-color: var(--blau); margin: 16px 0 6px; cursor: pointer; }
+  #rechnerKarte input[type="range"]:focus { outline-offset: 4px; }
+  .rc-feld { display: flex; align-items: center; gap: 10px; border: 1px solid var(--feld-rand); border-radius: 12px; padding: 2px 14px; background: var(--feld-bg); }
+  .rc-feld:focus-within { outline: 2px solid var(--blau); border-color: var(--blau); }
+  .rc-feld input { border: 0; padding: 8px 0; background: transparent; font-size: 22px; font-weight: 650; min-width: 0; }
+  .rc-feld input:focus { outline: 0; }
+  .rc-symbol { font-size: 20px; color: var(--grau); }
+  .rc-marken { display: flex; justify-content: space-between; gap: 6px; color: var(--grau); font-size: 11px; }
+  .rc-schnell { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+  .rc-schnell button { padding: 10px 6px; font-size: 15px; }
+  .rc-ergebnis { margin-top: 16px; border-radius: 14px; padding: 16px; background: var(--blau-hell); }
+  .rc-label { font-size: 13px; color: var(--blau-text); }
+  #rcEuro { font-size: clamp(28px, 9vw, 40px); font-weight: 750; letter-spacing: -.04em; color: var(--blau-text); margin-top: 2px; overflow-wrap: anywhere; }
+  .seg { display: flex; gap: 6px; margin-bottom: 8px; }
+  .seg button { margin: 0; flex: 1; }
+  .seg button.aktiv { background: var(--blau); color: #fff; }
+  #verlaufChart svg { width: 100%; height: auto; display: block; }
+  .v-achse { stroke: var(--linie); stroke-width: 1; }
+  .v-text { fill: var(--grau); font-size: 10px; }
+  .v-linie { fill: none; stroke: var(--blau-text); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+  .v-flaeche { fill: var(--blau-text); opacity: .14; }
+  .v-prog { fill: none; stroke: var(--grau); stroke-width: 2; stroke-dasharray: 5 4; }
+  .v-budget { stroke: var(--rot); stroke-width: 1.5; stroke-dasharray: 2 3; }
+  .v-punkt { fill: var(--blau-text); }
+  .check.gesperrt { opacity: .6; cursor: default; }
+  .wert-peso { display: block; }
+  .wert-euro { display: block; font-size: 11.5px; font-weight: 400; color: var(--grau); line-height: 1.25; }
+  .rz > b { text-align: right; }
+  .zm-klick, .tag-zeile.klick, .rz.klick { cursor: pointer; }
+  .kopf-klick { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; -webkit-tap-highlight-color: transparent; }
+  .kopf-klick::before { content: '▾'; color: var(--blau-text); width: 1em; flex: none; }
+  .karte.zu .kopf-klick::before { content: '▸'; }
+  .karte.zu > h2 { margin-bottom: 0; }
+  .karte.zu > .karte-inhalt { display: none; }
+  .pfeil { display: inline-block; width: 1.1em; color: var(--blau-text); }
+  .aufgeklappt { margin-top: 8px; border-top: 1px solid var(--linie); }
+  .tag-block + .tag-block { border-top: 0; }
+  .check.mini { margin: 0; font-size: 13px; color: var(--grau); }
+  .check.mini input { width: 18px; height: 18px; }
+  .kat-aktion { display: flex; align-items: center; gap: 12px; }
+  .check { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--text); margin: 14px 0 0; cursor: pointer; }
+  .check input { width: 22px; height: 22px; flex: none; padding: 0; accent-color: var(--blau); }
+  .eintrag.erledigt { background: var(--erledigt); margin: 0 -14px; padding-left: 14px; padding-right: 14px; }
+  .euro-box {
+    padding: 12px; border-radius: 10px; background: var(--bg); color: var(--text);
+    font-variant-numeric: tabular-nums; min-height: 47px; display: flex; align-items: center; white-space: nowrap;
+  }
+
+  /* Balken (Kategorien, Budget) */
+  .balken-zeile {
+    display: grid; grid-template-columns: 110px 1fr auto; gap: 8px; align-items: center;
+    padding: 6px 4px; border-radius: 8px; cursor: pointer; font-size: 14px;
+  }
+  .balken-zeile.aktiv { background: var(--blau-hell); }
+  .balken-spur { background: var(--bg); border-radius: 6px; height: 22px; overflow: hidden; position: relative; display: block; }
+  .balken { background: var(--blau); position: absolute; left: 0; top: 0; bottom: 0; overflow: hidden; border-radius: 6px 0 0 6px; transition: width .3s; }
+  .balken.warn { background: var(--rot); }
+  .pct { position: absolute; top: 0; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: center;
+         font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); pointer-events: none; }
+  .balken .pct { right: auto; color: #fff; }
+  .balken-wert { font-variant-numeric: tabular-nums; font-size: 13px; text-align: right; min-width: 78px; }
+  .balken-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .balken-zeile.abhebung { grid-template-columns: 1fr auto; margin-top: 6px; border-top: 1px dashed var(--linie); border-radius: 0 0 8px 8px; padding-top: 10px; color: var(--grau); }
+
+  .eur { font-size: 15px; font-weight: 500; opacity: .85; white-space: nowrap; }
+  header .eur { font-size: 16px; }
+  .bar-wert { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .bar-wert.negativ { color: var(--rot); }
+  .hinweis { font-size: 13px; color: var(--grau); margin: 8px 0 0; }
+  .hinweis.warnung, .warnung { color: var(--rot); }
+  .hinweis button.klein { margin-top: 8px; display: block; }
+
+  /* Reiter */
+  .tabs-karte { padding: 0; overflow: hidden; }
+  .tabs-karte > h2 { padding: 14px 14px 12px; margin: 0; }
+  .tabs-karte.zu > h2 { padding-bottom: 14px; }
+  .tabs { display: flex; border-bottom: 1px solid var(--linie); overflow-x: auto; }
+  .tab {
+    width: auto; flex: 1 1 auto; margin: 0; border-radius: 0; background: transparent; color: var(--grau);
+    padding: 13px 3px; font-size: 12px; border-bottom: 3px solid transparent; white-space: nowrap;
+  }
+  .tab.aktiv { color: var(--blau-text); border-bottom-color: var(--blau-text); }
+  .tab-inhalt { padding: 14px; }
+
+  .filterleiste { display: flex; gap: 10px; margin-bottom: 8px; }
+  .filterleiste > div { flex: 1; min-width: 0; }
+  .filterleiste label { margin-top: 0; }
+  .eintrag {
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 10px;
+    padding: 12px 0; border-top: 1px solid var(--linie);
+  }
+  .liste > .eintrag:first-child { border-top: 0; }
+  .eintrag .betrag { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .eintrag .meta { font-size: 13px; color: var(--grau); }
+  .eintrag .kat { display: inline-block; background: var(--blau-hell); color: var(--blau-text); border-radius: 20px; padding: 1px 9px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  .eintrag .kat.abh { background: var(--abh-bg); color: var(--abh-text); }
+  .eintrag .beschr { grid-column: 1 / 2; word-break: break-word; }
+  .eintrag .aktionen { grid-column: 2 / 3; display: flex; gap: 6px; justify-content: flex-end; align-items: flex-start; }
+  .leer { color: var(--grau); text-align: center; padding: 18px 0; }
+
+  /* Zeilen in Zahlungsmittel / Verrechnung */
+  .zm { padding: 12px 0; border-top: 1px solid var(--linie); }
+  .zm:first-child { border-top: 0; padding-top: 0; }
+  .zm-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .zm-name { font-weight: 700; }
+  .zm-wert { font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; }
+  .zm-sub { font-size: 13px; color: var(--grau); margin-top: 2px; }
+  .rz { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--linie); font-variant-numeric: tabular-nums; }
+  .rz:first-child { border-top: 0; }
+  .rz > b, .rz > span:last-child { white-space: nowrap; }
+  .rz.sub { padding: 2px 0 2px 14px; border-top: 0; font-size: 13px; color: var(--grau); }
+  .ergebnis { text-align: center; background: var(--blau-hell); border-radius: 12px; padding: 16px 10px; margin-bottom: 12px; color: var(--blau-text); font-weight: 600; }
+  .ergebnis .gross { font-size: 30px; font-weight: 800; display: block; margin-top: 2px; }
+  .tag-zeile { display: grid; grid-template-columns: 86px 1fr auto; gap: 8px; align-items: center; padding: 5px 0; font-size: 14px; }
+  .tag-zeile .t { color: var(--grau); font-size: 13px; }
+
+  details summary { cursor: pointer; font-weight: 600; color: var(--blau-text); padding: 8px 0; }
+  .kat-eintrag { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid var(--linie); gap: 10px; }
+  .kat-eintrag:first-child { border-top: 0; }
+
+  /* Suche */
+  .suche { position: fixed; inset: 0; z-index: 30; background: var(--bg); overflow-y: auto; padding: 12px; padding-top: max(12px, env(safe-area-inset-top)); }
+  .suche-inner { max-width: 640px; margin: 0 auto; }
+  .suche-kopf { display: flex; gap: 8px; }
+  .suche-kopf input { flex: 1; min-width: 0; }
+  .suche-filter { display: flex; gap: 8px; }
+  .suche-filter > div { flex: 1; min-width: 0; }
+  .suche-info { font-size: 14px; color: var(--grau); margin: 12px 2px; }
+
+  .undo { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 8px 8px 8px 16px;
+          border-radius: 12px; display: flex; align-items: center; gap: 12px; z-index: 60; font-size: 14px; max-width: 92%; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+  .undo button { width: auto; margin: 0; padding: 9px 14px; background: #2563eb; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(80px);
+    background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px;
+    transition: transform .25s; z-index: 50; max-width: 90%;
+  }
+  .toast.sichtbar { transform: translateX(-50%) translateY(0); }
+  .abbrechen { display: none; }
+  .bearbeiten .abbrechen { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kopf-zeile">
+    <h1>Reise-Ausgaben</h1>
+    <div style="display:flex;gap:8px">
+      <button type="button" class="icon-btn" id="themaBtn" aria-label="Hell oder dunkel umschalten">
+        <svg class="ic-mond" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
+        <svg class="ic-sonne" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      </button>
+      <button type="button" class="icon-btn" id="sucheBtn" aria-label="Suche">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      </button>
+    </div>
+  </div>
+  <div class="gesamt" id="gesamt">0,00 ₱</div>
+  <div class="sub" id="gesamtSub">Keine Ausgaben</div>
+</header>
+
+<main>
+  <section class="karte" id="formKarte">
+    <h2 id="formTitel">Neue Ausgabe</h2>
+    <div id="schnell">
+      <label for="freitext">Schnelleingabe</label>
+      <input type="text" id="freitext" placeholder="z. B. 2 Bier in Coron am 31.10.2026 für 500 php" autocomplete="off">
+      <button type="button" class="hell" id="freitextBtn" style="margin-top:8px">Ins Formular übernehmen</button>
+      <p class="hinweis" id="freitextInfo" style="margin:6px 0 4px"></p>
+    </div>
+    <form id="form" autocomplete="off">
+      <div class="zeile">
+        <div>
+          <label for="datum">Datum</label>
+          <input type="date" id="datum" required>
+        </div>
+        <div>
+          <label for="betrag">Betrag (₱)</label>
+          <input type="number" id="betrag" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
+        </div>
+      </div>
+      <label for="ort">Ort</label>
+      <input type="text" id="ort" list="orteListe" maxlength="40" placeholder="z. B. Coron" autocomplete="off">
+      <datalist id="orteListe"></datalist>
+      <label for="kategorie">Kategorie</label>
+      <select id="kategorie" required></select>
+      <label for="zahlung">Zahlungsmittel</label>
+      <select id="zahlung" required></select>
+      <div class="zeile" id="kursZeile">
+        <div>
+          <label for="kurs">Kurs (₱ für 1 €)</label>
+          <input type="number" id="kurs" inputmode="decimal" step="any" min="0.0001" required>
+        </div>
+        <div>
+          <label for="abgebucht">Abgebuchter Betrag (€)</label>
+          <input type="number" id="abgebucht" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <p class="hinweis" id="rechenHinweis" style="margin:6px 0 0"></p>
+      <p class="hinweis" id="barKursHinweis" style="margin:6px 0 0" hidden>Bar-Zahlung: Kurs und Euro-Betrag werden automatisch aus den Bargeldabhebungen berechnet (die älteste Abhebung zuerst) und sind gesperrt.</p>
+      <label for="beschreibung">Beschreibung</label>
+      <textarea id="beschreibung" rows="2" placeholder="z. B. Abendessen am Strand"></textarea>
+      <label class="check"><input type="checkbox" id="geprueft"> Bereits mit Umrechnungskurs eingetragen</label>
+      <label class="check"><input type="checkbox" id="pauschal"> Kosten für die gesamte Reise (nicht im Tagesschnitt)</label>
+      <button type="submit" id="speichern">Speichern</button>
+      <button type="button" class="hell abbrechen" id="abbrechen" style="margin-top:8px">Abbrechen</button>
+    </form>
+  </section>
+
+  <section class="karte" id="barKarte">
+    <h2>Bargeldbestand</h2>
+    <div class="bar-wert" id="barWert">0,00 ₱</div>
+    <div class="hinweis" id="barDetail"></div>
+    <div class="hinweis" id="barHinweis"></div>
+  </section>
+
+  <section class="karte" id="rechnerKarte">
+    <h2>Peso-Euro Schnell-Check</h2>
+    <label for="rcBetrag">Betrag in philippinischen Pesos</label>
+    <div class="rc-feld">
+      <span class="rc-symbol" aria-hidden="true">₱</span>
+      <input id="rcBetrag" type="number" min="0" max="1000000" step="1" value="500" inputmode="decimal" aria-describedby="rcHinweis">
+    </div>
+    <input id="rcSlider" type="range" min="20" max="5000" step="20" value="500" aria-label="Peso-Betrag mit Schieberegler einstellen">
+    <div class="rc-marken" aria-hidden="true"><span>20 PHP</span><span>1.000 PHP</span><span>2.500 PHP</span><span>5.000 PHP</span></div>
+    <div class="rc-schnell" aria-label="Häufige Beträge">
+      <button type="button" class="hell" data-rc="100">₱100</button>
+      <button type="button" class="hell" data-rc="500">₱500</button>
+      <button type="button" class="hell" data-rc="1000">₱1.000</button>
+      <button type="button" class="hell" data-rc="2000">₱2.000</button>
+      <button type="button" class="hell" data-rc="5000">₱5.000</button>
+      <button type="button" class="hell" data-rc="10000">₱10.000</button>
+    </div>
+    <div class="rc-ergebnis" aria-live="polite">
+      <div class="rc-label">Entspricht ungefähr</div>
+      <div id="rcEuro">7,02 €</div>
+    </div>
+    <p class="hinweis" id="rcHinweis">Rechenbasis: 1 € = 71,26 PHP</p>
+    <p class="hinweis">Der Kurs ist ein fester Richtwert in dieser Datei und wird nicht live aktualisiert. Der tatsächliche Kurs sowie Gebühren bei Karten- oder Bargeldzahlungen können abweichen.</p>
+  </section>
+
+  <section class="karte" id="katKarte">
+    <h2>Pro Kategorie</h2>
+    <div id="balken"></div>
+    <p class="hinweis">Tippe auf eine Kategorie, um die Liste zu filtern.</p>
+  </section>
+
+  <section class="karte" id="budgetKarte">
+    <h2>Reisebudget</h2>
+    <div id="budgetInfo"></div>
+    <details id="budgetDetails">
+      <summary>Budget und Reisezeitraum einstellen</summary>
+      <div class="zeile">
+        <div>
+          <label for="budgetBetrag">Budget</label>
+          <input type="number" id="budgetBetrag" inputmode="decimal" step="0.01" min="0" placeholder="z. B. 3000">
+        </div>
+        <div>
+          <label for="budgetWaehrung">Währung</label>
+          <select id="budgetWaehrung">
+            <option value="EUR">€ (Euro)</option>
+            <option value="PHP">₱ (Pesos)</option>
+          </select>
+        </div>
+      </div>
+      <div class="zeile">
+        <div>
+          <label for="budgetStart">Reisebeginn</label>
+          <input type="date" id="budgetStart">
+        </div>
+        <div>
+          <label for="budgetEnde">Reiseende</label>
+          <input type="date" id="budgetEnde">
+        </div>
+      </div>
+      <button type="button" id="budgetSpeichern">Budget speichern</button>
+      <p class="hinweis">Leeres Budget entfernt das Budget wieder.</p>
+    </details>
+  </section>
+
+  <section class="karte" id="verlaufKarte">
+    <h2>Verlauf</h2>
+    <div class="seg">
+      <button type="button" class="klein hell" data-vw="PHP">₱ Pesos</button>
+      <button type="button" class="klein hell" data-vw="EUR">€ Euro</button>
+    </div>
+    <div id="verlaufChart"></div>
+    <p class="hinweis" id="verlaufInfo"></p>
+  </section>
+
+  <section class="karte tabs-karte" id="tabsKarte">
+    <h2>Übersicht</h2>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab aktiv" data-tab="ausgaben">Ausgaben</button>
+      <button type="button" class="tab" data-tab="zahlung">Zahlungsmittel</button>
+      <button type="button" class="tab" data-tab="tag">Pro Tag</button>
+      <button type="button" class="tab" data-tab="orte">Orte</button>
+      <button type="button" class="tab" data-tab="abrechnung">Verrechnung</button>
+    </div>
+
+    <div class="tab-inhalt" id="tab-ausgaben">
+      <div class="filterleiste">
+        <div>
+          <label for="filter">Kategorie</label>
+          <select id="filter"></select>
+        </div>
+        <div>
+          <label for="sortierung">Sortierung</label>
+          <select id="sortierung">
+            <option value="datum-neu">Neueste zuerst</option>
+            <option value="datum-alt">Älteste zuerst</option>
+            <option value="betrag-hoch">Teuerste zuerst</option>
+            <option value="betrag-tief">Günstigste zuerst</option>
+            <option value="kategorie">Kategorie A–Z</option>
+          </select>
+        </div>
+      </div>
+      <label class="check" style="margin:4px 0 10px"><input type="checkbox" id="nurOffen"> <span id="nurOffenText">Nur: Kurs noch nicht eingetragen</span></label>
+      <div id="liste" class="liste"></div>
+    </div>
+    <div class="tab-inhalt" id="tab-zahlung" hidden></div>
+    <div class="tab-inhalt" id="tab-tag" hidden></div>
+    <div class="tab-inhalt" id="tab-orte" hidden></div>
+    <div class="tab-inhalt" id="tab-abrechnung" hidden></div>
+  </section>
+
+  <section class="karte" id="kategorienKarte">
+    <h2>Kategorien</h2>
+    <div id="katListe"></div>
+    <div class="zeile" style="margin-top:8px">
+      <div style="flex:2"><input type="text" id="katNeu" maxlength="24" placeholder="Neue Kategorie, z. B. Souvenirs"></div>
+      <div style="flex:1"><button type="button" class="hell" id="katAdd" style="margin-top:0;padding:12px 8px">Hinzufügen</button></div>
+    </div>
+    <p class="hinweis">„Gesamtreise“ markiert Kategorien, deren Kosten für die ganze Reise gelten (z. B. Flüge, Hunde). Sie zählen zum Budget, aber nicht zum Tagesschnitt und zur Hochrechnung. Einzelne Ausgaben markierst du im Formular. Neue Kategorien kannst du auch im Formular ganz unten über „＋ Neue Kategorie“ anlegen.</p>
+  </section>
+
+  <section class="karte" id="backupKarte">
+    <h2>Backup</h2>
+    <div class="zeile">
+      <div><button class="hell" id="exportJson" type="button" style="margin-top:0">Sichern (JSON)</button></div>
+      <div><button class="hell" id="exportCsv" type="button" style="margin-top:0">Als CSV</button></div>
+    </div>
+    <button class="hell" id="mergeBtn" type="button" style="margin-top:10px">Backup zusammenführen</button>
+    <button class="hell" id="importBtn" type="button" style="margin-top:8px">Backup laden (ersetzt alles)</button>
+    <p class="hinweis" id="mergeInfo"></p>
+    <input type="file" id="importDatei" accept=".json,application/json" hidden>
+    <p class="hinweis">Deine Daten liegen nur auf diesem Handy. Sichere sie ab und zu, falls du Browserdaten löschst. Das Backup enthält auch Budget und eigene Kategorien. „Backup zusammenführen“ gleicht mit dem Backup des anderen Handys ab: Es ergänzt fehlende Einträge, aktualisiert geänderte und entfernt gelöschte. Eigene Einträge gehen dabei nicht verloren.</p>
+  </section>
+</main>
+
+<div class="suche" id="suche" hidden>
+  <div class="suche-inner">
+    <div class="suche-kopf">
+      <input type="search" id="sucheText" placeholder="Beschreibung oder Ort durchsuchen …" autocomplete="off">
+      <button type="button" class="hell klein" id="sucheZu" style="padding:0 16px">Schließen</button>
+    </div>
+    <div class="suche-filter">
+      <div><label for="sucheKat">Kategorie</label><select id="sucheKat"></select></div>
+      <div><label for="sucheVon">Von</label><input type="date" id="sucheVon"></div>
+      <div><label for="sucheBis">Bis</label><input type="date" id="sucheBis"></div>
+    </div>
+    <div class="suche-info" id="sucheInfo"></div>
+    <div class="karte"><div id="sucheListe" class="liste"></div></div>
+  </div>
+</div>
+
+<div class="undo" id="undoBar" hidden><span id="undoText"></span><button type="button" id="undoBtn">Rückgängig</button></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var ABHEBUNG = 'Bargeldabhebung'; // zählt nicht zur Statistik, nur Dokumentation
+  var STANDARD_KATEGORIEN = ['Essen & Trinken', 'Unterkunft', 'Transport', 'Aktivitäten', 'Einkaufen', 'Sonstiges'];
+  var ZAHLUNGSMITTEL = ['Bar', 'KK Sabine', 'KK Tobi', 'ING']; // ING = Gemeinschaftskonto (in der Verrechnung neutral)
+  var STANDARD_KURS = 70; // Rückfall für alte Einträge ohne Kurs (1 € ≈ 70 ₱)
+  var KEY = 'reiseausgaben.v1';
+  var KEY_EINST = 'reiseausgaben.einstellungen.v1';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------- Speicher ----------
+  function ladenAusgaben() {
+    try {
+      var roh = localStorage.getItem(KEY);
+      var daten = roh ? JSON.parse(roh) : [];
+      return Array.isArray(daten) ? daten : [];
+    } catch (e) { return []; }
+  }
+  function sauberKategorien(liste) {
+    var aus = [];
+    (Array.isArray(liste) ? liste : []).forEach(function (k) {
+      if (typeof k !== 'string') return;
+      k = k.trim();
+      if (!k || k.length > 24 || k === ABHEBUNG) return;
+      if (STANDARD_KATEGORIEN.indexOf(k) >= 0 || aus.indexOf(k) >= 0) return;
+      aus.push(k);
+    });
+    return aus;
+  }
+  function sauberBudget(b) {
+    if (!b || typeof b !== 'object' || !(b.betrag > 0) || !isFinite(b.betrag)) return null;
+    return {
+      betrag: b.betrag,
+      waehrung: b.waehrung === 'PHP' ? 'PHP' : 'EUR',
+      start: typeof b.start === 'string' ? b.start : '',
+      ende: typeof b.ende === 'string' ? b.ende : ''
+    };
+  }
+  // Löschmarken: merken, welche Einträge wann gelöscht wurden, damit der Abgleich mit dem anderen Handy sie nicht wieder anlegt
+  function sauberGeloescht(o) {
+    var aus = {};
+    if (o && typeof o === 'object' && !Array.isArray(o)) {
+      Object.keys(o).slice(-1000).forEach(function (id) { if (o[id] > 0 && isFinite(o[id])) aus[id] = o[id]; });
+    }
+    return aus;
+  }
+  function ladenEinst() {
+    var e = { kategorien: [], budget: null, letzterKurs: null, restbei: 'beide', pauschal: [], geloescht: {}, letzterOrt: '' };
+    try {
+      var roh = localStorage.getItem(KEY_EINST);
+      var d = roh ? JSON.parse(roh) : {};
+      e.kategorien = sauberKategorien(d.kategorien);
+      e.budget = sauberBudget(d.budget);
+      e.letzterKurs = (d.letzterKurs > 0 && isFinite(d.letzterKurs)) ? d.letzterKurs : null;
+      e.restbei = (d.restbei === 'Sabine' || d.restbei === 'Tobi') ? d.restbei : 'beide';
+      e.pauschal = Array.isArray(d.pauschal) ? d.pauschal.filter(function (k) { return typeof k === 'string'; }) : [];
+      e.geloescht = sauberGeloescht(d.geloescht);
+      e.letzterOrt = typeof d.letzterOrt === 'string' ? d.letzterOrt.slice(0, 40) : '';
+    } catch (err) {}
+    return e;
+  }
+  var ausgaben = ladenAusgaben();
+  var einst = ladenEinst();
+
+  function speichern() {
+    berechneFifo();
+    try { localStorage.setItem(KEY, JSON.stringify(ausgaben)); }
+    catch (e) { toast('Speichern nicht möglich – Browser blockiert den Speicher.'); }
+  }
+  function speichernEinst() {
+    try { localStorage.setItem(KEY_EINST, JSON.stringify(einst)); }
+    catch (e) { toast('Einstellungen konnten nicht gespeichert werden.'); }
+  }
+
+  // ---------- Kategorien ----------
+  function statKategorien() { return STANDARD_KATEGORIEN.concat(einst.kategorien); }
+  function alleKategorien() { return statKategorien().concat([ABHEBUNG]); }
+  // Kategorien aus importierten oder alten Einträgen automatisch aufnehmen
+  function kategorienAbgleichen() {
+    var geaendert = false;
+    ausgaben.forEach(function (a) {
+      if (alleKategorien().indexOf(a.kategorie) < 0 && a.kategorie && a.kategorie.length <= 24) {
+        einst.kategorien.push(a.kategorie); geaendert = true;
+      }
+    });
+    if (geaendert) speichernEinst();
+  }
+  function kategorieHinzufuegen(name) {
+    name = String(name || '').trim();
+    if (!name) return { fehler: 'Bitte einen Namen eingeben.' };
+    if (name.length > 24) return { fehler: 'Maximal 24 Zeichen.' };
+    var vorhanden = alleKategorien().some(function (k) { return k.toLowerCase() === name.toLowerCase(); });
+    if (vorhanden) return { fehler: 'Diese Kategorie gibt es schon.' };
+    einst.kategorien.push(name);
+    speichernEinst();
+    return { name: name };
+  }
+
+  // ---------- Helfer ----------
+  function heute() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function runden(n) { var r = Math.round(n * 100) / 100; return r === 0 ? 0 : r; }
+  function zahl(n) { return runden(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function geld(n) { return zahl(n) + ' ₱'; }
+  function euroFmt(n) { return zahl(n) + ' €'; }
+  // Pesobetrag mit kleinem Euro-Betrag darunter
+  function wertEuro(peso, euro) {
+    return '<span class="wert-peso">' + geld(peso) + '</span><span class="wert-euro">≈ ' + euroFmt(euro) + '</span>';
+  }
+  function prozentText(wert, gesamt) {
+    if (gesamt <= 0 || wert <= 0) return '0 %';
+    var p = wert / gesamt * 100;
+    return (p < 1 ? '<1' : Math.round(p)) + ' %';
+  }
+  function euroText(e) { return ' <span class="eur">(≈ ' + euroFmt(e) + ')</span>'; }
+  function kursFmt(k) { return k.toLocaleString('de-DE', { maximumFractionDigits: 3 }); }
+  function datumAnzeige(iso) {
+    var t = iso.split('-');
+    return t.length === 3 ? t[2] + '.' + t[1] + '.' + t[0] : iso;
+  }
+  function tageZwischen(a, b) {
+    var x = a.split('-').map(Number), y = b.split('-').map(Number);
+    return Math.round((Date.UTC(y[0], y[1] - 1, y[2]) - Date.UTC(x[0], x[1] - 1, x[2])) / 86400000);
+  }
+  function tagPlus(iso, n) {
+    var x = iso.split('-').map(Number);
+    var d = new Date(Date.UTC(x[0], x[1] - 1, x[2] + n));
+    return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+  }
+  function wochentag(iso) {
+    var x = iso.split('-').map(Number);
+    var d = new Date(Date.UTC(x[0], x[1] - 1, x[2]));
+    return d.toLocaleDateString('de-DE', { weekday: 'short', timeZone: 'UTC' }).replace('.', '');
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function neueId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  var toastTimer;
+  function toast(text) {
+    var el = $('toast');
+    el.textContent = text;
+    el.classList.add('sichtbar');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('sichtbar'); }, 2600);
+  }
+  function istAbh(a) { return a.kategorie === ABHEBUNG; }
+  // Kosten für die gesamte Reise (z. B. Flüge, Hunde): zählen zum Budget, aber nicht zum Tagesschnitt
+  function istPauschal(a) { return a.pauschal === true || einst.pauschal.indexOf(a.kategorie) >= 0; }
+  function kursVon(a) { return a.kurs > 0 ? a.kurs : STANDARD_KURS; }
+  function eigenEuro(a) { return a.abgebucht > 0 ? a.abgebucht : a.betrag / kursVon(a); }
+  // Bar-Ausgaben: Der Euro-Wert ergibt sich aus den Bargeldabhebungen nach dem FIFO-Prinzip.
+  // Die älteste Abhebung wird zuerst aufgebraucht, danach die nächste (jeweils mit ihrem eigenen Kurs).
+  var fifoEuro = {}, fifoUeberhang = {};
+  function fifoBerechnen(liste) {
+    var euroMap = {}, ueber = {};
+    var lose = [], bars = [];
+    liste.forEach(function (a, i) {
+      if (a.kategorie === ABHEBUNG) lose.push({ a: a, i: i });
+      else if (a.zahlung === 'Bar') bars.push({ a: a, i: i });
+    });
+    function vergleich(x, y) { return x.a.datum.localeCompare(y.a.datum) || x.i - y.i; }
+    lose.sort(vergleich); bars.sort(vergleich);
+    var topf = lose.map(function (l) { return { rest: l.a.betrag, satz: eigenEuro(l.a) / l.a.betrag }; });
+    var pos = 0;
+    bars.forEach(function (b) {
+      var brauche = b.a.betrag, euro = 0;
+      while (brauche > 1e-9 && pos < topf.length) {
+        var nimm = Math.min(brauche, topf[pos].rest);
+        euro += nimm * topf[pos].satz;
+        topf[pos].rest -= nimm;
+        brauche -= nimm;
+        if (topf[pos].rest <= 1e-9) pos++;
+      }
+      if (brauche > 1e-9) {
+        // mehr bar bezahlt als abgehoben: letzten bekannten Abhebekurs verwenden
+        var satz = topf.length ? topf[topf.length - 1].satz : 1 / (b.a.kurs > 0 ? b.a.kurs : STANDARD_KURS);
+        euro += brauche * satz;
+        ueber[b.a.id] = true;
+      }
+      euroMap[b.a.id] = euro;
+    });
+    return { euro: euroMap, ueberhang: ueber };
+  }
+  function berechneFifo() {
+    var r = fifoBerechnen(ausgaben);
+    fifoEuro = r.euro; fifoUeberhang = r.ueberhang;
+  }
+  function istBarAusgabe(a) { return a.kategorie !== ABHEBUNG && a.zahlung === 'Bar'; }
+  function istGeprueft(a) { return a.geprueft === true || istBarAusgabe(a); }
+  function euroVon(a) {
+    if (istBarAusgabe(a) && fifoEuro[a.id] !== undefined) return fifoEuro[a.id];
+    return eigenEuro(a);
+  }
+  function kursEff(a) { return istBarAusgabe(a) ? a.betrag / euroVon(a) : a.kurs; }
+  function summePeso(liste) { return liste.reduce(function (s, a) { return s + a.betrag; }, 0); }
+  function summeEuro(liste) { return liste.reduce(function (s, a) { return s + euroVon(a); }, 0); }
+
+  // Balken mit Beschriftung, die an der Füllkante die Farbe wechselt (dunkel auf grau, weiß auf blau)
+  function balkenSpur(breite, label, klasse) {
+    var fuellung = breite > 0
+      ? '<span class="balken ' + (klasse || '') + '" style="width:' + breite + '%"><span class="pct" style="width:' + (10000 / breite) + '%">' + label + '</span></span>'
+      : '';
+    return '<span class="balken-spur"><span class="pct">' + label + '</span>' + fuellung + '</span>';
+  }
+
+  // ---------- Dropdowns ----------
+  function optionen(liste) {
+    return liste.map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('');
+  }
+  var letzteKategorie = '';
+  function dropdownsFuellen() {
+    var vK = $('kategorie').value, vF = $('filter').value, vS = $('sucheKat').value;
+    var alle = alleKategorien();
+    $('kategorie').innerHTML = optionen(alle) + '<option value="__neu__">＋ Neue Kategorie …</option>';
+    $('filter').innerHTML = '<option value="">Alle</option>' + optionen(alle);
+    $('sucheKat').innerHTML = '<option value="">Alle</option>' + optionen(alle);
+    if (!$('zahlung').options.length) {
+      $('zahlung').innerHTML = optionen(ZAHLUNGSMITTEL);
+    }
+    if (alle.indexOf(vK) >= 0) $('kategorie').value = vK;
+    if (alle.indexOf(vF) >= 0) $('filter').value = vF; else filterKat = '';
+    if (alle.indexOf(vS) >= 0) $('sucheKat').value = vS;
+    letzteKategorie = $('kategorie').value;
+  }
+
+  // ---------- Formular ----------
+  var bearbeiteId = null;
+  var filterKat = '';
+  var nurOffen = false;
+
+  function startKurs() { return einst.letzterKurs || STANDARD_KURS; }
+
+  // Pesos, Euro und Kurs hängen zusammen (₱ = € × Kurs). Zwei der drei Werte sind von Hand eingegeben,
+  // der dritte wird berechnet. `anker` merkt sich die zwei zuletzt von Hand geänderten Werte (ältester zuerst).
+  var anker = ['kurs'];
+  var barAktiv = false, geprueftMerken = false;
+  var FELD = { php: 'betrag', eur: 'abgebucht', kurs: 'kurs' };
+  function feldZahl(id) { return parseFloat(String($(id).value).replace(',', '.')); }
+  function kursRunden(k) { return Math.round(k * 10000) / 10000; }
+  function gueltigerAnker(a) {
+    return Array.isArray(a) && a.length === 2 && a[0] !== a[1] &&
+      a.every(function (x) { return x === 'php' || x === 'eur' || x === 'kurs'; });
+  }
+  function berechne() {
+    if (istBarModus()) { barVorschau(); return; }
+    var dritter = null;
+    if (anker.length === 2) {
+      dritter = ['php', 'eur', 'kurs'].filter(function (x) { return anker.indexOf(x) < 0; })[0];
+    }
+    var b = feldZahl('betrag'), e = feldZahl('abgebucht'), k = feldZahl('kurs');
+    var hinweis = 'Gib den Betrag in Pesos oder in Euro ein. Der andere Wert wird über den Kurs berechnet.';
+    if (dritter === 'eur') {
+      $('abgebucht').value = (b > 0 && k > 0) ? (b / k).toFixed(2) : '';
+      hinweis = 'Der Euro-Betrag wird aus Pesos ÷ Kurs berechnet. Trage hier den echten Abbuchungsbetrag ein, dann ergibt sich der Kurs.';
+    } else if (dritter === 'php') {
+      $('betrag').value = (e > 0 && k > 0) ? (e * k).toFixed(2) : '';
+      hinweis = 'Der Peso-Betrag wird aus Euro × Kurs berechnet.';
+    } else if (dritter === 'kurs') {
+      if (b > 0 && e > 0) $('kurs').value = kursRunden(b / e);
+      hinweis = 'Der Kurs ergibt sich aus Pesos ÷ Euro. Änderst du ihn, bleibt der Euro-Betrag stehen und die Pesos werden angepasst.';
+    }
+    ['php', 'eur', 'kurs'].forEach(function (f) { $(FELD[f]).classList.toggle('abgeleitet', f === dritter); });
+    $('rechenHinweis').textContent = hinweis;
+  }
+  // Ein Feld wurde von Hand geändert. Es bleibt fest, der dritte Wert wird berechnet:
+  // - Pesos und Euro eingegeben: der Kurs ergibt sich daraus.
+  // - Kurs geändert, obwohl beide Währungen von Hand stammen: der zuletzt eingegebene Währungswert bleibt.
+  // Bar-Ausgaben: Kurs und Euro-Betrag kommen aus den Abhebungen (FIFO) und sind gesperrt
+  function istBarModus() { return $('zahlung').value === 'Bar' && $('kategorie').value !== ABHEBUNG; }
+  function barVorschau() {
+    var b = feldZahl('betrag');
+    if (!(b > 0)) { $('kurs').value = ''; $('abgebucht').value = ''; return; }
+    var virt = { id: '__vorschau__', datum: $('datum').value || heute(), betrag: b, kategorie: 'Vorschau', zahlung: 'Bar' };
+    var liste = ausgaben.slice();
+    var idx = bearbeiteId ? liste.findIndex(function (a) { return a.id === bearbeiteId; }) : -1;
+    if (idx >= 0) liste[idx] = virt; else liste.push(virt);
+    var euro = fifoBerechnen(liste).euro['__vorschau__'];
+    if (euro > 0) {
+      $('abgebucht').value = euro.toFixed(2);
+      $('kurs').value = kursRunden(b / euro);
+    }
+  }
+  function kursBereichUmschalten() {
+    var bar = istBarModus();
+    $('kurs').disabled = bar;
+    $('abgebucht').disabled = bar;
+    $('rechenHinweis').hidden = bar;
+    $('barKursHinweis').hidden = !bar;
+    var cb = $('geprueft');
+    if (bar) {
+      if (!barAktiv) geprueftMerken = cb.checked;
+      cb.checked = true; cb.disabled = true;
+    } else {
+      if (barAktiv) {
+        cb.checked = geprueftMerken;
+        // von Bar auf eine andere Zahlungsart gewechselt: Kursfelder zurücksetzen
+        $('kurs').value = startKurs(); $('abgebucht').value = ''; anker = ['kurs'];
+      }
+      cb.disabled = false;
+    }
+    cb.closest('label').classList.toggle('gesperrt', bar);
+    barAktiv = bar;
+    berechne();
+  }
+  $('zahlung').addEventListener('change', kursBereichUmschalten);
+  $('kategorie').addEventListener('change', kursBereichUmschalten);
+  $('datum').addEventListener('input', function () { if (istBarModus()) barVorschau(); });
+  function beruehrt(f) {
+    var rest = anker.filter(function (x) { return x !== f; });
+    if (rest.length > 1) {
+      if (f === 'kurs') rest = [rest[1]];
+      else rest = rest.filter(function (x) { return x !== 'kurs'; });
+    }
+    anker = rest.concat([f]);
+    berechne();
+  }
+  function formZuruecksetzen() {
+    bearbeiteId = null;
+    $('form').reset();
+    $('datum').value = heute();
+    $('kurs').value = startKurs();
+    $('ort').value = einst.letzterOrt || '';
+    anker = ['kurs'];
+    letzteKategorie = $('kategorie').value;
+    barAktiv = false;
+    kursBereichUmschalten();
+    $('formTitel').textContent = 'Neue Ausgabe';
+    $('speichern').textContent = 'Speichern';
+    $('formKarte').classList.remove('bearbeiten');
+    berechne();
+    ['betrag', 'datum', 'kategorie', 'zahlung', 'ort'].forEach(function (id) { $(id).classList.remove('unsicher'); });
+    $('freitextInfo').innerHTML = '';
+  }
+  $('betrag').addEventListener('input', function () { beruehrt('php'); });
+  $('abgebucht').addEventListener('input', function () { beruehrt('eur'); });
+  $('kurs').addEventListener('input', function () { beruehrt('kurs'); });
+
+  $('kategorie').addEventListener('change', function () {
+    if ($('kategorie').value !== '__neu__') { letzteKategorie = $('kategorie').value; return; }
+    var name = window.prompt('Name der neuen Kategorie:');
+    if (name === null) { $('kategorie').value = letzteKategorie; return; }
+    var r = kategorieHinzufuegen(name);
+    if (r.fehler) { toast(r.fehler); $('kategorie').value = letzteKategorie; return; }
+    dropdownsFuellen();
+    $('kategorie').value = r.name;
+    letzteKategorie = r.name;
+    zeichnen();
+    toast('Kategorie „' + r.name + '“ angelegt');
+  });
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var betrag = feldZahl('betrag'), kurs = feldZahl('kurs'), euro = feldZahl('abgebucht');
+    var barModus = $('zahlung').value === 'Bar' && $('kategorie').value !== ABHEBUNG;
+    if (!(betrag > 0)) { toast('Bitte einen gültigen Betrag (₱ oder €) eingeben.'); return; }
+    if (!barModus) {
+      if (anker.indexOf('kurs') < 0) {
+        // Pesos und Euro wurden eingegeben: der Kurs ergibt sich daraus
+        if (!(euro > 0)) { toast('Bitte den Euro-Betrag eingeben.'); return; }
+        kurs = betrag / euro;
+      }
+      if (!isFinite(kurs) || kurs <= 0) { toast('Bitte einen gültigen Kurs eingeben.'); return; }
+    }
+    var euroManuell = !barModus && anker.indexOf('eur') >= 0 && euro > 0;
+    if ($('kategorie').value === '__neu__') { toast('Bitte eine Kategorie wählen.'); return; }
+    var eintrag = {
+      id: bearbeiteId || neueId(),
+      datum: $('datum').value,
+      betrag: Math.round(betrag * 100) / 100,
+      kategorie: $('kategorie').value,
+      zahlung: $('zahlung').value,
+      beschreibung: $('beschreibung').value.trim(),
+      geaendert: Date.now()
+    };
+    var ort = $('ort').value.trim().slice(0, 40);
+    if (ort) eintrag.ort = ort;
+    if (!barModus) {
+      eintrag.kurs = kurs;
+      if (euroManuell) eintrag.abgebucht = Math.round(euro * 100) / 100;
+      eintrag.anker = anker.slice(); // merkt sich, welche Werte von Hand eingegeben wurden
+    }
+    if ($('geprueft').checked) eintrag.geprueft = true;
+    if ($('pauschal').checked) eintrag.pauschal = true;
+    if (bearbeiteId) {
+      ausgaben = ausgaben.map(function (a) { return a.id === bearbeiteId ? eintrag : a; });
+      toast('Änderung gespeichert');
+    } else {
+      ausgaben.push(eintrag);
+      toast('Ausgabe gespeichert');
+    }
+    if (!barModus) einst.letzterKurs = kursRunden(kurs);
+    if (!bearbeiteId && ort) einst.letzterOrt = ort; // nur bei neuen Einträgen merken
+    speichern(); speichernEinst();
+    var datumMerken = eintrag.datum, editId = bearbeiteId;
+    formZuruecksetzen();
+    $('freitext').value = '';
+    $('datum').value = datumMerken; // praktisch, wenn mehrere Ausgaben am selben Tag erfasst werden
+    zeichnen();
+    if (editId) zurueckScrollen(editId);
+  });
+  $('abbrechen').addEventListener('click', function () {
+    var id = bearbeiteId;
+    formZuruecksetzen();
+    if (id) zurueckScrollen(id);
+  });
+
+  // ---------- Listen ----------
+  function gefiltert() {
+    return ausgaben.filter(function (a) { return (!filterKat || a.kategorie === filterKat) && (!nurOffen || !istGeprueft(a)); });
+  }
+  function sortiert(liste) {
+    var modus = $('sortierung').value;
+    var kopie = liste.slice();
+    kopie.sort(function (a, b) {
+      switch (modus) {
+        case 'datum-alt': return a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id);
+        case 'betrag-hoch': return b.betrag - a.betrag;
+        case 'betrag-tief': return a.betrag - b.betrag;
+        case 'kategorie': return a.kategorie.localeCompare(b.kategorie, 'de') || b.datum.localeCompare(a.datum);
+        default: return b.datum.localeCompare(a.datum) || b.id.localeCompare(a.id);
+      }
+    });
+    return kopie;
+  }
+  function eintragHtml(a) {
+    var meta = esc(datumAnzeige(a.datum)) + (a.ort ? ' · ' + esc(a.ort) : '') + (a.zahlung ? ' · ' + esc(a.zahlung) : '') + (istBarAusgabe(a) ? ' · Kurs ' + kursFmt(kursEff(a)) + ' (Abhebung)' : (a.kurs > 0 ? ' · Kurs ' + kursFmt(a.kurs) : '')) +
+      (!istBarAusgabe(a) && a.abgebucht > 0 ? ' · ' + euroFmt(a.abgebucht) + ' abgebucht' : '') + (!istAbh(a) && istPauschal(a) ? ' · Gesamtreise' : '') + (istGeprueft(a) ? ' · ✓' : '');
+    return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' +
+      '<div class="meta"><span class="kat' + (istAbh(a) ? ' abh' : '') + '">' + esc(a.kategorie) + '</span>' + meta + '</div>' +
+      '<div class="betrag">' + wertEuro(a.betrag, euroVon(a)) + '</div>' +
+      '<div class="beschr">' + (a.beschreibung ? esc(a.beschreibung) : '<span class="meta">–</span>') + '</div>' +
+      '<div class="aktionen">' +
+      '<button type="button" class="klein hell" data-aktion="edit">Ändern</button>' +
+      '<button type="button" class="klein rot" data-aktion="del">Löschen</button>' +
+      '</div></div>';
+  }
+  // Nach „Ändern“ springt die Seite nach oben zum Formular. Nach Speichern oder Abbrechen geht es an die alte Stelle zurück.
+  var rueckScroll = null;
+  function zurueckScrollen(id) {
+    var r = rueckScroll;
+    rueckScroll = null;
+    if (!r) return;
+    var ziel = Array.prototype.filter.call(document.querySelectorAll('main .eintrag[data-id="' + id + '"]'), function (el) { return el.offsetParent !== null; })[0];
+    var top = r.y;
+    if (ziel) {
+      // Hat sich die Liste verschoben (z. B. neues Datum), den geänderten Eintrag in die Mitte holen
+      var rect = ziel.getBoundingClientRect(), kopfH = document.querySelector('header').offsetHeight;
+      var absTop = rect.top + window.scrollY;
+      if (absTop - r.y < kopfH || absTop - r.y + rect.height > window.innerHeight) top = absTop - (window.innerHeight - rect.height) / 2;
+    }
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); // genauso weich wie das Hochscrollen
+  }
+  var loeschStapel = [], undoTimer;
+  function undoZeigen() {
+    var n = loeschStapel.length;
+    $('undoText').textContent = n === 1 ? 'Ausgabe gelöscht' : n + ' Ausgaben gelöscht';
+    $('undoBar').hidden = false;
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(function () { loeschStapel = []; $('undoBar').hidden = true; }, 10000);
+  }
+  $('undoBtn').addEventListener('click', function () {
+    var x = loeschStapel.pop();
+    if (!x) return;
+    delete einst.geloescht[x.a.id];
+    x.a.geaendert = Date.now();
+    ausgaben.splice(Math.min(x.i, ausgaben.length), 0, x.a);
+    speichern(); speichernEinst(); zeichnen();
+    if (loeschStapel.length) undoZeigen(); else { clearTimeout(undoTimer); $('undoBar').hidden = true; }
+  });
+  function listeKlick(e) {
+    var btn = e.target.closest('button[data-aktion]');
+    if (!btn) return;
+    var id = btn.closest('.eintrag').getAttribute('data-id');
+    var a = ausgaben.filter(function (x) { return x.id === id; })[0];
+    if (!a) return;
+    if (btn.getAttribute('data-aktion') === 'del') {
+      var idx = ausgaben.findIndex(function (x) { return x.id === id; });
+      ausgaben.splice(idx, 1);
+      einst.geloescht[id] = Date.now();
+      loeschStapel.push({ a: a, i: idx });
+      if (bearbeiteId === id) formZuruecksetzen();
+      speichern(); speichernEinst(); zeichnen(); undoZeigen();
+    } else {
+      rueckScroll = { y: window.scrollY };
+      if (!$('suche').hidden) schliesseSuche();
+      bearbeiteId = id;
+      $('datum').value = a.datum;
+      anker = gueltigerAnker(a.anker) ? a.anker.slice() : (a.abgebucht > 0 ? ['php', 'eur'] : ['php', 'kurs']);
+      $('betrag').value = a.betrag;
+      $('kategorie').value = a.kategorie;
+      letzteKategorie = a.kategorie;
+      $('zahlung').value = a.zahlung || ZAHLUNGSMITTEL[0];
+      $('kurs').value = a.kurs > 0 ? kursRunden(a.kurs) : startKurs();
+      $('abgebucht').value = a.abgebucht > 0 ? a.abgebucht : '';
+      $('beschreibung').value = a.beschreibung || '';
+      $('ort').value = a.ort || '';
+      $('geprueft').checked = istGeprueft(a);
+      $('pauschal').checked = a.pauschal === true;
+      $('formTitel').textContent = 'Ausgabe ändern';
+      $('speichern').textContent = 'Änderung speichern';
+      $('formKarte').classList.add('bearbeiten');
+      karteUmschalten('formKarte', false);
+      barAktiv = false;
+      kursBereichUmschalten();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+  $('liste').addEventListener('click', listeKlick);
+  $('sucheListe').addEventListener('click', listeKlick);
+
+  // ---------- Reiter ----------
+  var aktiverTab = 'ausgaben';
+  function tabWechseln(name) {
+    aktiverTab = name;
+    ['ausgaben', 'zahlung', 'tag', 'orte', 'abrechnung'].forEach(function (t) {
+      $('tab-' + t).hidden = (t !== name);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+      b.classList.toggle('aktiv', b.getAttribute('data-tab') === name);
+    });
+  }
+  document.querySelector('.tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('.tab');
+    if (b) tabWechseln(b.getAttribute('data-tab'));
+  });
+
+  // Reiter „Zahlungsmittel“
+  // Aufgeklappte Zeilen merken sich, auch wenn die Ansicht neu gezeichnet wird
+  var offenZahlung = {}, offenTag = {};
+  function sortNeu(liste) {
+    return liste.slice().sort(function (a, b) { return b.datum.localeCompare(a.datum) || b.id.localeCompare(a.id); });
+  }
+  function pfeil(offen) { return '<span class="pfeil">' + (offen ? '▾' : '▸') + '</span>'; }
+  function aufklapp(liste) {
+    return '<div class="aufgeklappt liste">' + sortNeu(liste).map(eintragHtml).join('') + '</div>';
+  }
+  function renderZahlungsmittel() {
+    var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
+    function zeile(key, name, ausg, abh, sub) {
+      var offen = !!offenZahlung[key];
+      var inhalt = ausg.concat(abh);
+      return '<div class="zm"><div class="zm-klick" data-zm="' + esc(key) + '" role="button" aria-expanded="' + offen + '">' +
+        '<div class="zm-kopf"><span class="zm-name">' + pfeil(offen) + esc(name) + '</span>' +
+        '<span class="zm-wert">' + wertEuro(summePeso(ausg), summeEuro(ausg)) + '</span></div>' +
+        '<div class="zm-sub">' + sub + '</div></div>' +
+        (offen ? (inhalt.length ? aufklapp(inhalt) : '<div class="leer">Keine Einträge.</div>') : '') + '</div>';
+    }
+    var html = ZAHLUNGSMITTEL.map(function (m) {
+      var ausg = ohneAbh.filter(function (a) { return a.zahlung === m; });
+      var abh = ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === m; });
+      var sub = ausg.length + (ausg.length === 1 ? ' Ausgabe' : ' Ausgaben');
+      if (m !== 'Bar' && abh.length) sub += ' · Abhebungen: ' + geld(summePeso(abh)) + ' (≈ ' + euroFmt(summeEuro(abh)) + ')';
+      return zeile(m, m, ausg, abh, sub);
+    }).join('');
+    var ohneZ = ohneAbh.filter(function (a) { return !a.zahlung; });
+    if (ohneZ.length) {
+      html += zeile('__ohne__', 'Ohne Zahlungsmittel', ohneZ, [],
+        ohneZ.length + (ohneZ.length === 1 ? ' älterer Eintrag' : ' ältere Einträge'));
+    }
+    html += '<div class="zm"><div class="zm-kopf"><span class="zm-name"><span class="pfeil"></span>Gesamt</span>' +
+      '<span class="zm-wert">' + wertEuro(summePeso(ohneAbh), summeEuro(ohneAbh)) + '</span></div>' +
+      '<div class="zm-sub">ohne Bargeldabhebungen</div></div>';
+    $('tab-zahlung').innerHTML = html;
+  }
+  $('tab-zahlung').addEventListener('click', function (e) {
+    if (e.target.closest('button[data-aktion]')) { listeKlick(e); return; }
+    var k = e.target.closest('[data-zm]');
+    if (!k) return;
+    var key = k.getAttribute('data-zm');
+    offenZahlung[key] = !offenZahlung[key];
+    renderZahlungsmittel();
+  });
+
+  // Reiter „Pro Tag“
+  function renderProTag() {
+    var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
+    var tagListe = ohneAbh.filter(function (a) { return !istPauschal(a); });
+    var pausListe = ohneAbh.filter(istPauschal);
+    var pausOffen = !!offenTag.__pausch__;
+    var pausHtml = pausListe.length
+      ? '<div class="rz klick" data-tag="__pausch__" role="button" aria-expanded="' + pausOffen + '"><span>' + pfeil(pausOffen) + 'Gesamtreise-Kosten (nicht enthalten)</span><b>' +
+        wertEuro(summePeso(pausListe), summeEuro(pausListe)) + '</b></div>' +
+        (pausOffen ? aufklapp(pausListe) : '')
+      : '';
+    if (!tagListe.length) {
+      $('tab-tag').innerHTML = pausHtml + '<div class="leer">Noch keine Tagesausgaben erfasst.</div>';
+      return;
+    }
+    var proTag = {}, proTagE = {};
+    tagListe.forEach(function (a) {
+      proTag[a.datum] = (proTag[a.datum] || 0) + a.betrag;
+      proTagE[a.datum] = (proTagE[a.datum] || 0) + euroVon(a);
+    });
+    var daten = Object.keys(proTag).sort();
+    var von = daten[0], bis = daten[daten.length - 1];
+    var anzahl = tageZwischen(von, bis) + 1;
+    var max = 0, teuer = von;
+    daten.forEach(function (d) { if (proTag[d] > max) { max = proTag[d]; teuer = d; } });
+    var summe = summePeso(tagListe), summeE = summeEuro(tagListe);
+    var html = '<div class="rz"><span>Durchschnitt pro Tag (' + anzahl + (anzahl === 1 ? ' Tag' : ' Tage') + ')</span><b>' + wertEuro(summe / anzahl, summeE / anzahl) + '</b></div>' +
+      '<div class="rz"><span>Teuerster Tag (' + esc(datumAnzeige(teuer).slice(0, 5)) + ')</span><b>' + wertEuro(max, proTagE[teuer]) + '</b></div>' +
+      pausHtml +
+      '<div style="height:8px"></div>';
+    for (var i = anzahl - 1; i >= 0; i--) {
+      var d = tagPlus(von, i);
+      var w = proTag[d] || 0;
+      var eintraege = tagListe.filter(function (a) { return a.datum === d; });
+      var klickbar = eintraege.length > 0;
+      var offen = klickbar && !!offenTag[d];
+      html += '<div class="tag-block"><div class="tag-zeile' + (klickbar ? ' klick' : '') + '"' +
+        (klickbar ? ' data-tag="' + esc(d) + '" role="button" aria-expanded="' + offen + '"' : '') + '>' +
+        '<span class="t">' + (klickbar ? pfeil(offen) : '<span class="pfeil"></span>') + esc(wochentag(d)) + ' ' + esc(datumAnzeige(d).slice(0, 5)) + '</span>' +
+        balkenSpur(max > 0 ? (w / max) * 100 : 0, prozentText(w, summe)) +
+        '<span class="balken-wert">' + wertEuro(w, proTagE[d] || 0) + '</span></div>' +
+        (offen ? aufklapp(eintraege) : '') + '</div>';
+    }
+    $('tab-tag').innerHTML = html;
+  }
+  $('tab-tag').addEventListener('click', function (e) {
+    if (e.target.closest('button[data-aktion]')) { listeKlick(e); return; }
+    var k = e.target.closest('[data-tag]');
+    if (!k) return;
+    var key = k.getAttribute('data-tag');
+    offenTag[key] = !offenTag[key];
+    renderProTag();
+  });
+
+  // Reiter „Orte“: was hat jeder Ort gekostet?
+  var offenOrt = {};
+  function orteListeFuellen() {
+    var zaehl = {};
+    ausgaben.forEach(function (a) { if (a.ort) zaehl[a.ort] = (zaehl[a.ort] || 0) + 1; });
+    var orte = Object.keys(zaehl).sort(function (x, y) { return zaehl[y] - zaehl[x] || x.localeCompare(y, 'de'); }).slice(0, 40);
+    $('orteListe').innerHTML = orte.map(function (o) { return '<option value="' + esc(o) + '">'; }).join('');
+  }
+  function renderOrte() {
+    var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
+    if (!ohneAbh.length) { $('tab-orte').innerHTML = '<div class="leer">Noch keine Ausgaben erfasst.</div>'; return; }
+    var gruppen = {};
+    ohneAbh.forEach(function (a) { var k = a.ort || '__ohne__'; (gruppen[k] = gruppen[k] || []).push(a); });
+    var keys = Object.keys(gruppen).filter(function (k) { return k !== '__ohne__'; })
+      .sort(function (x, y) { return summePeso(gruppen[y]) - summePeso(gruppen[x]); });
+    if (gruppen.__ohne__) keys.push('__ohne__');
+    var gesamt = summePeso(ohneAbh);
+    var maxSumme = Math.max.apply(null, keys.map(function (k) { return summePeso(gruppen[k]); }));
+    var html = keys.map(function (k) {
+      var liste = gruppen[k], offen = !!offenOrt[k];
+      var name = k === '__ohne__' ? 'Ohne Ort' : k;
+      var sub = liste.length + (liste.length === 1 ? ' Ausgabe' : ' Ausgaben') + (k === '__ohne__' ? ' · hier fehlt noch der Ort' : '') +
+        '<div style="margin-top:6px">' + balkenSpur(maxSumme > 0 ? summePeso(liste) / maxSumme * 100 : 0, prozentText(summePeso(liste), gesamt)) + '</div>';
+      return '<div class="zm"><div class="zm-klick" data-ort="' + esc(k) + '" role="button" aria-expanded="' + offen + '">' +
+        '<div class="zm-kopf"><span class="zm-name">' + pfeil(offen) + esc(name) + '</span>' +
+        '<span class="zm-wert">' + wertEuro(summePeso(liste), summeEuro(liste)) + '</span></div>' +
+        '<div class="zm-sub">' + sub + '</div></div>' + (offen ? aufklapp(liste) : '') + '</div>';
+    }).join('');
+    $('tab-orte').innerHTML = html;
+  }
+  $('tab-orte').addEventListener('click', function (e) {
+    if (e.target.closest('button[data-aktion]')) { listeKlick(e); return; }
+    var k = e.target.closest('[data-ort]');
+    if (!k) return;
+    var key = k.getAttribute('data-ort');
+    offenOrt[key] = !offenOrt[key];
+    renderOrte();
+  });
+
+  // Reiter „Verrechnung“ (alles in Euro, Kurs je Eintrag)
+  // Wer hat wie viel vorgestreckt? Kartenzahlungen und Bargeldabhebungen zählen als bezahlt von der Person,
+  // deren Karte belastet wurde. Bar-Ausgaben und ING (Gemeinschaftskonto) sind neutral, weil das Geld
+  // schon über die Abhebung bzw. gemeinsam bezahlt wurde. Das Restbargeld gehört beiden je zur Hälfte.
+  function renderAbrechnung() {
+    var zaehlt = ausgaben.filter(function (a) { return !istAbh(a) && a.zahlung; });
+    var ohneZ = ausgaben.filter(function (a) { return !istAbh(a) && !a.zahlung; });
+    var kS = 0, kT = 0, kI = 0, bar = 0;
+    zaehlt.forEach(function (a) {
+      var e = euroVon(a);
+      if (a.zahlung === 'KK Sabine') kS += e;
+      else if (a.zahlung === 'KK Tobi') kT += e;
+      else if (a.zahlung === 'ING') kI += e;
+      else bar += e;
+    });
+    function abhebungenMit(m) { return summeEuro(ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === m; })); }
+    var wS = abhebungenMit('KK Sabine'), wT = abhebungenMit('KK Tobi'), wI = abhebungenMit('ING');
+    var abgehoben = wS + wT + wI;
+    var kosten = kS + kT + kI + bar;                 // alle Ausgaben inkl. Bar und ING
+    var rest = runden(abgehoben - bar);             // Restbargeld
+    var vorS = kS + wS, vorT = kT + wT;              // von der Person vorgestreckt (Karte + Abhebungen)
+    var restBei = einst.restbei;
+    var hS = restBei === 'Sabine' ? 1 : (restBei === 'Tobi' ? 0 : 0.5);
+    var hT = 1 - hS;
+    // Positiv: Tobi schuldet Sabine. Grundwert = halber Unterschied der Vorauszahlungen (Restbargeld geteilt).
+    // Liegt das Restbargeld nur bei einem, muss er dem anderen dessen Hälfte erstatten.
+    var saldo = runden((vorS - vorT) / 2 + Math.max(rest, 0) * (hT - hS) / 2);
+
+    var kopf;
+    var hatDaten = zaehlt.length || abgehoben > 0;
+    if (!hatDaten) {
+      kopf = '<div class="ergebnis">Noch nichts abzurechnen<span class="gross">0,00 €</span></div>';
+    } else if (saldo === 0) {
+      kopf = '<div class="ergebnis">Ihr seid quitt<span class="gross">0,00 €</span></div>';
+    } else if (saldo > 0) {
+      kopf = '<div class="ergebnis">Tobi schuldet Sabine<span class="gross">' + euroFmt(saldo) + '</span></div>';
+    } else {
+      kopf = '<div class="ergebnis">Sabine schuldet Tobi<span class="gross">' + euroFmt(-saldo) + '</span></div>';
+    }
+    var html = kopf +
+      '<div class="rz"><span>Gesamtausgaben</span><b>' + euroFmt(kosten) + '</b></div>' +
+      '<div class="rz sub"><span>davon bar bezahlt</span><span>' + euroFmt(bar) + '</span></div>' +
+      '<div class="rz sub"><span>davon über ING</span><span>' + euroFmt(kI) + '</span></div>' +
+      '<div class="rz"><span>Sabine hat vorgestreckt</span><b>' + euroFmt(vorS) + '</b></div>' +
+      '<div class="rz sub"><span>Karte (KK Sabine)</span><span>' + euroFmt(kS) + '</span></div>' +
+      '<div class="rz sub"><span>Abhebungen</span><span>' + euroFmt(wS) + '</span></div>' +
+      '<div class="rz"><span>Tobi hat vorgestreckt</span><b>' + euroFmt(vorT) + '</b></div>' +
+      '<div class="rz sub"><span>Karte (KK Tobi)</span><span>' + euroFmt(kT) + '</span></div>' +
+      '<div class="rz sub"><span>Abhebungen</span><span>' + euroFmt(wT) + '</span></div>' +
+      '<div class="rz"><span>Abhebungen über ING</span><b>' + euroFmt(wI) + '</b></div>' +
+      '<div class="rz"><span>Restbargeld</span><b>' + euroFmt(rest) + '</b></div>' +
+      '<div class="rz sub"><span>abgehoben ' + euroFmt(abgehoben) + ' − bar bezahlt ' + euroFmt(bar) + '</span><span></span></div>' +
+      '<label for="restbei">Restbargeld liegt bei</label>' +
+      '<select id="restbei">' +
+      '<option value="beide"' + (restBei === 'beide' ? ' selected' : '') + '>Beiden je zur Hälfte (geteilt)</option>' +
+      '<option value="Sabine"' + (restBei === 'Sabine' ? ' selected' : '') + '>Sabine</option>' +
+      '<option value="Tobi"' + (restBei === 'Tobi' ? ' selected' : '') + '>Tobi</option>' +
+      '</select>';
+
+    var notizen = ['Abhebungen zählen als bezahlt von der Person, deren Karte belastet wurde. Bar-Ausgaben und ING sind neutral.'];
+    if (rest > 0 && restBei === 'beide') {
+      notizen.push('Das Restbargeld (' + euroFmt(rest) + ') gehört euch je zur Hälfte (' + euroFmt(rest / 2) + '). Teilt es vor der Zahlung auf. Behält einer von euch alles, wähle oben, wer es hat.');
+    } else if (rest > 0) {
+      notizen.push('Das Restbargeld (' + euroFmt(rest) + ') liegt bei ' + restBei + '. Die Hälfte davon (' + euroFmt(rest / 2) + ') ist in der Zahlung berücksichtigt.');
+    }
+    if (rest < 0) {
+      notizen.push('<span class="warnung">Es wurde mehr bar bezahlt als abgehoben. Es fehlt wohl eine Abhebung.</span>');
+    }
+    if (ohneZ.length) {
+      notizen.push('<span class="warnung">' + ohneZ.length + (ohneZ.length === 1 ? ' Eintrag hat' : ' Einträge haben') +
+        ' kein Zahlungsmittel und fehlen in der Verrechnung.</span> Setze sie im Kasten „Bargeldbestand“ auf „Bar“ oder ändere sie einzeln.');
+    }
+    html += notizen.map(function (n) { return '<p class="hinweis">' + n + '</p>'; }).join('');
+    $('tab-abrechnung').innerHTML = html;
+  }
+  $('tab-abrechnung').addEventListener('change', function (e) {
+    if (e.target.id !== 'restbei') return;
+    einst.restbei = e.target.value;
+    speichernEinst();
+    renderAbrechnung();
+  });
+
+  // ---------- Bargeldbestand ----------
+  function bargeldbestand() {
+    var abh = ausgaben.filter(istAbh);
+    var bar = ausgaben.filter(function (a) { return !istAbh(a) && a.zahlung === 'Bar'; });
+    return {
+      abgehoben: summePeso(abh), barBezahlt: summePeso(bar),
+      peso: runden(summePeso(abh) - summePeso(bar)),
+      euro: runden(summeEuro(abh) - summeEuro(bar))
+    };
+  }
+  function renderBargeld() {
+    var b = bargeldbestand();
+    $('barWert').innerHTML = geld(b.peso) + euroText(b.euro);
+    $('barWert').classList.toggle('negativ', b.peso < 0);
+    $('barDetail').textContent = 'Abgehoben ' + geld(b.abgehoben) + ' − bar bezahlt ' + geld(b.barBezahlt);
+    var ohneZahlung = ausgaben.filter(function (a) { return !istAbh(a) && !a.zahlung; }).length;
+    var hinweis = '';
+    if (b.peso < 0) {
+      hinweis += '<div class="warnung hinweis">Bestand im Minus: Es fehlt eine Abhebung, oder ein Eintrag steht fälschlich auf „Bar“.</div>';
+    }
+    if (ohneZahlung > 0) {
+      hinweis += ohneZahlung + (ohneZahlung === 1 ? ' älterer Eintrag hat' : ' ältere Einträge haben') +
+        ' noch kein Zahlungsmittel und ' + (ohneZahlung === 1 ? 'zählt' : 'zählen') + ' nicht mit.' +
+        '<button type="button" class="klein hell" id="barZuweisen">Alle auf „Bar“ setzen</button>';
+    }
+    $('barHinweis').innerHTML = hinweis;
+  }
+  $('barKarte').addEventListener('click', function (e) {
+    if (!e.target.closest('#barZuweisen')) return;
+    var offen = ausgaben.filter(function (a) { return !istAbh(a) && !a.zahlung; });
+    if (!offen.length) return;
+    if (confirm(offen.length + ' Einträge ohne Zahlungsmittel auf „Bar“ setzen?')) {
+      offen.forEach(function (a) { a.zahlung = 'Bar'; a.geaendert = Date.now(); });
+      speichern(); zeichnen(); toast('Auf „Bar“ gesetzt');
+    }
+  });
+
+  // ---------- Budget ----------
+  function renderBudget() {
+    var b = einst.budget;
+    if (!b) {
+      $('budgetInfo').innerHTML = '<p class="hinweis" style="margin-top:0">Noch kein Budget festgelegt. Trage unten Budget und Reisezeitraum ein, dann siehst du Rest, Tagesschnitt und Hochrechnung.</p>';
+      return;
+    }
+    var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
+    var euroModus = b.waehrung === 'EUR';
+    var fmt = euroModus ? euroFmt : geld;
+    var ausgegeben = euroModus ? summeEuro(ohneAbh) : summePeso(ohneAbh);
+    var tagListe = ohneAbh.filter(function (a) { return !istPauschal(a); });
+    var tageskosten = euroModus ? summeEuro(tagListe) : summePeso(tagListe);
+    var pauschalK = ausgegeben - tageskosten; // Kosten für die gesamte Reise (Flüge, Hunde …)
+    var rest = b.betrag - ausgegeben;
+    var pct = ausgegeben / b.betrag * 100;
+    var pctText = (pct > 0 && pct < 1 ? '<1' : Math.round(pct)) + ' %';
+    var h = balkenSpur(Math.min(100, pct), pctText, pct > 100 ? 'warn' : '');
+    h += '<div style="height:8px"></div>';
+    h += '<div class="rz"><span>Budget</span><b>' + fmt(b.betrag) + '</b></div>';
+    h += '<div class="rz"><span>Ausgegeben</span><b>' + fmt(ausgegeben) + '</b></div>';
+    if (pauschalK > 0.004) {
+      h += '<div class="rz sub"><span>davon Gesamtreise (z. B. Flüge, Hunde)</span><span>' + fmt(pauschalK) + '</span></div>';
+    }
+    h += '<div class="rz"><span>' + (rest < 0 ? 'Überschritten um' : 'Noch übrig') + '</span><b' + (rest < 0 ? ' class="warnung"' : '') + '>' + fmt(Math.abs(rest)) + '</b></div>';
+
+    var datenListe = tagListe.map(function (a) { return a.datum; }).sort();
+    var start = b.start || datenListe[0] || '';
+    var heuteStr = heute();
+    var ende = b.ende;
+    if (start && heuteStr < start) {
+      h += '<p class="hinweis">Die Reise beginnt am ' + esc(datumAnzeige(start)) + '.</p>';
+    } else if (start) {
+      var bisTag = (ende && heuteStr > ende) ? ende : heuteStr;
+      var tage = Math.max(1, tageZwischen(start, bisTag) + 1);
+      var schnitt = tageskosten / tage;
+      h += '<div class="rz"><span>Ø pro Tag (' + tage + (tage === 1 ? ' Tag' : ' Tage') + ')</span><b>' + fmt(schnitt) + '</b></div>';
+      if (pauschalK > 0.004) h += '<div class="rz sub"><span>ohne Gesamtreise-Kosten</span><span></span></div>';
+      if (ende && start <= ende) {
+        if (heuteStr <= ende) {
+          var uebrig = tageZwischen(heuteStr, ende) + 1;
+          if (rest > 0) {
+            h += '<div class="rz"><span>Verfügbar pro Tag (' + uebrig + (uebrig === 1 ? ' Tag' : ' Tage') + ' übrig)</span><b>' + fmt(rest / uebrig) + '</b></div>';
+          }
+          var gesamtTage = tageZwischen(start, ende) + 1;
+          var prog = pauschalK + schnitt * gesamtTage; // Gesamtreise-Kosten fallen nur einmal an
+          var ok = prog <= b.betrag;
+          h += '<div class="rz"><span>Hochrechnung bis Reiseende</span><b' + (ok ? '' : ' class="warnung"') + '>' + fmt(prog) + '</b></div>';
+          h += '<p class="hinweis' + (ok ? '' : ' warnung') + '">' + (ok
+            ? 'Bei diesem Tempo bleibt ihr im Budget (rund ' + fmt(b.betrag - prog) + ' Reserve).'
+            : 'Bei diesem Tempo wird das Budget um rund ' + fmt(prog - b.betrag) + ' überschritten.') + '</p>';
+        } else {
+          h += '<p class="hinweis">Die Reise ist seit dem ' + esc(datumAnzeige(ende)) + ' beendet.</p>';
+        }
+      }
+    }
+    $('budgetInfo').innerHTML = h;
+  }
+  $('budgetSpeichern').addEventListener('click', function () {
+    var txt = String($('budgetBetrag').value).trim();
+    if (!txt) {
+      einst.budget = null; speichernEinst(); zeichnen(); toast('Budget entfernt'); return;
+    }
+    var betrag = parseFloat(txt.replace(',', '.'));
+    if (!isFinite(betrag) || betrag <= 0) { toast('Bitte ein gültiges Budget eingeben.'); return; }
+    var start = $('budgetStart').value, ende = $('budgetEnde').value;
+    if (start && ende && ende < start) { toast('Das Reiseende liegt vor dem Beginn.'); return; }
+    einst.budget = { betrag: betrag, waehrung: $('budgetWaehrung').value, start: start, ende: ende };
+    speichernEinst(); zeichnen(); toast('Budget gespeichert');
+  });
+  function budgetFelderFuellen() {
+    var b = einst.budget;
+    $('budgetBetrag').value = b ? b.betrag : '';
+    $('budgetWaehrung').value = b ? b.waehrung : 'EUR';
+    $('budgetStart').value = b ? b.start : '';
+    $('budgetEnde').value = b ? b.ende : '';
+    $('budgetDetails').open = !b;
+  }
+
+  // ---------- Eigene Kategorien (Verwaltung) ----------
+  function renderKategorienKarte() {
+    $('katListe').innerHTML = statKategorien().map(function (k) {
+      var eigen = einst.kategorien.indexOf(k) >= 0;
+      var pausch = einst.pauschal.indexOf(k) >= 0;
+      return '<div class="kat-eintrag"><span>' + esc(k) + '</span><span class="kat-aktion">' +
+        '<label class="check mini"><input type="checkbox" data-kat-pausch="' + esc(k) + '"' + (pausch ? ' checked' : '') + '> Gesamtreise</label>' +
+        (eigen ? '<button type="button" class="klein rot" data-kat-del="' + esc(k) + '">Löschen</button>' : '') +
+        '</span></div>';
+    }).join('');
+  }
+  $('katListe').addEventListener('change', function (e) {
+    var cb = e.target.closest('input[data-kat-pausch]');
+    if (!cb) return;
+    var name = cb.getAttribute('data-kat-pausch');
+    einst.pauschal = einst.pauschal.filter(function (k) { return k !== name; });
+    if (cb.checked) einst.pauschal.push(name);
+    speichernEinst(); zeichnen();
+  });
+  $('katListe').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-kat-del]');
+    if (!btn) return;
+    var name = btn.getAttribute('data-kat-del');
+    var genutzt = ausgaben.some(function (a) { return a.kategorie === name; });
+    if (genutzt) { toast('„' + name + '“ wird noch bei Ausgaben verwendet.'); return; }
+    if (!confirm('Kategorie „' + name + '“ löschen?')) return;
+    einst.kategorien = einst.kategorien.filter(function (k) { return k !== name; });
+    einst.pauschal = einst.pauschal.filter(function (k) { return k !== name; });
+    speichernEinst(); dropdownsFuellen(); zeichnen();
+  });
+  function katHinzufuegenKlick() {
+    var r = kategorieHinzufuegen($('katNeu').value);
+    if (r.fehler) { toast(r.fehler); return; }
+    $('katNeu').value = '';
+    dropdownsFuellen(); zeichnen();
+    toast('Kategorie „' + r.name + '“ angelegt');
+  }
+  $('katAdd').addEventListener('click', katHinzufuegenKlick);
+  $('katNeu').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); katHinzufuegenKlick(); } });
+
+  // ---------- Suche ----------
+  function norm(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+  function sucheTreffer() {
+    var woerter = norm($('sucheText').value).split(/\s+/).filter(Boolean);
+    var k = $('sucheKat').value, von = $('sucheVon').value, bis = $('sucheBis').value;
+    var treffer = ausgaben.filter(function (a) {
+      if (k && a.kategorie !== k) return false;
+      if (von && a.datum < von) return false;
+      if (bis && a.datum > bis) return false;
+      var text = norm((a.beschreibung || '') + ' ' + (a.ort || ''));
+      return woerter.every(function (w) { return text.indexOf(w) >= 0; });
+    });
+    treffer.sort(function (a, b) { return b.datum.localeCompare(a.datum) || b.id.localeCompare(a.id); });
+    return treffer;
+  }
+  function renderSuche() {
+    var t = sucheTreffer();
+    var stat = ($('sucheKat').value === ABHEBUNG) ? t : t.filter(function (a) { return !istAbh(a); });
+    $('sucheInfo').textContent = t.length + (t.length === 1 ? ' Treffer' : ' Treffer') + (t.length ? ' · Summe ' + geld(summePeso(stat)) + ' (≈ ' + euroFmt(summeEuro(stat)) + ')' : '') +
+      (stat.length !== t.length ? ' (ohne Abhebungen)' : '');
+    $('sucheListe').innerHTML = t.length ? t.map(eintragHtml).join('') : '<div class="leer">Nichts gefunden.</div>';
+  }
+  function oeffneSuche() {
+    if (!$('suche').hidden) return;
+    $('suche').hidden = false;
+    document.body.style.overflow = 'hidden';
+    try { history.pushState({ suche: true }, ''); } catch (e) {}
+    renderSuche();
+    setTimeout(function () { $('sucheText').focus(); }, 50);
+  }
+  function schliesseSuche(ueberZurueck) {
+    if ($('suche').hidden) return;
+    $('suche').hidden = true;
+    document.body.style.overflow = '';
+    if (!ueberZurueck && history.state && history.state.suche) { try { history.back(); } catch (e) {} }
+  }
+  $('sucheBtn').addEventListener('click', oeffneSuche);
+  $('sucheZu').addEventListener('click', function () { schliesseSuche(false); });
+  window.addEventListener('popstate', function () { schliesseSuche(true); });
+  ['sucheText', 'sucheKat', 'sucheVon', 'sucheBis'].forEach(function (id) {
+    $(id).addEventListener('input', renderSuche);
+    $(id).addEventListener('change', renderSuche);
+  });
+
+  // ---------- Anzeige ----------
+  function zeichnen() {
+    berechneFifo();
+    // Kopf: Abhebungen zählen nicht zur Statistik (außer man filtert gezielt darauf)
+    var liste = gefiltert();
+    var nurAbhebung = (filterKat === ABHEBUNG);
+    var statListe = nurAbhebung ? liste : liste.filter(function (a) { return !istAbh(a); });
+    $('gesamt').innerHTML = geld(summePeso(statListe)) + euroText(summeEuro(statListe));
+    var anzahl = statListe.length;
+    var zaehler = anzahl + (anzahl === 1 ? ' Ausgabe' : ' Ausgaben');
+    if (nurAbhebung) {
+      $('gesamtSub').textContent = 'Bargeldabhebungen · ' + anzahl + (anzahl === 1 ? ' Abhebung' : ' Abhebungen') + ' (nicht in Statistik)';
+    } else if (filterKat) {
+      $('gesamtSub').textContent = filterKat + ' · ' + zaehler;
+    } else {
+      $('gesamtSub').textContent = 'Alle Kategorien · ' + zaehler + ' (ohne Abhebungen)';
+    }
+
+    if (nurOffen) $('gesamtSub').textContent += ' · Kurs noch offen';
+    $('nurOffenText').textContent = 'Nur: Kurs noch nicht eingetragen (' + ausgaben.filter(function (a) { return !istGeprueft(a); }).length + ')';
+
+    // Balken (nur Ausgaben, ohne Abhebungen)
+    var proKat = {};
+    statKategorien().forEach(function (k) { proKat[k] = 0; });
+    var proKatE = {};
+    var abgehoben = 0, abgehobenE = 0, anzahlAbh = 0;
+    ausgaben.forEach(function (a) {
+      if (istAbh(a)) { abgehoben += a.betrag; abgehobenE += euroVon(a); anzahlAbh++; return; }
+      proKat[a.kategorie] = (proKat[a.kategorie] || 0) + a.betrag;
+      proKatE[a.kategorie] = (proKatE[a.kategorie] || 0) + euroVon(a);
+    });
+    var max = Math.max.apply(null, Object.keys(proKat).map(function (k) { return proKat[k]; }).concat([0]));
+    var gesamtStat = Object.keys(proKat).reduce(function (s, k) { return s + proKat[k]; }, 0);
+    function prozent(wert) { return prozentText(wert, gesamtStat); }
+    $('balken').innerHTML = Object.keys(proKat).map(function (k) {
+      var breite = max > 0 ? (proKat[k] / max) * 100 : 0;
+      return '<div class="balken-zeile' + (k === filterKat ? ' aktiv' : '') + '" data-kat="' + esc(k) + '">' +
+        '<span class="balken-name">' + esc(k) + '</span>' +
+        balkenSpur(breite, prozent(proKat[k])) +
+        '<span class="balken-wert">' + wertEuro(proKat[k], proKatE[k] || 0) + '</span></div>';
+    }).join('') +
+      '<div class="balken-zeile abhebung' + (nurAbhebung ? ' aktiv' : '') + '" data-kat="' + esc(ABHEBUNG) + '">' +
+      '<span class="balken-name">Abgehoben (' + anzahlAbh + '×, nicht in Statistik)</span>' +
+      '<span class="balken-wert">' + wertEuro(abgehoben, abgehobenE) + '</span></div>';
+
+    renderBargeld();
+    renderBudget();
+    renderVerlauf();
+    renderKategorienKarte();
+
+    // Reiter „Ausgaben“
+    var s = sortiert(liste);
+    if (!s.length) {
+      $('liste').innerHTML = '<div class="leer">' +
+        (ausgaben.length ? 'Keine Ausgaben in dieser Kategorie.' : 'Noch keine Ausgaben erfasst.') + '</div>';
+    } else {
+      $('liste').innerHTML = s.map(eintragHtml).join('');
+    }
+    orteListeFuellen();
+    renderZahlungsmittel();
+    renderProTag();
+    renderOrte();
+    renderAbrechnung();
+    if (!$('suche').hidden) renderSuche();
+  }
+
+  $('balken').addEventListener('click', function (e) {
+    var zeile = e.target.closest('.balken-zeile');
+    if (!zeile) return;
+    var k = zeile.getAttribute('data-kat');
+    filterKat = (filterKat === k) ? '' : k;
+    $('filter').value = filterKat;
+    tabWechseln('ausgaben');
+    karteUmschalten('tabsKarte', false);
+    zeichnen();
+  });
+  $('filter').addEventListener('change', function () { filterKat = $('filter').value; zeichnen(); });
+  $('nurOffen').addEventListener('change', function () { nurOffen = $('nurOffen').checked; zeichnen(); });
+  $('sortierung').addEventListener('change', zeichnen);
+
+  // ---------- Export / Import ----------
+  function download(name, inhalt, typ) {
+    var blob = new Blob([inhalt], { type: typ });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+  $('exportJson').addEventListener('click', function () {
+    if (!ausgaben.length) { toast('Noch nichts zu sichern.'); return; }
+    var paket = { format: 'reiseausgaben', version: 3, ausgaben: ausgaben, einstellungen: einst };
+    download('ausgaben-backup-' + heute() + '.json', JSON.stringify(paket, null, 2), 'application/json');
+  });
+  $('exportCsv').addEventListener('click', function () {
+    if (!ausgaben.length) { toast('Noch nichts zu exportieren.'); return; }
+    var zeilen = [['Datum', 'Ort', 'Betrag (PHP)', 'Kategorie', 'Zahlungsmittel', 'Kurs (PHP je EUR)', 'Betrag (EUR)', 'Kurs eingetragen', 'Gesamtreise', 'Beschreibung']];
+    sortiert(ausgaben).forEach(function (a) {
+      zeilen.push([a.datum, a.ort || '', String(a.betrag).replace('.', ','), a.kategorie, a.zahlung || '',
+        kursEff(a) > 0 ? String(Math.round(kursEff(a) * 10000) / 10000).replace('.', ',') : '', String(runden(euroVon(a))).replace('.', ','), istGeprueft(a) ? 'ja' : 'nein', istPauschal(a) ? 'ja' : 'nein', a.beschreibung || '']);
+    });
+    var csv = '﻿' + zeilen.map(function (z) {
+      return z.map(function (f) { return '"' + String(f).replace(/"/g, '""') + '"'; }).join(';');
+    }).join('\r\n');
+    download('ausgaben-' + heute() + '.csv', csv, 'text/csv;charset=utf-8');
+  });
+  function eintragSauber(a) {
+    if (!(a && typeof a.datum === 'string' && typeof a.betrag === 'number' && isFinite(a.betrag) && typeof a.kategorie === 'string')) return null;
+    var e = { id: String(a.id || neueId()), datum: a.datum, betrag: a.betrag,
+              kategorie: a.kategorie, zahlung: String(a.zahlung || ''), beschreibung: String(a.beschreibung || '') };
+    if (a.kurs > 0 && isFinite(a.kurs)) e.kurs = a.kurs;
+    if (a.abgebucht > 0 && isFinite(a.abgebucht)) e.abgebucht = a.abgebucht;
+    if (a.geprueft === true) e.geprueft = true;
+    if (a.pauschal === true) e.pauschal = true;
+    if (gueltigerAnker(a.anker)) e.anker = a.anker.slice();
+    if (typeof a.ort === 'string' && a.ort.trim()) e.ort = a.ort.trim().slice(0, 40);
+    if (a.geaendert > 0 && isFinite(a.geaendert)) e.geaendert = a.geaendert;
+    return e;
+  }
+  // Zusammenführen: gleiche ID = derselbe Eintrag (der neuere gewinnt), neue IDs werden ergänzt, Löschmarken entfernen Einträge
+  function mergeBerechnen(eingang, eingangGeloescht) {
+    var liste = ausgaben.slice();
+    var tomb = Object.assign({}, einst.geloescht);
+    Object.keys(eingangGeloescht || {}).forEach(function (id) { if (!(tomb[id] >= eingangGeloescht[id])) tomb[id] = eingangGeloescht[id]; });
+    var pos = {};
+    liste.forEach(function (a, i) { pos[a.id] = i; });
+    var st = { neu: 0, akt: 0, entfernt: 0, doppelt: 0 };
+    eingang.forEach(function (a) {
+      var i = pos[a.id];
+      if (i !== undefined) {
+        if ((a.geaendert || 0) > (liste[i].geaendert || 0)) { liste[i] = a; st.akt++; }
+        return;
+      }
+      var t = tomb[a.id];
+      if (t && t >= (a.geaendert || 0)) return; // dort oder hier gelöscht
+      var gleich = liste.some(function (l) {
+        return l.datum === a.datum && l.betrag === a.betrag && l.kategorie === a.kategorie && l.zahlung === a.zahlung &&
+               normT(l.beschreibung) === normT(a.beschreibung);
+      });
+      if (gleich) st.doppelt++;
+      pos[a.id] = liste.length; liste.push(a); st.neu++;
+    });
+    liste = liste.filter(function (a) {
+      var t = tomb[a.id];
+      if (t && t > (a.geaendert || 0)) { st.entfernt++; return false; }
+      return true;
+    });
+    return { liste: liste, tomb: tomb, st: st };
+  }
+  var importModus = 'merge';
+  $('mergeBtn').addEventListener('click', function () { importModus = 'merge'; $('importDatei').click(); });
+  $('importBtn').addEventListener('click', function () { importModus = 'ersetzen'; $('importDatei').click(); });
+  function nachImport() {
+    kategorienAbgleichen();
+    speichern(); speichernEinst();
+    dropdownsFuellen(); budgetFelderFuellen(); formZuruecksetzen(); zeichnen();
+  }
+  $('importDatei').addEventListener('change', function () {
+    var datei = this.files[0];
+    if (!datei) return;
+    var leser = new FileReader();
+    leser.onload = function () {
+      try {
+        var daten = JSON.parse(leser.result);
+        var rohListe = Array.isArray(daten) ? daten : daten.ausgaben; // altes Format: reine Liste
+        if (!Array.isArray(rohListe)) throw new Error('format');
+        var gueltig = rohListe.map(eintragSauber).filter(Boolean);
+        if (!gueltig.length) throw new Error('leer');
+        var neu = (!Array.isArray(daten) && daten.einstellungen) ? daten.einstellungen : null;
+        if (importModus === 'merge') {
+          var m = mergeBerechnen(gueltig, neu ? sauberGeloescht(neu.geloescht) : {});
+          var st = m.st;
+          if (!st.neu && !st.akt && !st.entfernt) { $('mergeInfo').textContent = 'Zuletzt geprüft: Ihr seid schon auf demselben Stand.'; toast('Nichts zu ergänzen – gleicher Stand.'); return; }
+          var frage = 'Zusammenführen: ' + st.neu + ' neue, ' + st.akt + ' aktualisierte und ' + st.entfernt + ' gelöschte Einträge übernehmen?' +
+            (st.doppelt ? '\n\nHinweis: ' + st.doppelt + ' neue Einträge haben dieselben Angaben wie vorhandene (mögliche Doppelte).' : '');
+          if (!confirm(frage)) return;
+          ausgaben = m.liste;
+          einst.geloescht = m.tomb;
+          if (neu) {
+            sauberKategorien(neu.kategorien).forEach(function (k) { if (einst.kategorien.indexOf(k) < 0) einst.kategorien.push(k); });
+            (Array.isArray(neu.pauschal) ? neu.pauschal : []).forEach(function (k) {
+              if (typeof k === 'string' && einst.pauschal.indexOf(k) < 0) einst.pauschal.push(k);
+            });
+            if (!einst.budget) einst.budget = sauberBudget(neu.budget);
+          }
+          nachImport();
+          $('mergeInfo').textContent = 'Zuletzt zusammengeführt: ' + st.neu + ' neu, ' + st.akt + ' aktualisiert, ' + st.entfernt + ' entfernt' +
+            (st.doppelt ? ', ' + st.doppelt + ' mögliche Doppelte' : '') + '.';
+          toast('Zusammengeführt: ' + st.neu + ' neu, ' + st.akt + ' aktualisiert');
+        } else {
+          if (!confirm(gueltig.length + ' Ausgaben laden? Die aktuelle Liste wird ersetzt.')) return;
+          ausgaben = gueltig;
+          if (neu) {
+            einst.kategorien = sauberKategorien(neu.kategorien);
+            einst.budget = sauberBudget(neu.budget);
+            if (neu.letzterKurs > 0 && isFinite(neu.letzterKurs)) einst.letzterKurs = neu.letzterKurs;
+            einst.restbei = (neu.restbei === 'Sabine' || neu.restbei === 'Tobi') ? neu.restbei : 'beide';
+            einst.pauschal = Array.isArray(neu.pauschal) ? neu.pauschal.filter(function (k) { return typeof k === 'string'; }) : [];
+            einst.geloescht = sauberGeloescht(neu.geloescht);
+          }
+          nachImport();
+          toast(gueltig.length + ' Ausgaben geladen');
+        }
+      } catch (e) {
+        toast('Datei konnte nicht gelesen werden.');
+      }
+    };
+    leser.readAsText(datei);
+    this.value = '';
+  });
+
+  // ---------- Schnelleingabe (Freitext, ohne KI: feste Regeln) ----------
+  function normT(t) {
+    return String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 's');
+  }
+  var MON = { jan: 1, feb: 2, mar: 3, apr: 4, mai: 5, jun: 6, jul: 7, aug: 8, sep: 9, okt: 10, nov: 11, dez: 12 };
+  var NUM_SRC = '(?<n>\\d{1,3}(?:[.,]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)';
+  var PRAEFIX = '(?:(?:fur|fuer|kostet|kosten|ca\\.?|circa|etwa)\\s*)?';
+  var BETRAG_PHP = [
+    new RegExp(PRAEFIX + NUM_SRC + '\\s*(?:php|₱|pesos?)(?![a-z])'),
+    new RegExp(PRAEFIX + '(?:php|₱)\\s*' + NUM_SRC)
+  ];
+  var BETRAG_EUR = [
+    new RegExp(PRAEFIX + NUM_SRC + '\\s*(?:€|eur(?:o|os)?)(?![a-z])'),
+    new RegExp(PRAEFIX + '(?:€|eur(?:o|os)?)\\s*' + NUM_SRC)
+  ];
+  var KAT_REGELN = [
+    ['Bargeldabhebung', 'abhebung|abgehoben|abheben|atm\\b|geldautomat'],
+    ['Unterkunft', 'hotel|hostel|unterkunft|zimmer|ubernachtung|uebernachtung|nacht\\b|nachte|naechte|airbnb|resort|bungalow|homestay|apartment|appartement|ferienwohnung|camping|cabin|bett\\b'],
+    ['Aktivitäten', 'bootstour|bootsausflug|tour|ausflug|eintritt|ticket|tauchen|tauchgang|dive|schnorchel|snorkel|island ?hopping|inselhopping|kajak|kayak|massage|spa\\b|museum|nationalpark|wanderung|kurs\\b|aktivitat|canyoneering|surf|yoga|wasserfall|entrance|guide|lagune'],
+    ['Transport', 'taxi|tricycle|trike|bus\\b|fahre|faehre|ferry|boot|boat|flug|flight|jeepney|grab\\b|uber|roller|motorrad|motorbike|scooter|benzin|tanken|sprit|auto\\b|mietwagen|van\\b|shuttle|maut|transfer|fahrt|zug\\b|bahn|habal|transport|gepack'],
+    ['Einkaufen', 'einkauf|souvenir|kleidung|shirt|sonnencreme|mucken|muecken|apotheke|supermarkt|mall\\b|shop|geschenk|magnet|tasche|schuhe|shampoo|drogerie|simkarte|sim\\b|powerbank|kabel|batterie|sonnenbrille|badehose'],
+    ['Essen & Trinken', 'bier|wein|cocktail|drink|getrank|getraenk|cola|wasser|kaffee|coffee|tee\\b|essen|fruhstuck|fruehstueck|mittag|abend|dinner|lunch|breakfast|snack|restaurant|cafe|pizza|burger|reis|fisch|fleisch|obst|eis\\b|eiscreme|smoothie|saft|mango|mojito|margarita|san miguel|red horse|rum\\b|shake|nudeln|pasta|suppe|grill|bbq|kokos|buffet|imbiss|brot|kuchen|frucht']
+  ].map(function (r) { return [r[0], new RegExp('\\b(?:' + normT(r[1]) + ')', 'g')]; });
+
+  function zahlAusText(t) {
+    t = String(t).replace(/\s/g, '');
+    var punkt = t.indexOf('.') >= 0, komma = t.indexOf(',') >= 0;
+    if (punkt && komma) {
+      if (t.lastIndexOf(',') > t.lastIndexOf('.')) t = t.replace(/\./g, '').replace(',', '.');
+      else t = t.replace(/,/g, '');
+    } else if (komma) {
+      if (/^[1-9]\d{0,2}(,\d{3})+$/.test(t)) t = t.replace(/,/g, ''); // 1,500 = Tausender
+      else t = t.replace(',', '.');
+    } else if (punkt) {
+      if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, ''); // 1.500 = Tausender
+    }
+    var n = parseFloat(t);
+    return isFinite(n) ? n : NaN;
+  }
+  function isoDatum(y, m, d) {
+    var dt = new Date(Date.UTC(y, m - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null;
+    return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  }
+
+  // Liefert { datum, php, eur, zahlung, kategorie, beschreibung, unsicher: {feld: true}, notizen: [] }
+  function parseFreitext(roh) {
+    var orig = String(roh).trim();
+    var masked = normT(orig);
+    var cuts = [];
+    var res = { datum: null, php: null, eur: null, zahlung: 'Bar', kategorie: null, ort: null, beschreibung: '', unsicher: {}, notizen: [] };
+    function maskieren(von, bis) {
+      masked = masked.slice(0, von) + new Array(bis - von + 1).join(' ') + masked.slice(bis);
+      cuts.push([von, bis]);
+    }
+    function ersterTreffer(liste) {
+      var best = null;
+      liste.forEach(function (re) { var m = re.exec(masked); if (m && (!best || m.index < best.index)) best = m; });
+      return best;
+    }
+    var heuteIso = heute(), jahrHeute = Number(heuteIso.slice(0, 4));
+    function ohneJahr(m, d) {
+      var iso = isoDatum(jahrHeute, m, d);
+      if (iso && iso > tagPlus(heuteIso, 180)) iso = isoDatum(jahrHeute - 1, m, d);
+      return iso;
+    }
+    var m;
+
+    // --- Datum ---
+    var reText = /(?:\bam\s+)?\b(\d{1,2})\.?\s*(jan(?:uar)?|feb(?:ruar)?|mar(?:z)?|apr(?:il)?|mai|jun(?:i)?|jul(?:i)?|aug(?:ust)?|sep(?:t(?:ember)?)?|okt(?:ober)?|nov(?:ember)?|dez(?:ember)?)\b(?:\s*(\d{4})\b)?/;
+    m = reText.exec(masked);
+    if (m) {
+      var d1 = Number(m[1]), mo1 = MON[m[2].slice(0, 3)];
+      var iso1 = m[3] ? isoDatum(Number(m[3]), mo1, d1) : ohneJahr(mo1, d1);
+      if (iso1) { res.datum = iso1; maskieren(m.index, m.index + m[0].length); }
+    }
+    if (!res.datum) {
+      var reNum = /(?:\bam\s+)?(?<![\d.,\/-])(\d{1,2})[./-](\d{1,2})(?:[./-](\d{4}|\d{2}))?\.?(?!\d)/g;
+      while ((m = reNum.exec(masked))) {
+        var rest = masked.slice(m.index + m[0].length);
+        if (/^\s*(?:php|₱|pesos?|€|eur)/.test(rest)) continue; // sieht nach Betrag aus
+        var d2 = Number(m[1]), mo2 = Number(m[2]);
+        var iso2 = m[3] ? isoDatum(m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]), mo2, d2) : ohneJahr(mo2, d2);
+        if (iso2) { res.datum = iso2; maskieren(m.index, m.index + m[0].length); break; }
+      }
+    }
+    if (!res.datum) {
+      m = /\b(?:am\s+)?(vorgestern|gestern|heute)\b/.exec(masked);
+      if (m) {
+        res.datum = tagPlus(heuteIso, m[1] === 'heute' ? 0 : (m[1] === 'gestern' ? -1 : -2));
+        maskieren(m.index, m.index + m[0].length);
+      }
+    }
+
+    // --- Betrag ---
+    m = ersterTreffer(BETRAG_PHP);
+    if (m) { res.php = zahlAusText(m.groups.n); maskieren(m.index, m.index + m[0].length); }
+    m = ersterTreffer(BETRAG_EUR);
+    if (m) { res.eur = zahlAusText(m.groups.n); maskieren(m.index, m.index + m[0].length); }
+    if (res.php === null && res.eur === null) {
+      m = new RegExp('(?:fur|fuer|kostet|kosten|ca\\.?|circa|=)\\s*' + NUM_SRC).exec(masked);
+      if (m) {
+        res.php = zahlAusText(m.groups.n); maskieren(m.index, m.index + m[0].length);
+        res.unsicher.betrag = true; res.notizen.push('Betrag: keine Währung angegeben, Pesos angenommen');
+      }
+    }
+    if (res.php === null && res.eur === null) {
+      var reAlle = new RegExp(NUM_SRC, 'g'), kand = [];
+      while ((m = reAlle.exec(masked))) kand.push({ wert: zahlAusText(m.groups.n), von: m.index, bis: m.index + m[0].length });
+      var groesster = kand.reduce(function (b, k) { return (!b || k.wert > b.wert) ? k : b; }, null);
+      var letzter = kand.length ? kand[kand.length - 1] : null;
+      var treffer = null;
+      if (groesster && groesster.wert >= 20) treffer = groesster;                            // Mengen wie „2 Bier“ sind klein
+      else if (letzter && /^\s*$/.test(masked.slice(letzter.bis))) treffer = letzter;       // Zahl am Ende
+      if (treffer) {
+        res.php = treffer.wert; maskieren(treffer.von, treffer.bis);
+        res.unsicher.betrag = true; res.notizen.push('Betrag: keine Währung angegeben, Pesos angenommen');
+      }
+    }
+    if (res.php === null && res.eur === null) { res.unsicher.betrag = true; res.notizen.push('Betrag nicht erkannt'); }
+
+    // --- Zahlungsmittel ---
+    var gefunden = [];
+    function zahlungSuchen(re, wert) {
+      var mm = re.exec(masked);
+      if (mm) { gefunden.push(wert); maskieren(mm.index, mm.index + mm[0].length); }
+    }
+    zahlungSuchen(/(?<![a-z])ing(?![a-z])|gemeinschaftskonto|gemeinsames konto|gemeinschaftskarte/, 'ING');
+    zahlungSuchen(/(?:(?:mit|per|uber|von|bezahlt von|bezahlt mit)\s+)?(?:kk|karte|kreditkarte|card)\s+(?:von\s+)?sabine|sabines?\s+(?:kk|karte|kreditkarte)|sabine\s+(?:hat\s+)?(?:bezahlt|gezahlt)/, 'KK Sabine');
+    zahlungSuchen(/(?:(?:mit|per|uber|von|bezahlt von|bezahlt mit)\s+)?(?:kk|karte|kreditkarte|card)\s+(?:von\s+)?tobi|tobis?\s+(?:kk|karte|kreditkarte)|tobi\s+(?:hat\s+)?(?:bezahlt|gezahlt)/, 'KK Tobi');
+    if (gefunden.length === 0) zahlungSuchen(/(?:in\s+|mit\s+)?(?<![a-z])(?:bar|cash|bargeld)(?![a-z])/, 'Bar');
+    if (gefunden.length === 0) {
+      var kk = /(?:mit\s+)?(?<![a-z])(?:kreditkarte|karte|card|kk)(?![a-z])/.exec(masked);
+      if (kk) {
+        maskieren(kk.index, kk.index + kk[0].length);
+        res.unsicher.zahlung = true; res.notizen.push('Zahlungsmittel: „Karte“ ohne Namen, bitte wählen');
+      }
+    }
+    if (gefunden.length) res.zahlung = gefunden[0];
+    if (gefunden.length > 1) { res.unsicher.zahlung = true; res.notizen.push('Zahlungsmittel: mehrere genannt'); }
+
+    // --- Ort (bekannter Ort irgendwo im Satz, sonst „in Coron“ mit Großbuchstaben) ---
+    var bekannte = {};
+    ausgaben.forEach(function (a) { if (a.ort) bekannte[normT(a.ort)] = a.ort; });
+    Object.keys(bekannte).sort(function (x, y) { return y.length - x.length; }).some(function (key) {
+      var re = new RegExp('(?:\\b(?:in|bei|auf|am|an)\\s+)?(?<![a-z0-9])' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![a-z0-9])');
+      var mm = re.exec(masked);
+      if (!mm) return false;
+      res.ort = bekannte[key]; maskieren(mm.index, mm.index + mm[0].length);
+      return true;
+    });
+    if (!res.ort) {
+      var STOPP = ['bar', 'cash', 'bargeld', 'ordnung', 'ruhe', 'summe', 'euro', 'php', 'pesos', 'peso', 'kk', 'eur'];
+      var reOrt = /\b(?:in|bei|auf)\s+([a-z0-9][a-z0-9-]*(?:\s+[a-z0-9][a-z0-9-]*)?)/g, mo;
+      while ((mo = reOrt.exec(masked))) {
+        var start = mo.index + mo[0].length - mo[1].length;
+        var woerter = mo[1].split(/\s+/);
+        if (!/[A-ZÄÖÜ]/.test(orig.charAt(start)) || STOPP.indexOf(woerter[0]) >= 0) continue;
+        var ende = start + woerter[0].length;
+        if (woerter.length > 1) {
+          var start2 = start + mo[1].indexOf(woerter[1], woerter[0].length);
+          if (/[A-ZÄÖÜ]/.test(orig.charAt(start2))) ende = start2 + woerter[1].length;
+        }
+        res.ort = orig.slice(start, ende).trim();
+        maskieren(mo.index, ende);
+        res.unsicher.ort = true; res.notizen.push('Ort: „' + res.ort + '“ neu erkannt, bitte prüfen');
+        break;
+      }
+    }
+
+    // --- Kategorie ---
+    var beste = null, bestePunkte = 0;
+    KAT_REGELN.forEach(function (r) {
+      var punkte = (masked.match(r[1]) || []).length;
+      if (punkte > bestePunkte) { beste = r[0]; bestePunkte = punkte; }
+    });
+    einst.kategorien.forEach(function (k) {
+      var wurzel = normT(k).slice(0, Math.max(4, normT(k).length - 1)).replace(/[^a-z0-9 ]/g, '');
+      if (wurzel && new RegExp('\\b' + wurzel).test(masked) && bestePunkte < 2) { beste = k; bestePunkte = 2; }
+    });
+    if (!beste) {
+      beste = 'Sonstiges'; res.unsicher.kategorie = true;
+      res.notizen.push('Kategorie: nichts erkannt, „Sonstiges“ gewählt');
+    }
+    res.kategorie = beste;
+    if (beste === ABHEBUNG && !gefunden.length && !res.unsicher.zahlung) {
+      res.unsicher.zahlung = true; res.notizen.push('Zahlungsmittel: bitte die Karte der Abhebung wählen');
+    }
+
+    // --- Beschreibung: Originaltext ohne die erkannten Teile ---
+    cuts.sort(function (a, b) { return a[0] - b[0]; });
+    var teile = [], pos = 0;
+    cuts.forEach(function (c) { if (c[0] > pos) teile.push(orig.slice(pos, c[0])); pos = Math.max(pos, c[1]); });
+    teile.push(orig.slice(pos));
+    var b = teile.join(' ').replace(/\s+/g, ' ').trim();
+    var verbinder = /^(?:(?:für|fuer|am|mit|bezahlt|per|von|und|in|bar|cash|ca\.?|circa)(?=\s|$)|[,;:\-–()\s])+/i;
+    b = b.replace(verbinder, '').replace(/(?:(?:für|fuer|am|mit|bezahlt|per|von|und|bar|cash)(?=\s|$)|[,;:\-–()\s])+$/i, '').trim();
+    res.beschreibung = b ? b.charAt(0).toUpperCase() + b.slice(1) : '';
+    return res;
+  }
+
+  function freitextUebernehmen() {
+    var text = $('freitext').value.trim();
+    if (!text) { toast('Bitte erst einen Satz eintippen.'); return; }
+    var r = parseFreitext(text);
+    formZuruecksetzen();
+    $('datum').value = r.datum || heute();
+    $('kategorie').value = r.kategorie;
+    letzteKategorie = r.kategorie;
+    $('zahlung').value = r.zahlung;
+    kursBereichUmschalten();
+    if (r.php !== null) { $('betrag').value = r.php; beruehrt('php'); }
+    if (r.eur !== null) {
+      if (!istBarModus()) {
+        $('abgebucht').value = r.eur.toFixed(2); beruehrt('eur');
+        if (r.php === null) { r.unsicher.betrag = true; r.notizen.push('Pesobetrag aus Euro × Kurs ' + kursFmt(startKurs()) + ' berechnet'); }
+      } else if (r.php === null) {
+        $('betrag').value = (Math.round(r.eur * startKurs() * 100) / 100); beruehrt('php');
+        r.unsicher.betrag = true; r.notizen.push('Bar: Euro mit Kurs ' + kursFmt(startKurs()) + ' in Pesos umgerechnet, bitte Pesobetrag prüfen');
+      }
+    }
+    $('beschreibung').value = r.beschreibung;
+    if (r.ort) $('ort').value = r.ort;
+    Object.keys(r.unsicher).forEach(function (f) { $(f).classList.add('unsicher'); });
+    var erkannt = [];
+    if (r.php !== null) erkannt.push(geld(r.php));
+    if (r.eur !== null) erkannt.push(euroFmt(r.eur));
+    erkannt.push(datumAnzeige($('datum').value));
+    if (r.ort) erkannt.push(r.ort);
+    erkannt.push(r.kategorie, r.zahlung);
+    $('freitextInfo').innerHTML = 'Erkannt: ' + esc(erkannt.join(' · ')) +
+      (r.notizen.length ? '<br><span class="warnung">Bitte prüfen: ' + esc(r.notizen.join('; ')) + '</span>' : '') +
+      '<br>Prüfe das Formular und tippe auf „Speichern“.';
+  }
+  $('freitextBtn').addEventListener('click', freitextUebernehmen);
+  $('freitext').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); freitextUebernehmen(); } });
+  ['betrag', 'datum', 'kategorie', 'zahlung', 'ort'].forEach(function (id) {
+    ['input', 'change'].forEach(function (ev) { $(id).addEventListener(ev, function () { $(id).classList.remove('unsicher'); }); });
+  });
+
+  // ---------- Verlaufsdiagramm ----------
+  var verlaufW = null; // null = automatisch (Währung des Budgets, sonst Pesos)
+  function niceMax(v) {
+    if (!(v > 0)) return 1;
+    var e = Math.pow(10, Math.floor(Math.log10(v))), m = v / e;
+    return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * e;
+  }
+  function renderVerlauf() {
+    var b = einst.budget;
+    var w = verlaufW || (b ? b.waehrung : 'PHP');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-vw]'), function (btn) {
+      btn.classList.toggle('aktiv', btn.getAttribute('data-vw') === w);
+    });
+    var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
+    if (!ohneAbh.length) { $('verlaufChart').innerHTML = '<div class="leer">Noch keine Ausgaben erfasst.</div>'; $('verlaufInfo').textContent = ''; return; }
+    var wert = function (a) { return w === 'EUR' ? euroVon(a) : a.betrag; };
+    var fmt = w === 'EUR' ? euroFmt : geld;
+    var tagListe = ohneAbh.filter(function (a) { return !istPauschal(a); });
+    var alle = ohneAbh.map(function (a) { return a.datum; }).sort();
+    var tage = tagListe.map(function (a) { return a.datum; }).sort();
+    var letzter = alle[alle.length - 1];
+    var start = (b && b.start) || tage[0] || alle[0];
+    var heuteStr = heute();
+    var ende = (b && b.ende && b.ende >= start) ? b.ende : '';
+    var xEnde = ende || (heuteStr > letzter ? heuteStr : letzter);
+    if (xEnde < letzter) xEnde = letzter;
+    if (xEnde < start) xEnde = start;
+    var linieEnde = Math.max(0, tageZwischen(start, heuteStr < xEnde ? heuteStr : xEnde));
+    linieEnde = Math.max(linieEnde, Math.max(0, tageZwischen(start, letzter)));
+    var gesamtN = Math.max(1, tageZwischen(start, xEnde));
+    if (linieEnde > gesamtN) linieEnde = gesamtN;
+
+    // kumulierte Ausgaben pro Tag (Ausgaben vor dem Start zählen als Anfangswert, z. B. vorab gebuchte Flüge)
+    var proTag = {}, anfang = 0;
+    ohneAbh.forEach(function (a) {
+      if (a.datum < start) anfang += wert(a); else proTag[a.datum] = (proTag[a.datum] || 0) + wert(a);
+    });
+    var punkte = [], cum = anfang;
+    for (var i = 0; i <= linieEnde; i++) { cum += proTag[tagPlus(start, i)] || 0; punkte.push(cum); }
+    var heuteWert = punkte[punkte.length - 1];
+
+    // Hochrechnung bis Reiseende (wie im Reisebudget: Gesamtreise-Kosten einmalig, Rest nach Tagesschnitt)
+    var prog = null;
+    if (b && ende && heuteStr < ende && heuteStr >= start) {
+      var pauschalK = ohneAbh.filter(istPauschal).reduce(function (sum, a) { return sum + wert(a); }, 0);
+      var tageskosten = tagListe.reduce(function (sum, a) { return sum + wert(a); }, 0);
+      var vergangen = Math.max(1, tageZwischen(start, heuteStr) + 1);
+      prog = pauschalK + (tageskosten / vergangen) * (tageZwischen(start, ende) + 1);
+    }
+    var budgetLinie = (b && b.waehrung === w) ? b.betrag : null;
+    var hoechst = Math.max(heuteWert, prog || 0, budgetLinie || 0);
+    var yMax = niceMax(hoechst * 1.05);
+
+    var W = 340, H = 200, ml = 50, mr = 10, mt = 10, mb = 26;
+    function px(x) { return ml + (x / gesamtN) * (W - ml - mr); }
+    function py(y) { return H - mb - (y / yMax) * (H - mt - mb); }
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Verlauf der Ausgaben">';
+    [0, 0.5, 1].forEach(function (f) {
+      var y = py(yMax * f);
+      svg += '<line class="v-achse" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + y + '" y2="' + y + '"></line>' +
+        '<text class="v-text" x="' + (ml - 5) + '" y="' + (y + 3.5) + '" text-anchor="end">' +
+        (yMax * f).toLocaleString('de-DE', { maximumFractionDigits: 0 }) + '</text>';
+    });
+    [[0, 'start'], [gesamtN / 2, 'middle'], [gesamtN, 'end']].forEach(function (t) {
+      var d = tagPlus(start, Math.round(t[0]));
+      svg += '<text class="v-text" x="' + px(t[0]) + '" y="' + (H - 8) + '" text-anchor="' + t[1] + '">' + datumAnzeige(d).slice(0, 5) + '</text>';
+    });
+    if (budgetLinie !== null) {
+      svg += '<line class="v-budget" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + py(budgetLinie) + '" y2="' + py(budgetLinie) + '"></line>';
+    }
+    var pfad = punkte.map(function (v, i) { return (i ? 'L' : 'M') + px(i).toFixed(1) + ' ' + py(v).toFixed(1); }).join(' ');
+    svg += '<path class="v-flaeche" d="' + pfad + ' L' + px(linieEnde).toFixed(1) + ' ' + py(0) + ' L' + px(0).toFixed(1) + ' ' + py(0) + ' Z"></path>';
+    if (prog !== null) {
+      svg += '<path class="v-prog" d="M' + px(linieEnde).toFixed(1) + ' ' + py(heuteWert).toFixed(1) + ' L' + px(gesamtN).toFixed(1) + ' ' + py(prog).toFixed(1) + '"></path>';
+    }
+    svg += '<path class="v-linie" d="' + pfad + '"></path>' +
+      '<circle class="v-punkt" cx="' + px(linieEnde).toFixed(1) + '" cy="' + py(heuteWert).toFixed(1) + '" r="3.5"></circle></svg>';
+    $('verlaufChart').innerHTML = svg;
+
+    var info = '<span style="color:var(--blau-text)">━ Ausgaben</span> ' + fmt(heuteWert);
+    if (prog !== null) info += ' · <span>┅ Hochrechnung bis Reiseende</span> ' + fmt(prog);
+    if (budgetLinie !== null) info += ' · <span style="color:var(--rot)">┅ Budget</span> ' + fmt(budgetLinie);
+    if (b && b.waehrung !== w) info += '<br>Die Budgetlinie siehst du in ' + (b.waehrung === 'EUR' ? '€' : '₱') + '.';
+    $('verlaufInfo').innerHTML = info;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-vw]'), function (btn) {
+    btn.addEventListener('click', function () { verlaufW = btn.getAttribute('data-vw'); renderVerlauf(); });
+  });
+
+  // ---------- Peso-Euro Schnell-Check (Funktion unverändert, fester Richtwert) ----------
+  (function () {
+    var RATE = 71.26; // Pesos pro Euro
+    var amountInput = $('rcBetrag'), slider = $('rcSlider'), euros = $('rcEuro');
+    var euroFormat = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function update(value, source) {
+      var amount = Number(value);
+      if (!Number.isFinite(amount) || amount < 0) amount = 0;
+      amountInput.value = String(amount);
+      if (source !== 'slider') slider.value = String(Math.min(5000, Math.max(20, amount)));
+      euros.textContent = euroFormat.format(amount / RATE);
+    }
+    amountInput.addEventListener('input', function () { update(amountInput.value, 'input'); });
+    slider.addEventListener('input', function () { amountInput.value = slider.value; update(slider.value, 'slider'); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-rc]'), function (button) {
+      button.addEventListener('click', function () { update(button.getAttribute('data-rc'), 'button'); });
+    });
+    update(amountInput.value, 'initial');
+  })();
+
+  // ---------- Hell / Dunkel ----------
+  function themaAnwenden(t) {
+    document.documentElement.setAttribute('data-thema', t);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', t === 'dunkel' ? '#1e3a8a' : '#1d4ed8');
+  }
+  $('themaBtn').addEventListener('click', function () {
+    var neu = document.documentElement.getAttribute('data-thema') === 'dunkel' ? 'hell' : 'dunkel';
+    themaAnwenden(neu);
+    try { localStorage.setItem('reiseausgaben.thema', neu); } catch (e) {}
+  });
+  themaAnwenden(document.documentElement.getAttribute('data-thema') || 'hell');
+
+  // ---------- Auf- und zuklappbare Karten ----------
+  var KARTEN = ['formKarte', 'barKarte', 'rechnerKarte', 'katKarte', 'budgetKarte', 'verlaufKarte', 'tabsKarte', 'kategorienKarte', 'backupKarte'];
+  var KARTEN_STANDARD_ZU = ['rechnerKarte']; // neue Karten starten so, bis du sie einmal umschaltest
+  var KEY_UI = 'reiseausgaben.ui.v1';
+  function zugeklappteLaden() {
+    try {
+      var d = JSON.parse(localStorage.getItem(KEY_UI));
+      if (Array.isArray(d)) return { zu: d, bekannt: ['formKarte', 'barKarte', 'katKarte', 'budgetKarte', 'tabsKarte', 'kategorienKarte', 'backupKarte'] };
+      if (d && Array.isArray(d.zu) && Array.isArray(d.bekannt)) return d;
+    } catch (e) {}
+    return { zu: [], bekannt: [] };
+  }
+  function zugeklappteSpeichern() {
+    var zu = KARTEN.filter(function (id) { return $(id).classList.contains('zu'); });
+    try { localStorage.setItem(KEY_UI, JSON.stringify({ zu: zu, bekannt: KARTEN.slice() })); } catch (e) {}
+  }
+  function karteUmschalten(id, zu) {
+    var k = $(id);
+    var neu = (typeof zu === 'boolean') ? zu : !k.classList.contains('zu');
+    k.classList.toggle('zu', neu);
+    k.querySelector('h2').setAttribute('aria-expanded', String(!neu));
+    zugeklappteSpeichern();
+  }
+  function kartenZuklappbarMachen() {
+    var anfang = zugeklappteLaden();
+    KARTEN.forEach(function (id) {
+      var karte = $(id), kopf = karte.querySelector('h2');
+      var inhalt = document.createElement('div');
+      inhalt.className = 'karte-inhalt';
+      while (kopf.nextSibling) inhalt.appendChild(kopf.nextSibling);
+      karte.appendChild(inhalt);
+      kopf.classList.add('kopf-klick');
+      kopf.setAttribute('role', 'button');
+      kopf.tabIndex = 0;
+      kopf.addEventListener('click', function () { karteUmschalten(id); });
+      kopf.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); karteUmschalten(id); }
+      });
+      karteUmschalten(id, anfang.bekannt.indexOf(id) >= 0 ? anfang.zu.indexOf(id) >= 0 : KARTEN_STANDARD_ZU.indexOf(id) >= 0);
+    });
+  }
+
+  // ---------- Start ----------
+  kartenZuklappbarMachen();
+  kategorienAbgleichen();
+  dropdownsFuellen();
+  budgetFelderFuellen();
+  formZuruecksetzen();
+  zeichnen();
+
+  // Browser bitten, die Daten nicht automatisch zu löschen
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(function () {});
+  }
+  // Offline-Fähigkeit
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>
