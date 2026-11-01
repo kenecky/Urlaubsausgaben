@@ -360,27 +360,6 @@
     <button type="button" id="reiseNeuBtn">＋ Neue Reise</button>
     <button type="button" class="hell" id="vergleichBtn">Reisen vergleichen</button>
   </div>
-  <section class="karte" id="reisenKarte">
-    <h2>Meine Reisen</h2>
-    <div id="reisenListe"></div>
-  </section>
-
-  <section class="karte" id="weltKarte">
-    <div class="wk-kopf"><h2>Weltkarte</h2>
-      <div class="wk-zoom"><button type="button" id="wkPlus" aria-label="Vergrößern">＋</button><button type="button" id="wkMinus" aria-label="Verkleinern">−</button><button type="button" id="wkReset" aria-label="Zurücksetzen">⤾</button></div></div>
-    <div class="weltkarte" id="wkBox"><svg id="wkSvg" viewBox="0 0 1000 520" aria-label="Weltkarte"></svg></div>
-    <div class="wk-legende"><span><i class="wk-punkt" style="background:var(--blau)"></i>besucht</span><span><i class="wk-punkt" style="background:#f59e0b"></i>geplant</span><span id="wkZahl"></span></div>
-    <div class="wk-chips" id="wkChips"></div>
-    <div class="wk-auswahl" id="wkAuswahl" hidden></div>
-  </section>
-
-  <section class="karte" id="vergleichKarte" hidden>
-    <div class="wk-kopf"><h2>Reisen vergleichen</h2><button type="button" class="hell x-btn" id="vglX" aria-label="Schließen">✕</button></div>
-    <div class="wk-chips" id="vglChips"></div>
-    <div class="vgl-wrap" id="vglTabelle"></div>
-    <button type="button" class="hell" id="vglZu" style="margin-top:10px">Schließen</button>
-  </section>
-
   <section class="karte" id="neueReiseKarte" hidden>
     <div class="wk-kopf"><h2>Neue Reise</h2><button type="button" class="hell x-btn" id="nrX" aria-label="Schließen">✕</button></div>
     <label for="nrName">Name (optional)</label>
@@ -399,6 +378,27 @@
     </div>
     <button type="button" id="nrAnlegen">Reise anlegen</button>
     <button type="button" class="hell" id="nrAbbrechen" style="margin-top:8px">Abbrechen</button>
+  </section>
+
+  <section class="karte" id="vergleichKarte" hidden>
+    <div class="wk-kopf"><h2>Reisen vergleichen</h2><button type="button" class="hell x-btn" id="vglX" aria-label="Schließen">✕</button></div>
+    <div class="wk-chips" id="vglChips"></div>
+    <div class="vgl-wrap" id="vglTabelle"></div>
+    <button type="button" class="hell" id="vglZu" style="margin-top:10px">Schließen</button>
+  </section>
+
+  <section class="karte" id="reisenKarte">
+    <h2>Meine Reisen</h2>
+    <div id="reisenListe"></div>
+  </section>
+
+  <section class="karte" id="weltKarte">
+    <div class="wk-kopf"><h2>Weltkarte</h2>
+      <div class="wk-zoom"><button type="button" id="wkPlus" aria-label="Vergrößern">＋</button><button type="button" id="wkMinus" aria-label="Verkleinern">−</button><button type="button" id="wkReset" aria-label="Zurücksetzen">⤾</button></div></div>
+    <div class="weltkarte" id="wkBox"><svg id="wkSvg" viewBox="0 0 1000 520" aria-label="Weltkarte"></svg></div>
+    <div class="wk-legende"><span><i class="wk-punkt" style="background:var(--blau)"></i>besucht</span><span><i class="wk-punkt" style="background:#f59e0b"></i>geplant</span><span id="wkZahl"></span></div>
+    <div class="wk-chips" id="wkChips"></div>
+    <div class="wk-auswahl" id="wkAuswahl" hidden></div>
   </section>
 
   <section class="karte" id="startBackupKarte">
