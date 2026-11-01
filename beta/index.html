@@ -138,7 +138,7 @@
   .kopf-links h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .beta-marke { background: #f59e0b; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 8px; letter-spacing: .04em; flex: none; }
   header .startsub { font-size: 13px; opacity: .85; margin-top: 4px; }
-  .weltkarte { position: relative; touch-action: none; border-radius: 12px; overflow: hidden; background: var(--blau-hell); }
+  .weltkarte { position: relative; touch-action: pan-y; border-radius: 12px; overflow: hidden; background: var(--blau-hell); }
   .weltkarte svg { display: block; width: 100%; height: auto; }
   .wk-land { fill: #cbd5e1; stroke: #fff; stroke-width: .6; }
   html[data-thema="dunkel"] .weltkarte { background: #0a101c; }
@@ -2753,7 +2753,7 @@
   }
   window.addEventListener('pointerup', wkLos);
   window.addEventListener('pointercancel', wkLos);
-  $('wkBox').addEventListener('wheel', function (ev) { ev.preventDefault(); wkZoom(ev.deltaY < 0 ? 1.2 : 1 / 1.2); }, { passive: false });
+  $('wkBox').addEventListener('wheel', function (ev) { if (!ev.ctrlKey) return; ev.preventDefault(); wkZoom(ev.deltaY < 0 ? 1.2 : 1 / 1.2); }, { passive: false });
 
   // ---------- Abschluss, Bericht, Vergleich ----------
   function gesperrt() { return !!(reise && reise.status === 'abgeschlossen'); }
