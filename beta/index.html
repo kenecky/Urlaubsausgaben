@@ -382,7 +382,7 @@
   </section>
 
   <section class="karte" id="neueReiseKarte" hidden>
-    <h2>Neue Reise</h2>
+    <div class="wk-kopf"><h2>Neue Reise</h2><button type="button" class="hell x-btn" id="nrX" aria-label="Schließen">✕</button></div>
     <label for="nrName">Name (optional)</label>
     <input type="text" id="nrName" maxlength="60" placeholder="z. B. Thailand Winter 2027" autocomplete="off">
     <label for="nrLand">Land</label>
@@ -3222,6 +3222,7 @@
     }).catch(onlineFehler);
   });
   $('nrAbbrechen').addEventListener('click', function () { $('neueReiseKarte').hidden = true; });
+  $('nrX').addEventListener('click', function () { $('neueReiseKarte').hidden = true; });
   $('nrLand').addEventListener('change', nrLandGeaendert);
   $('nrAnlegen').addEventListener('click', function () {
     var l = LAND[$('nrLand').value];
