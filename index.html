@@ -151,6 +151,9 @@
   #startAktionen button { margin: 0; width: 100%; height: 50px; padding: 0 8px; font-size: 15px; white-space: nowrap; display: flex; align-items: center; justify-content: center; }
   .karte.zu > .wk-kopf { margin-bottom: 0; }
   .karte.zu .wk-zoom { display: none; }
+  .pk-zeile { padding: 10px 0; border-top: 1px solid var(--linie); }
+  .pk-zeile:first-child { border-top: 0; padding-top: 0; }
+  .pk-knoepfe { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .wk-kopf { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
   .wk-kopf h2 { margin: 0; flex: 1; }
   .x-btn { width: 36px; height: 36px; padding: 0; margin: 0; font-size: 17px; line-height: 1; flex: none; }
@@ -398,6 +401,12 @@
     <div class="wk-legende"><span><i class="wk-punkt" style="background:var(--blau)"></i>besucht</span><span><i class="wk-punkt" style="background:#f59e0b"></i>geplant</span><span id="wkZahl"></span></div>
     <div class="wk-chips" id="wkChips"></div>
     <div class="wk-auswahl" id="wkAuswahl" hidden></div>
+  </section>
+
+  <section class="karte" id="papierkorbKarte" hidden>
+    <h2>Papierkorb</h2>
+    <div id="papierkorbListe"></div>
+    <p class="hinweis">Gelöschte Reisen bleiben hier erhalten, bis du sie endgültig löschst.</p>
   </section>
 
   <section class="karte" id="startBackupKarte">
@@ -738,7 +747,8 @@
     e.letzterOrt = typeof d.letzterOrt === 'string' ? d.letzterOrt.slice(0, 40) : '';
     return e;
   }
-  var reisen = [];          // alle Reisen (Kopfdaten)
+  var reisen = [];          // alle Reisen (Kopfdaten), auch die im Papierkorb
+  function aktive() { return reisen.filter(function (r) { return !r.geloescht; }); }
   var reise = null;         // gerade geöffnete Reise
   var ausgaben = [];        // Ausgaben der geöffneten Reise
   var einst = einstSauber({}); // Einstellungen der geöffneten Reise
@@ -2370,8 +2380,8 @@
   themaAnwenden(document.documentElement.getAttribute('data-thema') || 'hell');
 
   // ---------- Auf- und zuklappbare Karten ----------
-  var KARTEN = ['reisenKarte', 'weltKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'rechnerKarte', 'katKarte', 'budgetKarte', 'verlaufKarte', 'tabsKarte', 'reiseKarte', 'kategorienKarte', 'backupKarte'];
-  var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte']; // neue Karten starten so, bis du sie einmal umschaltest
+  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'rechnerKarte', 'katKarte', 'budgetKarte', 'verlaufKarte', 'tabsKarte', 'reiseKarte', 'kategorienKarte', 'backupKarte'];
+  var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte', 'papierkorbKarte']; // neue Karten starten so, bis du sie einmal umschaltest
   var KEY_UI = 'reisen.v2.ui';
   function zugeklappteLaden() {
     try {
@@ -2491,7 +2501,8 @@
     return { id: m.id, name: String(m.name || 'Reise').slice(0, 60), laender: laender, start: strDatum(m.start), ende: strDatum(m.ende),
              status: m.status === 'abgeschlossen' ? 'abgeschlossen' : 'aktiv', erstellt: m.erstellt > 0 ? m.erstellt : Date.now(),
              abgeschlossenAm: m.abgeschlossenAm > 0 ? m.abgeschlossenAm : 0,
-             notiz: typeof m.notiz === 'string' ? m.notiz.slice(0, 2000) : '', verrechnet: m.verrechnet === true };
+             notiz: typeof m.notiz === 'string' ? m.notiz.slice(0, 2000) : '', verrechnet: m.verrechnet === true,
+             geloescht: m.geloescht > 0 ? m.geloescht : 0 };
   }
   function indexLaden() {
     try { var d = JSON.parse(localStorage.getItem(IDX_KEY)); return Array.isArray(d) ? d.map(reiseSauber).filter(Boolean) : []; } catch (e) { return []; }
@@ -2551,6 +2562,7 @@
     if (!alt) { toast('Keine Daten der bisherigen App gefunden.'); return; }
     var m = reisen.filter(function (r) { return r.id === MIGRATIONS_ID; })[0];
     if (!m) { toast('Die Reise Philippinen gibt es noch nicht.'); return; }
+    if (m.geloescht) { toast('Die Reise Philippinen liegt im Papierkorb. Stelle sie zuerst wieder her.'); return; }
     if (m.status === 'abgeschlossen') { toast('Die Reise ist abgeschlossen.'); return; }
     var d = datenLaden(m.id);
     var erg = mergeInDaten(d.ausgaben, d.einst.geloescht, alt.ausgaben.map(eintragSauber).filter(Boolean), alt.einst.geloescht);
@@ -2582,7 +2594,7 @@
     } finally { kontext = null; }
   }
   function startRendern() {
-    var liste = reisen.slice().sort(function (a, b) { return (b.start || '').localeCompare(a.start || ''); });
+    var liste = aktive().sort(function (a, b) { return (b.start || '').localeCompare(a.start || ''); });
     $('reisenListe').innerHTML = liste.length ? liste.map(function (m) {
       var st = reiseStatus(m), l = m.laender[0], k = kennzahlen(datenLaden(m.id), l ? l.waehrung : 'EUR');
       var tage = (m.start && m.ende) ? tageZwischen(m.start, m.ende) + 1 : 0;
@@ -2595,7 +2607,8 @@
     var laufend = liste.filter(function (m) { return reiseStatus(m) === 'laeuft'; }).length;
     $('startSub').textContent = liste.length + (liste.length === 1 ? ' Reise' : ' Reisen') + (laufend ? ' · ' + laufend + ' läuft' : '');
     karteRendern();
-    $('altUebernehmenBtn').hidden = !(altLesen() && reisen.some(function (r) { return r.id === MIGRATIONS_ID; }));
+    papierkorbRendern();
+    $('altUebernehmenBtn').hidden = !(altLesen() && aktive().some(function (r) { return r.id === MIGRATIONS_ID; }));
   }
   $('reisenListe').addEventListener('click', function (e) {
     var k = e.target.closest('[data-reise]');
@@ -2608,7 +2621,7 @@
   var wkGezeichnet = false, wkAktiv = '';
   function wkLaender() {
     var erg = {};
-    reisen.forEach(function (m) {
+    aktive().forEach(function (m) {
       var st = reiseStatus(m), art = (st === 'geplant') ? 'geplant' : 'besucht';
       m.laender.forEach(function (l) {
         if (!l.code) return;
@@ -2660,7 +2673,7 @@
     var besucht = Object.keys(info).filter(function (c) { return info[c].art === 'besucht'; }).length;
     $('wkZahl').textContent = besucht ? besucht + (besucht === 1 ? ' Land besucht' : ' Länder besucht') : '';
     wkChipsRendern(info);
-    $('weltKarte').hidden = !reisen.length;
+    $('weltKarte').hidden = !aktive().length;
     if (wkAktiv && !info[wkAktiv]) wkAktiv = '';
     wkAuswahlZeigen(info);
   }
@@ -2944,9 +2957,9 @@
   // Reisen vergleichen
   var vglAuswahl = null;
   function vergleichRendern() {
-    var liste = reisen.slice().sort(function (a, b) { return (b.start || '').localeCompare(a.start || ''); });
+    var liste = aktive().sort(function (a, b) { return (b.start || '').localeCompare(a.start || ''); });
     if (!vglAuswahl) vglAuswahl = liste.slice(0, 3).map(function (m) { return m.id; });
-    vglAuswahl = vglAuswahl.filter(function (id) { return reisen.some(function (m) { return m.id === id; }); });
+    vglAuswahl = vglAuswahl.filter(function (id) { return aktive().some(function (m) { return m.id === id; }); });
     $('vglChips').innerHTML = liste.map(function (m) {
       return '<button type="button" class="wk-chip' + (vglAuswahl.indexOf(m.id) >= 0 ? ' sel' : '') + '" data-vgl="' + esc(m.id) + '">' + (vglAuswahl.indexOf(m.id) >= 0 ? '✓ ' : '') + esc(m.name) + '</button>';
     }).join('');
@@ -3154,16 +3167,42 @@
     toast('Reise gespeichert');
   });
   $('rkLoeschen').addEventListener('click', function () {
-    if (!confirm('Reise „' + reise.name + '“ mit ' + ausgaben.length + ' Einträgen wirklich löschen? Das lässt sich nicht rückgängig machen. Sichere vorher ein Backup.')) return;
-    var eingabe = window.prompt('Zum Löschen den Namen der Reise eintippen:');
-    if (eingabe === null) return;
-    if (eingabe.trim().toLowerCase() !== reise.name.trim().toLowerCase()) { toast('Der Name stimmt nicht. Nichts gelöscht.'); return; }
-    var id = reise.id;
-    reisen = reisen.filter(function (r) { return r.id !== id; });
+    if (!confirm('Reise „' + reise.name + '“ mit ' + ausgaben.length + ' Einträgen in den Papierkorb verschieben?\n\nDu kannst sie dort jederzeit wiederherstellen.')) return;
+    reise.geloescht = Date.now();
     indexSpeichern();
-    try { localStorage.removeItem(DATEN_PRE + id); } catch (e) {}
     zeigeStart();
-    toast('Reise gelöscht');
+    toast('In den Papierkorb verschoben');
+  });
+  // Papierkorb: wiederherstellen oder endgültig löschen
+  function papierkorbRendern() {
+    var tot = reisen.filter(function (r) { return r.geloescht; }).sort(function (a, b) { return b.geloescht - a.geloescht; });
+    $('papierkorbKarte').hidden = !tot.length;
+    $('papierkorbKarte').querySelector('h2').textContent = 'Papierkorb (' + tot.length + ')';
+    $('papierkorbListe').innerHTML = tot.map(function (m) {
+      return '<div class="pk-zeile"><div class="pk-info"><b>' + (m.laender.length ? m.laender.map(function (x) { return flagge(x.code); }).join('') + ' ' : '') + esc(m.name) + '</b>' +
+        '<div class="hinweis" style="margin:2px 0 0">' + (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) + ' · ' : '') + 'gelöscht am ' + esc(zeitStempel(m.geloescht)) + '</div></div>' +
+        '<div class="pk-knoepfe"><button type="button" class="hell klein" data-pk-rest="' + esc(m.id) + '">Wiederherstellen</button>' +
+        '<button type="button" class="rot klein" data-pk-weg="' + esc(m.id) + '">Endgültig löschen …</button></div></div>';
+    }).join('');
+  }
+  $('papierkorbListe').addEventListener('click', function (e) {
+    var r = e.target.closest('[data-pk-rest]'), w = e.target.closest('[data-pk-weg]');
+    if (r) {
+      var m = reisen.filter(function (x) { return x.id === r.getAttribute('data-pk-rest'); })[0];
+      if (!m) return;
+      m.geloescht = 0; indexSpeichern(); startRendern(); toast('„' + m.name + '“ wiederhergestellt');
+    } else if (w) {
+      var id = w.getAttribute('data-pk-weg'), t = reisen.filter(function (x) { return x.id === id; })[0];
+      if (!t) return;
+      if (!confirm('Reise „' + t.name + '“ endgültig löschen? Das lässt sich nicht rückgängig machen.')) return;
+      var eingabe = window.prompt('Zum endgültigen Löschen den Namen der Reise eintippen:');
+      if (eingabe === null) return;
+      if (eingabe.trim().toLowerCase() !== t.name.trim().toLowerCase()) { toast('Der Name stimmt nicht. Nichts gelöscht.'); return; }
+      reisen = reisen.filter(function (x) { return x.id !== id; });
+      indexSpeichern();
+      try { localStorage.removeItem(DATEN_PRE + id); } catch (er) {}
+      startRendern(); toast('Endgültig gelöscht');
+    }
   });
 
   // Neue Reise anlegen
@@ -3272,6 +3311,7 @@
       datenSpeichernFuer(meta.id, { ausgaben: liste, einst: eNeu });
       return { neu: meta.name };
     }
+    if (vorhanden.geloescht) return { fehler: 'Die Reise „' + vorhanden.name + '“ liegt im Papierkorb. Stelle sie dort zuerst wieder her.' };
     if (vorhanden.status === 'abgeschlossen') return { fehler: 'Die Reise „' + vorhanden.name + '“ ist abgeschlossen. Öffne sie zuerst wieder.' };
     var d = datenLaden(meta.id);
     var m = mergeInDaten(d.ausgaben, d.einst.geloescht, liste, eNeu.geloescht);
@@ -3341,7 +3381,7 @@
   (function () {
     // Läuft genau eine Reise (oder war zuletzt eine laufende offen), geht die App direkt hinein
     var g = globalLaden();
-    var laufend = reisen.filter(function (m) { return reiseStatus(m) === 'laeuft'; });
+    var laufend = aktive().filter(function (m) { return reiseStatus(m) === 'laeuft'; });
     var ziel = laufend.filter(function (m) { return m.id === g.aktiv; })[0] || (laufend.length === 1 ? laufend[0] : null);
     if (ziel) reiseOeffnen(ziel.id);
   })();
