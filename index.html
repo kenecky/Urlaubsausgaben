@@ -2832,12 +2832,14 @@
       box.innerHTML = '<p class="hinweis" style="margin-top:0">Abgeschlossen am ' + esc(zeitStempel(reise.abgeschlossenAm || Date.now())) + '. Die Reise ist schreibgeschützt.</p>' +
         notizHtml() +
         '<button type="button" class="hell" data-ab="bericht" style="margin-top:12px">Abschlussbericht</button>' +
-        '<button type="button" class="rot" data-ab="oeffnen" style="margin-top:8px">Reise wieder öffnen …</button>';
+        '<button type="button" class="rot" data-ab="oeffnen" style="margin-top:8px">Reise wieder öffnen …</button>' +
+        '<button type="button" class="rot" data-ab="loeschen" style="margin-top:8px">Reise löschen …</button>';
     } else {
       box.innerHTML = '<p class="hinweis" style="margin-top:0">Wenn ihr zurück seid: erst prüfen, dann abschließen. Danach ist die Reise nur noch lesbar. Wieder öffnen geht jederzeit nach Rückfrage.</p>' +
         notizHtml() +
         '<button type="button" data-ab="check" style="margin-top:12px">Abschluss-Check starten</button>' +
         '<button type="button" class="hell" data-ab="bericht" style="margin-top:8px">Zwischenstand als Bericht</button>' +
+        '<button type="button" class="rot" data-ab="loeschen" style="margin-top:8px">Reise löschen …</button>' +
         '<div id="checkListe"></div>';
     }
     var banner = $('gesperrtBanner');
@@ -2872,6 +2874,7 @@
     var a = b.getAttribute('data-ab');
     if (a === 'check') checkZeigen();
     else if (a === 'bericht') berichtZeigen();
+    else if (a === 'loeschen') $('rkLoeschen').click();
     else if (a === 'abschliessen') {
       var warn = abschlussCheck().filter(function (x) { return x.w; }).length;
       if (!confirm('Reise „' + reise.name + '“ jetzt abschließen?' + (warn ? '\n\nEs gibt noch ' + warn + (warn === 1 ? ' Hinweis' : ' Hinweise') + ' im Check.' : '') + '\n\nDanach kann nichts mehr geändert werden, bis du die Reise wieder öffnest.')) return;
