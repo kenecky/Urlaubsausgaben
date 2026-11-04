@@ -554,6 +554,14 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
 .rf-daten span:nth-child(2) { color: var(--text); font-weight: 600; }
 .offen-tag { display: inline-block; background: #FFEFD2; color: #8A5300; font-size: 11.5px; font-weight: 700; line-height: 1.5; padding: 0 8px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; }
 html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
+
+.kat-eintrag { flex-wrap: wrap; }
+.kat-name { flex: 1; }
+.kat-aktion { flex: none; flex-wrap: nowrap; }
+.kat-knoepfe { flex-basis: 100%; display: flex; gap: 8px; padding-left: 42px; margin-top: 2px; }
+.rc-ergebnis { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 16px; }
+.rc-label { font-size: 14px; flex: none; }
+#rcEuro { margin-top: 0; font-size: clamp(24px, 7vw, 30px); text-align: right; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1950,9 +1958,9 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
       var eigen = einst.kategorien.indexOf(k) >= 0;
       var pausch = einst.pauschal.indexOf(k) >= 0;
       return '<div class="kat-eintrag"><span class="kat-name">' + katIcon(k).replace('kat-ico', 'kat-ico mini') + '<span>' + esc(k) + '</span></span><span class="kat-aktion">' +
-        '<label class="check mini"><input type="checkbox" data-kat-pausch="' + esc(k) + '"' + (pausch ? ' checked' : '') + '> Gesamtreise</label>' +
-        (eigen ? '<button type="button" class="klein hell" data-kat-ren="' + esc(k) + '">Umbenennen</button><button type="button" class="klein rot" data-kat-del="' + esc(k) + '">Löschen</button>' : '') +
-        '</span></div>';
+        '<label class="check mini"><input type="checkbox" data-kat-pausch="' + esc(k) + '"' + (pausch ? ' checked' : '') + '> Gesamtreise</label></span>' +
+        (eigen ? '<div class="kat-knoepfe"><button type="button" class="klein hell" data-kat-ren="' + esc(k) + '">Umbenennen</button><button type="button" class="klein rot" data-kat-del="' + esc(k) + '">Löschen</button></div>' : '') +
+        '</div>';
     }).join('');
   }
   $('katListe').addEventListener('change', function (e) {
