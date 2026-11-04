@@ -525,6 +525,25 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
 .re-flagge { grid-row: 1 / span 3; }
 .re-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .karte .wk-kopf h2 { margin: 0; }
+
+:root { --perf: #B7CAC6; } html[data-thema="dunkel"] { --perf: #335459; }
+.t-perf { border-top: 0; height: 3px; margin: 20px -20px 0; background: repeating-linear-gradient(90deg, var(--perf) 0 11px, transparent 11px 19px); }
+.t-perf::before, .t-perf::after { top: -13px; width: 28px; height: 28px; }
+.t-perf::before { left: -14px; } .t-perf::after { right: -14px; }
+#kursZeile label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kat-ico.mini { grid-row: auto; width: 32px; height: 32px; border-radius: 10px; font-size: 14px; flex: none; }
+.kat-ico.mini svg { width: 18px; height: 18px; }
+#balken .balken-zeile { grid-template-columns: 32px 1fr auto; column-gap: 12px; }
+#balken .kat-ico.mini { grid-column: 1; grid-row: 1 / span 2; align-self: center; }
+#balken .balken-name { grid-column: 2; grid-row: 1; }
+#balken .balken-spur { grid-column: 2; grid-row: 2; }
+#balken .balken-wert { grid-column: 3; grid-row: 1 / span 2; }
+#balken .balken-zeile.abhebung { grid-template-columns: 32px 1fr auto; }
+#balken .balken-zeile.abhebung .kat-ico.mini { grid-row: 1; }
+#balken .balken-zeile.abhebung .balken-name { white-space: normal; }
+.kat-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.kat-eintrag { flex-wrap: wrap; }
+.kat-aktion { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -658,7 +677,7 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
           <input type="number" id="kurs" inputmode="decimal" step="any" min="0.0001" required>
         </div>
         <div>
-          <label for="abgebucht">Abgebuchter Betrag (€)</label>
+          <label for="abgebucht">Abgebucht (€)</label>
           <input type="number" id="abgebucht" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00">
         </div>
       </div>
@@ -704,13 +723,48 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
       <div id="rcEuro">7,02 €</div>
     </div>
     <p class="hinweis" id="rcHinweis">Rechenbasis: 1 € = 71,26 PHP</p>
-    <p class="hinweis">Der Kurs ist ein fester Richtwert in dieser Datei und wird nicht live aktualisiert. Der tatsächliche Kurs sowie Gebühren bei Karten- oder Bargeldzahlungen können abweichen.</p>
   </section>
 
   <section class="karte" id="katKarte">
     <h2>Pro Kategorie</h2>
     <div id="balken"></div>
     <p class="hinweis">Tippe auf eine Kategorie, um die Liste zu filtern.</p>
+  </section>
+
+  <section class="karte tabs-karte" id="tabsKarte">
+    <h2>Übersicht</h2>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab aktiv" data-tab="ausgaben">Ausgaben</button>
+      <button type="button" class="tab" data-tab="zahlung">Zahlung</button>
+      <button type="button" class="tab" data-tab="tag">Pro Tag</button>
+      <button type="button" class="tab" data-tab="orte">Orte</button>
+      <button type="button" class="tab" data-tab="abrechnung">Verrechnung</button>
+    </div>
+
+    <div class="tab-inhalt" id="tab-ausgaben">
+      <div class="filterleiste">
+        <div>
+          <label for="filter">Kategorie</label>
+          <select id="filter"></select>
+        </div>
+        <div>
+          <label for="sortierung">Sortierung</label>
+          <select id="sortierung">
+            <option value="datum-neu">Neueste zuerst</option>
+            <option value="datum-alt">Älteste zuerst</option>
+            <option value="betrag-hoch">Teuerste zuerst</option>
+            <option value="betrag-tief">Günstigste zuerst</option>
+            <option value="kategorie">Kategorie A–Z</option>
+          </select>
+        </div>
+      </div>
+      <label class="check" style="margin:4px 0 10px"><input type="checkbox" id="nurOffen"> <span id="nurOffenText">Nur: Kurs noch nicht eingetragen</span></label>
+      <div id="liste" class="liste"></div>
+    </div>
+    <div class="tab-inhalt" id="tab-zahlung" hidden></div>
+    <div class="tab-inhalt" id="tab-tag" hidden></div>
+    <div class="tab-inhalt" id="tab-orte" hidden></div>
+    <div class="tab-inhalt" id="tab-abrechnung" hidden></div>
   </section>
 
   <section class="karte" id="budgetKarte">
@@ -756,58 +810,6 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
     <p class="hinweis" id="verlaufInfo"></p>
   </section>
 
-  <section class="karte tabs-karte" id="tabsKarte">
-    <h2>Übersicht</h2>
-    <div class="tabs" role="tablist">
-      <button type="button" class="tab aktiv" data-tab="ausgaben">Ausgaben</button>
-      <button type="button" class="tab" data-tab="zahlung">Zahlung</button>
-      <button type="button" class="tab" data-tab="tag">Pro Tag</button>
-      <button type="button" class="tab" data-tab="orte">Orte</button>
-      <button type="button" class="tab" data-tab="abrechnung">Verrechnung</button>
-    </div>
-
-    <div class="tab-inhalt" id="tab-ausgaben">
-      <div class="filterleiste">
-        <div>
-          <label for="filter">Kategorie</label>
-          <select id="filter"></select>
-        </div>
-        <div>
-          <label for="sortierung">Sortierung</label>
-          <select id="sortierung">
-            <option value="datum-neu">Neueste zuerst</option>
-            <option value="datum-alt">Älteste zuerst</option>
-            <option value="betrag-hoch">Teuerste zuerst</option>
-            <option value="betrag-tief">Günstigste zuerst</option>
-            <option value="kategorie">Kategorie A–Z</option>
-          </select>
-        </div>
-      </div>
-      <label class="check" style="margin:4px 0 10px"><input type="checkbox" id="nurOffen"> <span id="nurOffenText">Nur: Kurs noch nicht eingetragen</span></label>
-      <div id="liste" class="liste"></div>
-    </div>
-    <div class="tab-inhalt" id="tab-zahlung" hidden></div>
-    <div class="tab-inhalt" id="tab-tag" hidden></div>
-    <div class="tab-inhalt" id="tab-orte" hidden></div>
-    <div class="tab-inhalt" id="tab-abrechnung" hidden></div>
-  </section>
-
-  <section class="karte" id="abschlussKarte">
-    <h2>Abschluss</h2>
-    <div id="abschlussInhalt"></div>
-  </section>
-
-  <section class="karte" id="berichtKarte" hidden>
-    <h2>Abschlussbericht</h2>
-    <div class="bericht" id="berichtInhalt"></div>
-    <div class="zeile" style="margin-top:10px">
-      <div><button type="button" class="hell" id="berichtTeilen" style="margin-top:0">Teilen</button></div>
-      <div><button type="button" class="hell" id="berichtKopieren" style="margin-top:0">Kopieren</button></div>
-    </div>
-    <button type="button" class="hell" id="berichtDrucken" style="margin-top:8px">Drucken / als PDF</button>
-    <button type="button" class="hell" id="berichtZu" style="margin-top:8px">Schließen</button>
-  </section>
-
   <section class="karte" id="reiseKarte">
     <h2>Diese Reise</h2>
     <label for="rkName">Name</label>
@@ -843,6 +845,22 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
       <div style="flex:1"><button type="button" class="hell" id="katAdd" style="margin-top:0;padding:12px 8px">Hinzufügen</button></div>
     </div>
     <p class="hinweis">„Gesamtreise“ markiert Kategorien, deren Kosten für die ganze Reise gelten (z. B. Flüge, Hunde). Sie zählen zum Budget, aber nicht zum Tagesschnitt und zur Hochrechnung. Einzelne Ausgaben markierst du im Formular. Neue Kategorien kannst du auch im Formular ganz unten über „＋ Neue Kategorie“ anlegen.</p>
+  </section>
+
+  <section class="karte" id="abschlussKarte">
+    <h2>Abschluss</h2>
+    <div id="abschlussInhalt"></div>
+  </section>
+
+  <section class="karte" id="berichtKarte" hidden>
+    <h2>Abschlussbericht</h2>
+    <div class="bericht" id="berichtInhalt"></div>
+    <div class="zeile" style="margin-top:10px">
+      <div><button type="button" class="hell" id="berichtTeilen" style="margin-top:0">Teilen</button></div>
+      <div><button type="button" class="hell" id="berichtKopieren" style="margin-top:0">Kopieren</button></div>
+    </div>
+    <button type="button" class="hell" id="berichtDrucken" style="margin-top:8px">Drucken / als PDF</button>
+    <button type="button" class="hell" id="berichtZu" style="margin-top:8px">Schließen</button>
   </section>
 
   <section class="karte" id="backupKarte">
@@ -1394,15 +1412,29 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
     'Transport': { c: '#1C8A8F', i: 'M5 16V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5V16M5 11h14M5 16h14M7.5 16v2.5M16.5 16v2.5M8 13.5h.01M16 13.5h.01' },
     'Aktivitäten': { c: '#C0508A', i: 'M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8z' },
     'Einkaufen': { c: '#7E62C2', i: 'M5 8h14l-1.2 12H6.2zM9 8V6.5a3 3 0 0 1 6 0V8' },
-    'Sonstiges': { c: '#6B7F84', i: 'M6 12h.01M12 12h.01M18 12h.01' },
-    'Bargeldabhebung': { c: '#4A6B70', i: 'M3 7h18v10H3zM12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM6.5 10v4M17.5 10v4' }
+    'Sonstiges': { c: '#6B7F84', i: 'M11.5 7.5a4.25 1.8 0 1 0 8.5 0 4.25 1.8 0 1 0-8.5 0M11.5 7.5v10c0 1 1.9 1.8 4.25 1.8S20 18.5 20 17.5v-10M11.5 10.8c0 1 1.9 1.8 4.25 1.8S20 11.8 20 10.8M11.5 14.1c0 1 1.9 1.8 4.25 1.8S20 15.1 20 14.1M7 19.3a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM7 13.5v3.6' },
+    'Massage': { c: '#A8743A', i: 'M3 19.5c1.5-1.6 3.4-2.4 6-2.6h12M6 13.6a2.6 2.6 0 1 0 0-.01M12 16.6l-1.6-5.2a1 1 0 0 1 1.8-.8l1.4 2.2V5.6a1 1 0 0 1 2 0v6l.8-4.4a1 1 0 0 1 2 .3l-.6 5 .9-2.6a1 1 0 0 1 1.9.6L19.3 16.6' },
+    'Bargeldabhebung': { c: '#4A6B70', i: 'M3.5 3.5h17v5.5h-17zM7 6.3h10M8.5 6.3v10.7h6V6.3M11.5 11.6a1.5 1.5 0 1 0 0-.01M14.5 14.6l2.5-1.7c.8-.5 1.9-.2 2.2.7.2.5.1 1-.2 1.4l-2.4 3.7c-.6.9-1.6 1.5-2.7 1.5H10.8' }
   };
-  var KAT_EXTRA = ['#2E9E6B', '#B5832B', '#5468C4', '#C2553F', '#3E8FB0'];
+  var KAT_EXTRA = ['#2E9E6B', '#B5832B', '#5468C4', '#C2553F', '#3E8FB0', '#8E5BB5', '#2F7D5B', '#C7731E', '#A04566', '#4F7A8C'];
+  var katStileCache = null;
+  function katStileLaden() { if (!katStileCache) { var g = globalLaden().katStile; katStileCache = (g && typeof g === 'object') ? g : {}; } return katStileCache; }
+  function katStileSpeichern() { globalSpeichern({ katStile: katStileCache }); }
   function katStil(k) {
+    k = String(k || '');
     if (KAT_STIL[k]) return KAT_STIL[k];
-    var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
-    return { c: KAT_EXTRA[h % KAT_EXTRA.length], t: (k.charAt(0) || '?').toUpperCase() };
+    var kl = k.toLowerCase(), treffer = Object.keys(KAT_STIL).filter(function (n) { return n.toLowerCase() === kl; })[0];
+    if (treffer) return KAT_STIL[treffer];
+    var gem = katStileLaden();
+    if (gem[k] && gem[k].c) return gem[k];
+    var benutzt = Object.keys(gem).map(function (n) { return gem[n].c; });
+    var frei = KAT_EXTRA.filter(function (c) { return benutzt.indexOf(c) < 0; });
+    var neu = { c: frei.length ? frei[0] : KAT_EXTRA[Object.keys(gem).length % KAT_EXTRA.length], t: (k.charAt(0) || '?').toUpperCase() };
+    if (k) { gem[k] = neu; katStileSpeichern(); }
+    return neu;
   }
+
+  function pct2(wert, gesamt) { return gesamt > 0 ? (wert / gesamt * 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %' : '0,00 %'; }
   function katIcon(k) {
     var st = katStil(k);
     return '<span class="kat-ico" style="--k:' + st.c + '">' + (st.i ? '<svg viewBox="0 0 24 24"><path d="' + st.i + '"/></svg>' : esc(st.t)) + '</span>';
@@ -1894,9 +1926,9 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
     $('katListe').innerHTML = statKategorien().map(function (k) {
       var eigen = einst.kategorien.indexOf(k) >= 0;
       var pausch = einst.pauschal.indexOf(k) >= 0;
-      return '<div class="kat-eintrag"><span>' + esc(k) + '</span><span class="kat-aktion">' +
+      return '<div class="kat-eintrag"><span class="kat-name">' + katIcon(k).replace('kat-ico', 'kat-ico mini') + '<span>' + esc(k) + '</span></span><span class="kat-aktion">' +
         '<label class="check mini"><input type="checkbox" data-kat-pausch="' + esc(k) + '"' + (pausch ? ' checked' : '') + '> Gesamtreise</label>' +
-        (eigen ? '<button type="button" class="klein rot" data-kat-del="' + esc(k) + '">Löschen</button>' : '') +
+        (eigen ? '<button type="button" class="klein hell" data-kat-ren="' + esc(k) + '">Umbenennen</button><button type="button" class="klein rot" data-kat-del="' + esc(k) + '">Löschen</button>' : '') +
         '</span></div>';
     }).join('');
   }
@@ -1909,6 +1941,8 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
     speichernEinst(); zeichnen();
   });
   $('katListe').addEventListener('click', function (e) {
+    var ren = e.target.closest('button[data-kat-ren]');
+    if (ren) { kategorieUmbenennen(ren.getAttribute('data-kat-ren')); return; }
     var btn = e.target.closest('button[data-kat-del]');
     if (!btn) return;
     var name = btn.getAttribute('data-kat-del');
@@ -1919,6 +1953,24 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
     einst.pauschal = einst.pauschal.filter(function (k) { return k !== name; });
     speichernEinst(); dropdownsFuellen(); zeichnen();
   });
+  function kategorieUmbenennen(alt) {
+    var neu = window.prompt('Neuer Name für „' + alt + '“:', alt);
+    if (neu === null) return;
+    neu = neu.trim();
+    if (!neu || neu === alt) return;
+    if (neu.length > 24) { toast('Maximal 24 Zeichen.'); return; }
+    if (alleKategorien().some(function (k) { return k !== alt && k.toLowerCase() === neu.toLowerCase(); })) { toast('Diese Kategorie gibt es schon.'); return; }
+    var jetzt = Date.now(), n = 0;
+    einst.kategorien = einst.kategorien.map(function (k) { return k === alt ? neu : k; });
+    einst.pauschal = einst.pauschal.map(function (k) { return k === alt ? neu : k; });
+    ausgaben.forEach(function (a) { if (a.kategorie === alt) { a.kategorie = neu; a.geaendert = jetzt; n++; } });
+    if (filterKat === alt) filterKat = neu;
+    if (letzteKategorie === alt) letzteKategorie = neu;
+    var gem = katStileLaden();
+    if (gem[alt] && !gem[neu]) { gem[neu] = { c: gem[alt].c, t: (neu.charAt(0) || '?').toUpperCase() }; katStileSpeichern(); }
+    speichern(); speichernEinst(); dropdownsFuellen(); zeichnen();
+    toast('„' + alt + '“ heißt jetzt „' + neu + '“' + (n ? ' (' + n + (n === 1 ? ' Ausgabe' : ' Ausgaben') + ' angepasst)' : ''));
+  }
   function katHinzufuegenKlick() {
     var r = kategorieHinzufuegen($('katNeu').value);
     if (r.fehler) { toast(r.fehler); return; }
@@ -2020,12 +2072,12 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
     function prozent(wert) { return prozentText(wert, gesamtStat); }
     $('balken').innerHTML = Object.keys(proKat).map(function (k) {
       var breite = max > 0 ? (proKat[k] / max) * 100 : 0;
-      return '<div class="balken-zeile' + (k === filterKat ? ' aktiv' : '') + '" data-kat="' + esc(k) + '" style="--k:' + katStil(k).c + '">' +
-        '<span class="balken-name"><i class="punkt"></i>' + esc(k) + '<span class="b-pct">' + prozent(proKat[k]) + '</span></span>' +
+      return '<div class="balken-zeile' + (k === filterKat ? ' aktiv' : '') + '" data-kat="' + esc(k) + '" style="--k:' + katStil(k).c + '">' + katIcon(k).replace('kat-ico', 'kat-ico mini') +
+        '<span class="balken-name">' + esc(k) + '<span class="b-pct">' + pct2(proKat[k], gesamtStat) + '</span></span>' +
         balkenSpur(breite, prozent(proKat[k])) +
         '<span class="balken-wert">' + wertEuro(proKat[k], proKatE[k] || 0) + '</span></div>';
     }).join('') +
-      '<div class="balken-zeile abhebung' + (nurAbhebung ? ' aktiv' : '') + '" data-kat="' + esc(ABHEBUNG) + '">' +
+      '<div class="balken-zeile abhebung' + (nurAbhebung ? ' aktiv' : '') + '" data-kat="' + esc(ABHEBUNG) + '">' + katIcon(ABHEBUNG).replace('kat-ico', 'kat-ico mini') +
       '<span class="balken-name">Abgehoben (' + anzahlAbh + '×, nicht in Statistik)</span>' +
       '<span class="balken-wert">' + wertEuro(abgehoben, abgehobenE) + '</span></div>';
 
@@ -2627,8 +2679,8 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
   themaAnwenden(document.documentElement.getAttribute('data-thema') || 'hell');
 
   // ---------- Auf- und zuklappbare Karten ----------
-  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'rechnerKarte', 'katKarte', 'budgetKarte', 'verlaufKarte', 'tabsKarte', 'reiseKarte', 'kategorienKarte', 'backupKarte'];
-  var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte', 'papierkorbKarte']; // neue Karten starten so, bis du sie einmal umschaltest
+  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'rechnerKarte', 'katKarte', 'abschlussKarte', 'budgetKarte', 'verlaufKarte', 'tabsKarte', 'reiseKarte', 'kategorienKarte', 'backupKarte'];
+  var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte', 'papierkorbKarte', 'abschlussKarte']; // neue Karten starten so, bis du sie einmal umschaltest
   var KEY_UI = 'reisen.v2.ui';
   function zugeklappteLaden() {
     try {
