@@ -575,6 +575,31 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
 .verrechnung-box + .ab-titel { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--linie); }
 .tab { font-size: 13px; }
 .kat-eintrag { min-height: 50px; padding: 6px 0; align-items: center; }
+
+/* Umrechner als Blatt von unten */
+#rechnerKarte.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; max-width: 640px; margin: 0 auto; border-radius: 26px 26px 0 0;
+  padding: 10px 20px calc(24px + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; box-shadow: 0 -20px 50px -20px rgba(4,30,36,.55);
+  transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; }
+body.umrechner-offen #rechnerKarte.sheet { transform: none; visibility: visible; transition: transform .28s ease; }
+#rechnerKarte.sheet::before { content: ''; display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--feld-rand); margin: 0 auto 12px; }
+#rechnerKarte.sheet > h2 { font-size: 22px; margin: 0 0 2px; padding-right: 48px; }
+.sheet-sub { color: var(--grau); font-size: 14px; margin-bottom: 4px; }
+.sheet-x { position: absolute; right: 16px; top: 22px; width: 36px; height: 36px; padding: 0; margin: 0; border-radius: 12px; background: var(--feld-bg); color: var(--text); border: 1px solid var(--feld-rand); font-size: 17px; }
+.sheet-dunkel { position: fixed; inset: 0; background: rgba(4,20,24,.45); z-index: 65; opacity: 0; pointer-events: none; transition: opacity .25s; }
+body.umrechner-offen .sheet-dunkel { opacity: 1; pointer-events: auto; }
+body.umrechner-offen { overflow: hidden; }
+.w-chips { display: flex; gap: 6px; margin: 10px 0 12px; }
+.w-chip { width: auto; margin: 0; padding: 7px 14px; border-radius: 999px; font-size: 14px; background: var(--feld-bg); color: var(--text); border: 1px solid var(--feld-rand); font-weight: 600; }
+.w-chip.an { background: var(--petrol); color: #fff; border-color: var(--petrol); }
+html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: var(--blau); color: #fff; }
+.rc-feld input, .rc-feld input:focus { border: 0; background: transparent; box-shadow: none; padding: 10px 0; }
+.rc-feld input::-webkit-inner-spin-button, .rc-feld input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.rc-feld:focus-within { outline: 0; border-color: var(--lagune); box-shadow: 0 0 0 3px rgba(28,138,143,.22); }
+.nur-vorlesen { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+/* Kategorien: Buttons rechts neben der Checkbox */
+.kat-aktion { display: flex; align-items: center; gap: 6px; }
+.kat-knoepfe { margin: 0; }
+@media (prefers-reduced-motion: reduce) { #rechnerKarte.sheet, .sheet-dunkel { transition: none !important; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -593,6 +618,7 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
         <svg class="ic-mond" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
         <svg class="ic-sonne" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
       </button>
+      <button type="button" class="icon-btn" id="umrechnerBtn" aria-label="Umrechner öffnen" hidden><svg viewBox="0 0 24 24"><path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/></svg></button>
       <button type="button" class="icon-btn" id="sucheBtn" aria-label="Suche" hidden>
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
       </button>
@@ -732,15 +758,18 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
     <div class="hinweis" id="barHinweis"></div>
   </section>
 
-  <section class="karte" id="rechnerKarte">
-    <h2 id="rcTitel">Peso-Euro Schnell-Check</h2>
-    <select id="rcWaehrung" hidden style="margin-bottom:6px"></select>
-    <label for="rcBetrag" id="rcLabel">Betrag in philippinischen Pesos</label>
+  <section class="karte sheet" id="rechnerKarte" role="dialog" aria-modal="true" aria-labelledby="rcTitel">
+    <button type="button" class="sheet-x" id="rcZu" aria-label="Umrechner schließen">✕</button>
+    <h2 id="rcTitel">Umrechner</h2>
+    <div class="sheet-sub" id="rcSub"></div>
+    <div class="w-chips" id="rcRichtung"><button type="button" class="w-chip an" data-ri="zu">₱ → €</button><button type="button" class="w-chip" data-ri="von">€ → ₱</button></div>
+    <select id="rcWaehrung" hidden style="margin-top:8px"></select>
+    <label for="rcBetrag" id="rcLabel" class="nur-vorlesen">Betrag</label>
     <div class="rc-feld">
       <span class="rc-symbol" id="rcSymbol" aria-hidden="true">₱</span>
-      <input id="rcBetrag" type="number" min="0" max="1000000" step="1" value="500" inputmode="decimal" aria-describedby="rcHinweis">
+      <input id="rcBetrag" type="number" min="0" max="1000000" step="any" value="500" inputmode="decimal" aria-describedby="rcSub">
     </div>
-    <input id="rcSlider" type="range" min="20" max="5000" step="20" value="500" aria-label="Peso-Betrag mit Schieberegler einstellen">
+    <input id="rcSlider" type="range" min="20" max="5000" step="20" value="500" aria-label="Betrag mit Schieberegler einstellen">
     <div class="rc-marken" id="rcMarken" aria-hidden="true"><span>20 PHP</span><span>1.000 PHP</span><span>2.500 PHP</span><span>5.000 PHP</span></div>
     <div class="rc-schnell" id="rcSchnell" aria-label="Häufige Beträge">
       <button type="button" class="hell" data-rc="100">₱100</button>
@@ -754,7 +783,7 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
       <div class="rc-label">Entspricht ungefähr</div>
       <div id="rcEuro">7,02 €</div>
     </div>
-    <p class="hinweis" id="rcHinweis">Rechenbasis: 1 € = 71,26 PHP</p>
+    <p class="hinweis" id="rcHinweis" hidden>Rechenbasis: 1 € = 71,26 PHP</p>
   </section>
 
   <section class="karte" id="katKarte">
@@ -927,6 +956,7 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
 </div>
 
 <div id="berichtDruck" class="bericht"></div>
+<div class="sheet-dunkel" id="sheetDunkel"></div>
 <div class="undo" id="undoBar" hidden><span id="undoText"></span><button type="button" id="undoBtn">Rückgängig</button></div>
 <div class="toast" id="toast"></div>
 
@@ -1972,9 +2002,9 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
       var eigen = einst.kategorien.indexOf(k) >= 0;
       var pausch = einst.pauschal.indexOf(k) >= 0;
       return '<div class="kat-eintrag"><span class="kat-name">' + katIcon(k).replace('kat-ico', 'kat-ico mini') + '<span class="kat-text">' + esc(k) + '</span>' +
-        (eigen ? '<span class="kat-knoepfe"><button type="button" class="ico-knopf" data-kat-ren="' + esc(k) + '" aria-label="Umbenennen"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg></button>' +
+        '</span><span class="kat-aktion">' + (eigen ? '<span class="kat-knoepfe"><button type="button" class="ico-knopf" data-kat-ren="' + esc(k) + '" aria-label="Umbenennen"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg></button>' +
           '<button type="button" class="ico-knopf rot" data-kat-del="' + esc(k) + '" aria-label="Löschen"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></span>' : '') +
-        '</span><span class="kat-aktion"><label class="check mini"><input type="checkbox" data-kat-pausch="' + esc(k) + '"' + (pausch ? ' checked' : '') + '> Gesamtreise</label></span></div>';
+        '<label class="check mini"><input type="checkbox" data-kat-pausch="' + esc(k) + '"' + (pausch ? ' checked' : '') + '> Gesamtreise</label></span></div>';
     }).join('');
   }
   $('katListe').addEventListener('change', function (e) {
@@ -2657,6 +2687,12 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
 
   // ---------- Schnell-Check: Landeswährung in Euro (Philippinen: Richtwert 71,26 wie im Original) ----------
   var rechnerAnpassen = function () {};
+  function umrechnerAuf() { if ($('rechnerKarte').hidden) return; document.body.classList.add('umrechner-offen'); setTimeout(function () { try { $('rcBetrag').focus({ preventScroll: true }); } catch (e) {} }, 300); }
+  function umrechnerZu() { document.body.classList.remove('umrechner-offen'); }
+  $('umrechnerBtn').addEventListener('click', umrechnerAuf);
+  $('rcZu').addEventListener('click', umrechnerZu);
+  $('sheetDunkel').addEventListener('click', umrechnerZu);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') umrechnerZu(); });
   (function () {
     var RATE = 71.26; // Landeswährung pro Euro
     var amountInput = $('rcBetrag'), slider = $('rcSlider'), euros = $('rcEuro');
@@ -2666,12 +2702,17 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
       var e = Math.pow(10, Math.floor(Math.log10(x))), m = x / e;
       return Math.max(1, (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * e);
     }
+    var richtung = 'zu', rcSym = '₱', rcName = 'Pesos';
+    function lokalFormat(x) {
+      var d = RATE >= 20 ? 0 : 2;
+      return new Intl.NumberFormat('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d }).format(x) + ' ' + rcSym;
+    }
     function update(value, source) {
       var amount = Number(value);
       if (!Number.isFinite(amount) || amount < 0) amount = 0;
       amountInput.value = String(amount);
       if (source !== 'slider') slider.value = String(Math.min(Number(slider.max), Math.max(Number(slider.min), amount)));
-      euros.textContent = euroFormat.format(amount / RATE);
+      euros.textContent = richtung === 'zu' ? euroFormat.format(amount / RATE) : lokalFormat(amount * RATE);
     }
     amountInput.addEventListener('input', function () { update(amountInput.value, 'input'); });
     slider.addEventListener('input', function () { amountInput.value = slider.value; update(slider.value, 'slider'); });
@@ -2679,32 +2720,48 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
       button.addEventListener('click', function () { update(button.getAttribute('data-rc'), 'button'); });
     });
     var rcCode = null;
+    function skala() {
+      var php = rcCode === 'PHP', f = php ? 1 : RATE / 70, min, max, step, knoepfe, marken, einheit;
+      if (richtung === 'zu') {
+        min = php ? 20 : schoen(20 * f); max = php ? 5000 : schoen(5000 * f); step = min;
+        knoepfe = [100, 500, 1000, 2000, 5000, 10000].map(function (x) { return php ? x : schoen(x * f); });
+        marken = php ? [20, 1000, 2500, 5000] : [min, schoen(max * 0.2), schoen(max * 0.5), max];
+        einheit = rcCode;
+      } else {
+        min = 1; max = 200; step = 1; knoepfe = [5, 10, 20, 50, 100, 200]; marken = [1, 50, 100, 200]; einheit = '€';
+      }
+      slider.min = String(min); slider.max = String(max); slider.step = String(step);
+      Array.prototype.forEach.call(document.querySelectorAll('[data-rc]'), function (button, i) {
+        button.setAttribute('data-rc', String(knoepfe[i]));
+        button.textContent = richtung === 'zu' ? rcSym + zahlFormat.format(knoepfe[i]) : zahlFormat.format(knoepfe[i]) + ' €';
+      });
+      $('rcMarken').innerHTML = marken.map(function (x) { return '<span>' + zahlFormat.format(x) + ' ' + esc(einheit) + '</span>'; }).join('');
+      $('rcSymbol').textContent = richtung === 'zu' ? rcSym : '€';
+      $('rcLabel').textContent = 'Betrag in ' + (richtung === 'zu' ? rcName : 'Euro');
+      $('rcSub').textContent = (richtung === 'zu' ? rcName + ' in Euro' : 'Euro in ' + rcName) + ' · Kurs 1 € = ' + kursFmt(RATE) + ' ' + rcSym;
+      var chips = document.querySelectorAll('#rcRichtung [data-ri]');
+      chips[0].textContent = rcSym + ' → €'; chips[1].textContent = '€ → ' + rcSym;
+      Array.prototype.forEach.call(chips, function (c) { c.classList.toggle('an', c.getAttribute('data-ri') === richtung); c.setAttribute('aria-pressed', String(c.getAttribute('data-ri') === richtung)); });
+      update(knoepfe[1], 'initial');
+    }
+    $('rcRichtung').addEventListener('click', function (e) {
+      var c = e.target.closest('[data-ri]'); if (!c) return;
+      richtung = c.getAttribute('data-ri'); skala();
+    });
     rechnerAnpassen = function (code) {
       var codes = reise ? reisewaehrungen().filter(function (c) { return c !== 'EUR'; }) : [];
       $('rechnerKarte').hidden = !codes.length;
-      if (!codes.length) return;
+      $('umrechnerBtn').hidden = !codes.length || !reise || !$('startseite').hidden;
+      if (!codes.length) { umrechnerZu(); return; }
       if (!code || codes.indexOf(code) < 0) code = (rcCode && codes.indexOf(rcCode) >= 0) ? rcCode : (codes.indexOf(hauptCode()) >= 0 ? hauptCode() : codes[0]);
       rcCode = code;
       $('rcWaehrung').hidden = codes.length < 2;
       $('rcWaehrung').innerHTML = codes.map(function (c) { return '<option value="' + c + '">' + esc(waehrungName(c)) + ' (' + c + ')</option>'; }).join('');
       $('rcWaehrung').value = code;
-      var php = code === 'PHP', sym = waehrungSymbol(code), name = waehrungName(code);
-      RATE = php ? 71.26 : kursFuer(code);
-      var f = php ? 1 : RATE / 70;
-      var min = php ? 20 : schoen(20 * f), max = php ? 5000 : schoen(5000 * f), step = php ? 20 : schoen(20 * f);
-      slider.min = String(min); slider.max = String(max); slider.step = String(step);
-      var knoepfe = [100, 500, 1000, 2000, 5000, 10000].map(function (x) { return php ? x : schoen(x * f); });
-      Array.prototype.forEach.call(document.querySelectorAll('[data-rc]'), function (button, i) {
-        button.setAttribute('data-rc', String(knoepfe[i]));
-        button.textContent = sym + zahlFormat.format(knoepfe[i]);
-      });
-      var marken = php ? [20, 1000, 2500, 5000] : [min, schoen(max * 0.2), schoen(max * 0.5), max];
-      $('rcMarken').innerHTML = marken.map(function (x) { return '<span>' + zahlFormat.format(x) + ' ' + esc(code) + '</span>'; }).join('');
-      $('rcTitel').textContent = name + '-Euro Schnell-Check';
-      $('rcLabel').textContent = 'Betrag in ' + (php ? 'philippinischen Pesos' : name);
-      $('rcSymbol').textContent = sym;
+      RATE = code === 'PHP' ? 71.26 : kursFuer(code);
+      rcSym = waehrungSymbol(code); rcName = waehrungName(code);
       $('rcHinweis').textContent = 'Rechenbasis: 1 € = ' + kursFmt(RATE) + ' ' + code;
-      update(knoepfe[1], 'initial');
+      skala();
     };
     $('rcWaehrung').addEventListener('change', function () { rechnerAnpassen($('rcWaehrung').value); });
     update(amountInput.value, 'initial');
@@ -2724,7 +2781,7 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
   themaAnwenden(document.documentElement.getAttribute('data-thema') || 'hell');
 
   // ---------- Auf- und zuklappbare Karten ----------
-  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'rechnerKarte', 'katKarte', 'abschlussKarte', 'budgetKarte', 'verlaufKarte', 'tabsKarte', 'reiseKarte', 'kategorienKarte', 'backupKarte'];
+  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'budgetKarte', 'verlaufKarte', 'tabsKarte', 'reiseKarte', 'kategorienKarte', 'backupKarte'];
   var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte', 'papierkorbKarte', 'abschlussKarte']; // neue Karten starten so, bis du sie einmal umschaltest
   var KEY_UI = 'reisen.v2.ui';
   function zugeklappteLaden() {
@@ -3354,6 +3411,8 @@ html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
     $('reiseAnsicht').hidden = start;
     $('zurueckBtn').hidden = start;
     $('sucheBtn').hidden = start;
+    $('umrechnerBtn').hidden = start || $('rechnerKarte').hidden;
+    if (start) umrechnerZu();
     $('gesamt').hidden = start;
     $('gesamtSub').hidden = start;
     $('startSub').hidden = !start;
