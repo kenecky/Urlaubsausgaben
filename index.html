@@ -544,6 +544,16 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
 .kat-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .kat-eintrag { flex-wrap: wrap; }
 .kat-aktion { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+.t-fort { margin: -4px 0 0; padding: 0 0 18px; }
+.rf-punkte { display: grid; gap: 3px; }
+.rf-punkte i { height: 10px; border-radius: 3px; background: var(--feld-bg); box-shadow: inset 0 0 0 1px var(--linie); min-width: 0; }
+.rf-punkte i.voll { background: var(--lagune); box-shadow: none; }
+.rf-punkte i.heute { background: var(--mango); box-shadow: none; }
+.rf-daten { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--grau); margin-top: 8px; }
+.rf-daten span:nth-child(2) { color: var(--text); font-weight: 600; }
+.offen-tag { display: inline-block; background: #FFEFD2; color: #8A5300; font-size: 11.5px; font-weight: 700; line-height: 1.5; padding: 0 8px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; }
+html[data-thema="dunkel"] .offen-tag { background: #3D2C0A; color: #FFD58A; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -639,6 +649,7 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
     <div class="sub" id="gesamtSub" hidden>Keine Ausgaben</div>
     <div class="t-perf" aria-hidden="true"></div>
     <div class="t-stub" id="kopfStub"></div>
+    <div class="t-fort" id="reiseFort" hidden></div>
   </section>
   <section class="karte sperr-banner" id="gesperrtBanner" hidden></section>
   <section class="karte" id="formKarte">
@@ -1462,12 +1473,24 @@ html[data-thema="dunkel"] .toast, html[data-thema="dunkel"] .undo { background: 
     else barTxt = euroFmt(bg.reduce(function (x, b) { return x + b.restEuro; }, 0));
     function zelle(l, w) { return '<div class="t-zelle"><div class="t-label">' + l + '</div><div class="t-wert">' + esc(w) + '</div></div>'; }
     box.innerHTML = zelle('Reisetag', tagTxt) + zelle('Pro Tag', euroFmt(schnitt).replace(',00 €', ' €')) + zelle('Bargeld', barTxt);
+    var fort = document.getElementById('reiseFort');
+    if (fort) {
+      if (s && e && e >= s) {
+        var gT = tageZwischen(s, e) + 1, an = h < s ? 0 : Math.min(gT, tageZwischen(s, (h > e ? e : h)) + 1);
+        var mitte = h < s ? 'Start in ' + tageZwischen(h, s) + (tageZwischen(h, s) === 1 ? ' Tag' : ' Tagen') : (h > e ? 'Reise beendet' : (gT - an) + ((gT - an) === 1 ? ' Tag übrig' : ' Tage übrig'));
+        var heuteIdx = (h >= s && h <= e) ? an - 1 : -1;
+        fort.hidden = false;
+        fort.innerHTML = '<div class="rf-punkte" style="grid-template-columns:repeat(' + gT + ',1fr)" role="img" aria-label="Reisetag ' + an + ' von ' + gT + '">' +
+          Array.apply(null, Array(gT)).map(function (x, i) { return '<i class="' + (i === heuteIdx ? 'heute' : (i < an ? 'voll' : '')) + '"></i>'; }).join('') + '</div>' +
+          '<div class="rf-daten"><span>' + esc(datumAnzeige(s).slice(0, 6)) + '</span><span>' + esc(mitte) + '</span><span>' + esc(datumAnzeige(e).slice(0, 6)) + '</span></div>';
+      } else { fort.hidden = true; fort.innerHTML = ''; }
+    }
   }
   function eintragHtml(a) {
     var meta = esc(a.kategorie) + ' · ' + esc(datumAnzeige(a.datum).slice(0, 6)) + (a.ort ? ' · ' + esc(a.ort) : '') + (a.zahlung ? ' · ' + esc(a.zahlung) : '') +
       (!istAbh(a) && istPauschal(a) ? ' · Gesamtreise' : '') + (istGeprueft(a) ? ' · <span class="ok">✓</span>' : '');
     return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' + katIcon(a.kategorie) +
-      '<div class="e-mitte"><div class="beschr">' + esc(a.beschreibung || a.kategorie) + '</div><div class="meta">' + meta + '</div></div>' +
+      '<div class="e-mitte"><div class="beschr">' + esc(a.beschreibung || a.kategorie) + '</div><div class="meta">' + (istGeprueft(a) ? '' : '<span class="offen-tag">Kurs offen</span>') + meta + '</div></div>' +
       '<div class="betrag">' + eintragBetragHtml(a) + '</div>' +
       '<div class="aktionen">' +
       '<button type="button" class="klein hell" data-aktion="edit" aria-label="Ändern"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg></button>' +
