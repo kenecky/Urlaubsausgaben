@@ -808,11 +808,37 @@ html[data-thema="dunkel"] .start-fab { color: #CFE6E4; }
 .unten-blatt > .blatt-x { display: flex; align-items: center; justify-content: center; }
 body.blatt-offen .sheet-dunkel { opacity: 1; pointer-events: auto; }
 
-/* Buttons „Neue Ausgabe“ und „Ausgaben“: helles Himmelblau */
-#kacheln .kachel.breit { background: #E3EEFA; border: 1px solid #C3D7EF; box-shadow: 0 8px 18px -12px rgba(40,80,140,.6); }
-#kacheln .kachel.breit .heute { border-left-color: #C3D7EF; }
-html[data-thema="dunkel"] #kacheln .kachel.breit { background: #1A2B3D; border-color: #2D4560; box-shadow: 0 8px 18px -12px rgba(0,0,0,.8); }
-html[data-thema="dunkel"] #kacheln .kachel.breit .heute { border-left-color: #2D4560; }
+/* Buttons „Neue Ausgabe“ und „Ausgaben“: weiß mit Petrol-Streifen links */
+#kacheln .kachel.breit { background: var(--karte); border: 1px solid var(--linie); border-left: 6px solid var(--petrol); box-shadow: 0 8px 20px -12px rgba(4,30,36,.45); }
+html[data-thema="dunkel"] #kacheln .kachel.breit { border-left-color: #1C8A8F; }
+#kacheln .ausg .ak-kopf b::after { content: '\00a0\00a0›'; color: #1C8A8F; font-weight: 800; }
+
+/* Startseite: steht still, „Meine Reisen“ scrollt in sich, Leiste unten */
+html:has(body.start-an) { overflow: hidden; overscroll-behavior: none; }
+body.start-an { overflow: hidden; }
+#startseite:not([hidden]) { display: flex; flex-direction: column; padding-bottom: 0 !important; box-sizing: border-box; overflow: hidden; }
+#reisenKarte { flex: 1 1 auto; min-height: 120px; display: flex; flex-direction: column; margin-bottom: 12px; }
+#reisenKarte > h2 { flex: none; }
+#reisenListe { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+#weltKarte { flex: none; margin-bottom: 12px; }
+#weltKarte .wk-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+#weltKarte .wk-chips::-webkit-scrollbar { display: none; }
+#weltKarte .wk-chips > * { flex: none; }
+.start-leiste { flex: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--karte); border: 1px solid var(--linie); border-radius: 20px; padding: 10px 6px; margin-bottom: calc(10px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px -12px rgba(4,30,36,.4); }
+.sl-knopf { display: flex; flex-direction: column; align-items: center; gap: 4px; width: auto; min-height: 0; margin: 0; padding: 2px 0; background: none; border: 0; box-shadow: none; color: var(--grau); font-size: 12px; font-weight: 600; }
+.sl-knopf span { position: relative; width: 44px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--petrol); background: var(--feld-bg); }
+html[data-thema="dunkel"] .sl-knopf span { color: #CFE6E4; }
+.sl-knopf svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sl-knopf.neu { color: var(--text); }
+.sl-knopf.neu span { background: var(--mango); color: var(--mango-text) !important; }
+.sl-knopf .fab-zahl { font-style: normal; }
+.start-leiste .sl-knopf { background: none !important; box-shadow: none !important; border: 0 !important; height: auto !important; border-radius: 12px !important; padding: 2px 0 !important; color: var(--grau) !important; font-size: 12px !important; }
+.start-leiste .sl-knopf.neu { color: var(--text) !important; }
+/* Neue Reise und Vergleich öffnen als Blatt von unten */
+#neueReiseKarte:not([hidden]), #vergleichKarte:not([hidden]) { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; max-width: 640px; margin: 0 auto; border-radius: 26px 26px 0 0;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; box-shadow: 0 -20px 50px -20px rgba(4,30,36,.55); animation: blattRein .28s ease; }
+@keyframes blattRein { from { transform: translateY(100%); } to { transform: none; } }
+body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:not([hidden])) .sheet-dunkel { opacity: 1; pointer-events: auto; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -841,10 +867,6 @@ html[data-thema="dunkel"] #kacheln .kachel.breit .heute { border-left-color: #2D
 </header>
 
 <main id="startseite" hidden>
-  <div id="startAktionen">
-    <button type="button" id="reiseNeuBtn">＋ Neue Reise</button>
-    <button type="button" class="hell" id="vergleichBtn">Reisen vergleichen</button>
-  </div>
   <section class="karte" id="neueReiseKarte" hidden>
     <div class="wk-kopf"><h2>Neue Reise</h2><button type="button" class="hell x-btn" id="nrX" aria-label="Schließen">✕</button></div>
     <label for="nrName">Name (optional)</label>
@@ -886,10 +908,6 @@ html[data-thema="dunkel"] #kacheln .kachel.breit .heute { border-left-color: #2D
     <div class="wk-auswahl" id="wkAuswahl" hidden></div>
   </section>
 
-  <div class="start-fabs" id="startFabs">
-    <button type="button" class="start-fab" id="bkFab" aria-label="Backup aller Reisen öffnen"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></button>
-    <button type="button" class="start-fab" id="pkFab" aria-label="Papierkorb öffnen"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2l1-12M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/></svg><span class="fab-zahl" id="pkZahl" hidden></span></button>
-  </div>
   <section class="karte unten-blatt" id="papierkorbKarte" role="dialog" aria-modal="true" aria-labelledby="pkTitel">
     <button type="button" class="sheet-x blatt-x" aria-label="Papierkorb schließen">✕</button>
     <h2 id="pkTitel">Papierkorb</h2>
@@ -906,6 +924,12 @@ html[data-thema="dunkel"] #kacheln .kachel.breit .heute { border-left-color: #2D
     <button class="hell" id="altUebernehmenBtn" type="button" style="margin-top:8px" hidden>Daten aus der bisherigen App aktualisieren</button>
     <p class="hinweis" id="startInfo">Beim Laden prüft die App, ob es die Reise schon gibt. Dann gleicht sie nur ab und ersetzt nichts.</p>
   </section>
+  <nav class="start-leiste" id="startLeiste" aria-label="Aktionen">
+    <button type="button" class="sl-knopf neu" id="reiseNeuBtn"><span><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Neue Reise</button>
+    <button type="button" class="sl-knopf" id="vergleichBtn"><span><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>Vergleichen</button>
+    <button type="button" class="sl-knopf" id="bkFab"><span><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></span>Backup</button>
+    <button type="button" class="sl-knopf" id="pkFab"><span><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2l1-12M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/></svg><i class="fab-zahl" id="pkZahl" hidden></i></span>Papierkorb</button>
+  </nav>
 </main>
 
 <main id="reiseAnsicht" hidden>
@@ -3232,7 +3256,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit .heute { border-left-color: #2D
   themaAnwenden(document.documentElement.getAttribute('data-thema') || 'hell');
 
   // ---------- Auf- und zuklappbare Karten ----------
-  var KARTEN = ['reisenKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'tabsKarte'];
+  var KARTEN = [ 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'tabsKarte'];
   var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte', 'papierkorbKarte', 'abschlussKarte']; // neue Karten starten so, bis du sie einmal umschaltest
   var KEY_UI = 'reisen.v2.ui';
   function zugeklappteLaden() {
@@ -3966,6 +3990,10 @@ html[data-thema="dunkel"] #kacheln .kachel.breit .heute { border-left-color: #2D
     var y0 = null, x0 = 0, dy = 0, modus = null, GRENZE = 80;
     function aktivHier(t) {
       var b = document.body.classList;
+      if (b.contains('start-an')) {
+        return !b.contains('blatt-offen') && $('neueReiseKarte').hidden && $('vergleichKarte').hidden && !t.closest('#wkBox, .wk-chips, input, select, textarea, button') &&
+          (!t.closest('#reisenListe') || $('reisenListe').scrollTop <= 0);
+      }
       return b.contains('rs-haupt') && !b.contains('reise-offen') && !b.contains('umrechner-offen') && !b.contains('ab-offen') &&
         !$('reiseAnsicht').hidden && !t.closest('.sheet, input, select, textarea, #suche');
     }
@@ -4099,7 +4127,13 @@ html[data-thema="dunkel"] #kacheln .kachel.breit .heute { border-left-color: #2D
   function () { var k = document.querySelector('#reiseAnsicht .kopf, header'); var r = k && getComputedStyle(k).position.match(/fixed|sticky/) ? k.getBoundingClientRect().bottom : 0; return Math.max(0, r); },
   function (v) { if (v) window.scrollBy(0, -v); }, document.querySelector('#tabsKarte .tabs'));
   // Ansicht wechseln
+  function startHoeheSetzen() {
+    var st = $('startseite'); if (st.hidden) return;
+    st.style.height = Math.max(420, window.innerHeight - st.getBoundingClientRect().top - window.scrollY) + 'px';
+  }
+  window.addEventListener('resize', startHoeheSetzen);
   function ansichtSetzen(start) {
+    document.body.classList.toggle('start-an', !!start); window.scrollTo(0, 0); setTimeout(startHoeheSetzen, 0);
     document.body.classList.remove('ab-offen'); if (typeof blattZu === 'function') blattZu();
     $('startseite').hidden = !start;
     if (start) { document.body.classList.remove('gesperrt'); $('vergleichKarte').hidden = true; }
@@ -4297,7 +4331,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit .heute { border-left-color: #2D
     b.querySelector('.blatt-x').addEventListener('click', blattZu);
     wischSchliessen(b, blattZu);
   });
-  $('sheetDunkel').addEventListener('click', blattZu);
+  $('sheetDunkel').addEventListener('click', function () { blattZu(); $('neueReiseKarte').hidden = true; $('vergleichKarte').hidden = true; });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') blattZu(); });
   $('pkFab').addEventListener('click', function () { papierkorbRendern(); blattAuf('papierkorbKarte'); });
   $('bkFab').addEventListener('click', function () { blattAuf('startBackupKarte'); });
