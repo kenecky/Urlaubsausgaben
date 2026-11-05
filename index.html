@@ -754,6 +754,20 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
 #ptrInd.bereit { background: var(--petrol); color: #fff; }
 #ptrInd.laedt svg { animation: ptrDreh .7s linear infinite; }
 @keyframes ptrDreh { to { transform: rotate(360deg); } }
+
+/* Vorschläge bei der Beschreibung */
+.vorschlaege { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+.vorschlaege .vs { width: auto; min-height: 0; margin: 0; padding: 7px 12px; border-radius: 12px; background: var(--blau-hell); color: var(--text); border: 1px solid var(--linie); box-shadow: none; display: flex; flex-direction: column; align-items: flex-start; text-align: left; line-height: 1.2; }
+.vorschlaege .vs b { font-size: 14.5px; font-weight: 600; }
+.vorschlaege .vs small { font-size: 11.5px; color: var(--grau); font-weight: 500; }
+/* Tagesbudget im Ticket */
+.t-budget { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 8px 12px; border-radius: 12px; background: var(--feld-bg); font-size: 14px; }
+.t-budget .ampel { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.t-budget b { font-weight: 700; }
+.t-budget small { margin-left: auto; color: var(--grau); font-size: 12.5px; }
+.t-budget.gruen .ampel { background: #2E9E5B; box-shadow: 0 0 0 3px rgba(46,158,91,.18); }
+.t-budget.gelb .ampel { background: var(--mango); box-shadow: 0 0 0 3px rgba(245,165,36,.2); }
+.t-budget.rot .ampel { background: var(--rot); box-shadow: 0 0 0 3px rgba(200,60,50,.18); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -852,6 +866,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     <div class="t-perf" aria-hidden="true"></div>
     <div class="t-stub" id="kopfStub"></div>
     <div class="t-fort" id="reiseFort" hidden></div>
+    <div class="t-budget" id="ticketBudget" hidden></div>
   </section>
   <section class="karte sperr-banner" id="gesperrtBanner" hidden></section>
   <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="rund" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button><button type="button" class="kachel" data-seite-auf="kat"><span class="ic" style="--k:#1C8A8F"><svg viewBox="0 0 24 24"><path d="M12 3v9h9A9 9 0 1 1 12 3zM15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span><b>Kategorien</b><small id="kInfo_kat"></small></button><button type="button" class="kachel" data-seite-auf="ueb"><span class="ic" style="--k:#3D6FB6"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></span><b>Übersicht</b><small id="kInfo_ueb"></small></button></section>
@@ -899,6 +914,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
       <button type="button" class="klein hell" id="kursOnlineBtn" style="margin-top:8px">↻ Kurs online holen</button>
       <p class="hinweis" id="barKursHinweis" style="margin:6px 0 0" hidden>Bar-Zahlung: Kurs und Euro-Betrag werden automatisch aus den Bargeldabhebungen berechnet (die älteste Abhebung zuerst) und sind gesperrt.</p>
       <label for="beschreibung">Beschreibung</label>
+      <div class="vorschlaege" id="vorschlaege" hidden></div>
       <textarea id="beschreibung" rows="2" placeholder="z. B. Abendessen am Strand"></textarea>
       <label class="check"><input type="checkbox" id="geprueft"> Bereits mit Umrechnungskurs eingetragen</label>
       <label class="check"><input type="checkbox" id="pauschal"> Kosten für die gesamte Reise (nicht im Tagesschnitt)</label>
@@ -1553,6 +1569,51 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     toast('Kategorie „' + r.name + '“ angelegt');
   });
 
+  // Vorschläge beim Tippen: bekannte Beschreibungen aus allen Reisen, füllt Kategorie und Zahlung mit
+  var vsCache = null;
+  function vsDaten() {
+    if (vsCache) return vsCache;
+    var map = {};
+    function rein(a) {
+      if (!a || !a.beschreibung || istAbh(a)) return;
+      var t = String(a.beschreibung).trim(); if (!t || t.length > 60) return;
+      var k = t.toLowerCase(), z = map[k] || (map[k] = { text: t, n: 0, zeit: 0, kat: '', zahl: '' });
+      z.n++; var zt = a.geaendert || 0;
+      if (zt >= z.zeit) { z.zeit = zt; z.text = t; z.kat = a.kategorie; z.zahl = a.zahlung; }
+    }
+    (reisen || []).forEach(function (r) { if (!reise || r.id !== reise.id) datenLaden(r.id).ausgaben.forEach(rein); });
+    ausgaben.forEach(function (a) { rein(Object.assign({}, a, { geaendert: (a.geaendert || 0) + 1e13 })); }); // aktuelle Reise zählt mehr
+    vsCache = Object.keys(map).map(function (k) { return map[k]; });
+    return vsCache;
+  }
+  function vsZeigen() {
+    var box = $('vorschlaege'), q = $('beschreibung').value.trim().toLowerCase();
+    if (!q) { box.hidden = true; return; }
+    var treffer = vsDaten().filter(function (z) { var t = z.text.toLowerCase(); return t !== q && t.indexOf(q) >= 0; })
+      .sort(function (a, b) { var as = a.text.toLowerCase().indexOf(q) === 0, bs = b.text.toLowerCase().indexOf(q) === 0; return (bs - as) || (b.n - a.n) || (b.zeit - a.zeit); })
+      .slice(0, 4);
+    if (!treffer.length) { box.hidden = true; return; }
+    box.innerHTML = treffer.map(function (z, i) {
+      return '<button type="button" class="vs" data-vs="' + i + '"><b>' + esc(z.text) + '</b><small>' + esc(z.kat) + (z.zahl ? ' · ' + esc(z.zahl) : '') + '</small></button>';
+    }).join('');
+    box._treffer = treffer; box.hidden = false;
+  }
+  function selectSetzen(id, wert) {
+    var sel = $(id); if (!wert || !sel.querySelector('option[value="' + wert.replace(/"/g, '\\"') + '"]')) return;
+    if (sel.value !== wert) { sel.value = wert; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+  }
+  $('beschreibung').addEventListener('input', vsZeigen);
+  $('beschreibung').addEventListener('focus', function () { vsCache = null; vsZeigen(); });
+  $('beschreibung').addEventListener('blur', function () { setTimeout(function () { $('vorschlaege').hidden = true; }, 200); });
+  $('vorschlaege').addEventListener('mousedown', function (e) { e.preventDefault(); }); // Fokus behalten
+  $('vorschlaege').addEventListener('click', function (e) {
+    var b = e.target.closest('.vs'); if (!b) return;
+    var z = $('vorschlaege')._treffer[+b.getAttribute('data-vs')]; if (!z) return;
+    $('beschreibung').value = z.text;
+    selectSetzen('kategorie', z.kat); selectSetzen('zahlung', z.zahl);
+    $('vorschlaege').hidden = true;
+  });
+
   $('form').addEventListener('submit', function (e) {
     e.preventDefault();
     var betrag = feldZahl('betrag'), kurs = feldZahl('kurs'), euro = feldZahl('abgebucht');
@@ -1596,6 +1657,8 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
       ausgaben.push(eintrag);
       toast('Ausgabe gespeichert');
     }
+    try { if (navigator.vibrate) navigator.vibrate(35); } catch (err) {}
+    vsCache = null;
     if (!barModus && formW() !== 'EUR') {
       einst.kurse[formW()] = kursRunden(kurs);
       if (formW() === hauptCode()) einst.letzterKurs = kursRunden(kurs);
@@ -1705,7 +1768,28 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     var n = Math.max(1, gesamtT || tage), ohne = ausgaben.filter(function (a) { return !istAbh(a); });
     return { tage: n, euro: summeEuro(ohne) / n, lokal: summePeso(ohne) / n, mitStart: !!s };
   }
+  function ticketBudgetRendern() {
+    var box = $('ticketBudget'), b = einst.budget;
+    if (!b || !(b.betrag > 0) || (multi && b.waehrung === 'LOKAL')) { box.hidden = true; return; }
+    var euroModus = b.waehrung === 'EUR', fmt = euroModus ? euroFmt : geld;
+    function kurz(x) { return fmt(x).replace(',00 ', ' ').replace(/,\d\d (?=[^\d]*$)/, ' '); }
+    var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
+    var rest = b.betrag - (euroModus ? summeEuro(ohne) : summePeso(ohne));
+    var start = b.start || reise.start, ende = b.ende || reise.ende, h = heute(), farbe = 'gruen', txt, sub = '';
+    if (rest < 0) { farbe = 'rot'; txt = 'Budget überschritten um ' + kurz(-rest); }
+    else if (start && ende && h >= start && h <= ende) {
+      var uebrig = tageZwischen(h, ende) + 1, gesamt = tageZwischen(start, ende) + 1;
+      var proTag = rest / uebrig, plan = b.betrag / gesamt, q = proTag / plan;
+      farbe = q >= 1 ? 'gruen' : (q >= 0.8 ? 'gelb' : 'rot');
+      txt = 'Noch ' + kurz(proTag) + ' pro Tag'; sub = kurz(rest) + ' übrig';
+    } else { txt = 'Budget: noch ' + kurz(rest) + ' übrig'; }
+    box.className = 't-budget ' + farbe;
+    box.innerHTML = '<span class="ampel" aria-hidden="true"></span><b>' + esc(txt) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '');
+    box.setAttribute('aria-label', txt + (sub ? ', ' + sub : '') + (farbe === 'gruen' ? ', im Plan' : farbe === 'gelb' ? ', knapp' : ', über Plan'));
+    box.hidden = false;
+  }
   function kopfStubRendern() {
+    ticketBudgetRendern();
     var box = document.getElementById('kopfStub');
     if (!box || !reise) return;
     document.getElementById('ticketFlaggen').textContent = reise.laender.map(function (l) { return flagge(l.code); }).join('');
