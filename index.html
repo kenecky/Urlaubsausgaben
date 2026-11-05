@@ -843,6 +843,23 @@ header .kopf-zeile { min-height: 52px; }
 header h1, body:has(#startseite:not([hidden])) header h1 { font-size: 28px !important; font-weight: 800 !important; letter-spacing: -.025em !important; margin-top: 0 !important; }
 body:has(#startseite:not([hidden])) header { padding-bottom: 18px !important; }
 body:has(#reiseAnsicht:not([hidden])), body:has(#startseite:not([hidden])) { background: linear-gradient(var(--kopf) 0 140px, var(--bg) 140px) no-repeat !important; background-color: var(--bg) !important; }
+
+/* Erste Karte beginnt überall exakt an derselben Stelle (8 px unter dem Header) */
+body.rs-unter main, main#reiseAnsicht, main#startseite { padding-top: 8px !important; }
+#ticket, body.rs-unter #reiseAnsicht > section.karte.aktiv-seite, #startseite > #reisenKarte { margin-top: 0 !important; }
+/* Hauptseite einer Reise: wird bei wenig Platz stufenweise kompakter */
+body.eng1 .t-stub { padding: 10px 0 10px; }
+body.eng1 .t-fort { padding-bottom: 12px; }
+body.eng1 .t-budget { margin-top: 4px; padding: 6px 12px; }
+body.eng1 .ticket { margin-bottom: 12px; }
+body.eng1 .kacheln { gap: 10px; }
+body.eng1 .kachel.breit { padding-top: 12px !important; padding-bottom: 12px !important; }
+body.eng1 .ausg .ak-sub { margin-bottom: 9px; }
+body.eng1 .ausg .ak-leg { margin-top: 8px; gap: 4px 12px; }
+body.eng2 .ticket .gesamt { font-size: 34px; }
+body.eng2 .t-perf { margin-top: 12px; }
+body.eng2 .ausg .ak-leg small:nth-child(n+5) { display: none; }
+body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -3923,7 +3940,7 @@ body:has(#reiseAnsicht:not([hidden])), body:has(#startseite:not([hidden])) { bac
     document.body.classList.remove('rs-unter'); document.body.classList.add('rs-haupt');
     Array.prototype.forEach.call(document.querySelectorAll('#reiseAnsicht > section.karte'), function (k) { k.classList.remove('aktiv-seite'); });
     if (reise) $('kopfTitel').textContent = reise.name;
-    window.scrollTo(0, 0);
+    window.scrollTo(0, 0); setTimeout(hauptEinpassen, 0);
   }
   function editVerlassen() { var id = bearbeiteId; formZuruecksetzen(); if (id) nachSeiteScroll = id; }
   function seiteOeffnen(name, ersetzen) {
@@ -3956,6 +3973,16 @@ body:has(#reiseAnsicht:not([hidden])), body:has(#startseite:not([hidden])) { bac
     if (n === 'neu' && bearbeiteId) formZuruecksetzen();
     seiteOeffnen(n);
   });
+  // Hauptseite einpassen: so kompakt wie nötig, damit „Ausgaben“ ganz sichtbar ist
+  function hauptEinpassen() {
+    var b = document.body.classList;
+    b.remove('eng1', 'eng2', 'eng3');
+    if (!b.contains('rs-haupt') || $('reiseAnsicht').hidden) return;
+    var k = document.querySelector('.kachel.ausg'); if (!k || !k.offsetHeight) return;
+    var stufen = ['eng1', 'eng2', 'eng3'];
+    for (var i = 0; i < stufen.length && k.getBoundingClientRect().bottom + window.scrollY > window.innerHeight - 8; i++) b.add(stufen[i]);
+  }
+  window.addEventListener('resize', function () { setTimeout(hauptEinpassen, 50); });
   function kachelnRendern() {
     if (!reise) return;
     var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
@@ -3982,6 +4009,7 @@ body:has(#reiseAnsicht:not([hidden])), body:has(#startseite:not([hidden])) { bac
     var neu = document.querySelector('[data-seite-auf="neu"]');
     neu.disabled = gesperrt();
     $('kInfo_neu').textContent = gesperrt() ? 'Reise ist abgeschlossen' : 'Schnell erfassen';
+    setTimeout(hauptEinpassen, 0);
   }
 
   // ---------- Hauptseite: nach unten ziehen = neu laden (die Seite selbst scrollt nicht) ----------
