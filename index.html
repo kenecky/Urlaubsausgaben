@@ -811,7 +811,7 @@ body.blatt-offen .sheet-dunkel { opacity: 1; pointer-events: auto; }
 /* Buttons „Neue Ausgabe“ und „Ausgaben“: weiß mit Petrol-Streifen links */
 #kacheln .kachel.breit { background: var(--karte); border: 1px solid var(--linie); border-left: 6px solid var(--petrol); box-shadow: 0 8px 20px -12px rgba(4,30,36,.45); }
 html[data-thema="dunkel"] #kacheln .kachel.breit { border-left-color: #1C8A8F; }
-#kacheln .ausg .ak-kopf b::after { content: '\00a0\00a0›'; color: #1C8A8F; font-weight: 800; }
+
 
 /* Startseite: steht still, „Meine Reisen“ scrollt in sich, Leiste unten */
 html:has(body.start-an) { overflow: hidden; overscroll-behavior: none; }
@@ -886,6 +886,38 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
 .kachel.breit[data-seite-auf="neu"] .heute { padding: 2px 10px; min-width: 74px; }
 .kachel.breit[data-seite-auf="neu"] .heute.gestern { padding-right: 0; }
 .kachel.breit[data-seite-auf="neu"] .heute strong { font-size: 17px; }
+
+/* Kachel Ausgabenliste: Prozente rechtsbündig */
+.ausg .ak-leg small em { font-style: normal; margin-left: auto; padding-left: 6px; flex: none; }
+/* Kachel Neue Ausgabe: nur Titel, mittig */
+.kachel.breit[data-seite-auf="neu"] .tx { align-self: center; display: flex; flex-direction: column; justify-content: center; }
+.kachel.breit[data-seite-auf="neu"] .tx b { white-space: nowrap; }
+#kInfo_neu:empty { display: none; }
+/* Formular Neue/Ändern: kompakt, Beschriftung im Feld */
+#formKarte { padding-top: 14px !important; padding-bottom: 14px !important; }
+#formKarte .schnell-zeile { display: flex; gap: 8px; }
+#formKarte .schnell-zeile input { flex: 1; min-width: 0; height: 46px; }
+#freitextBtn { width: 46px; height: 46px; flex: none; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+#freitextBtn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#freitextInfo:empty { display: none; }
+#formKarte form label:not(.check) { display: block; position: relative; z-index: 1; height: 16px; line-height: 16px; margin: 6px 0 -18px 13px; font-size: 11px; font-weight: 600; color: var(--grau); pointer-events: none; white-space: nowrap; overflow: hidden; }
+#formKarte form input:not([type="checkbox"]), #formKarte form select, #formKarte form textarea { height: 46px; min-height: 46px; padding-top: 17px !important; padding-bottom: 4px !important; box-sizing: border-box; }
+#formKarte form textarea { resize: none; line-height: 1.3; }
+#formKarte form .zeile { gap: 8px; }
+#formKarte form select { background-position: calc(100% - 17px) 58%, calc(100% - 12px) 58%; }
+#barKursHinweis { display: none !important; }
+#rechenHinweis:empty { display: none; }
+#kursOnlineBtn { margin-top: 6px !important; padding: 6px 12px !important; min-height: 0; }
+#formKarte .check { margin: 8px 0 0; }
+#formKarte .vorschlaege { margin: 6px 0 -2px; }
+.form-knoepfe { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; margin-top: 12px; }
+.form-knoepfe button { margin: 0 !important; }
+.form-knoepfe:has(#abbrechen[hidden]), .form-knoepfe:has(#abbrechen[style*="none"]) { grid-template-columns: 1fr; }
+#formKarte #rechenHinweis { font-size: 12px; line-height: 1.3; margin-top: 4px !important; }
+#formKarte .check { margin: 6px 0 0 !important; }
+#formKarte .schnell-zeile input, #freitextBtn { height: 44px; }
+#freitextBtn { width: 44px; }
+#eintragLoeschen { margin-top: 8px !important; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -991,13 +1023,13 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
     <div class="t-budget" id="ticketBudget" hidden></div>
   </section>
   <section class="karte sperr-banner" id="gesperrtBanner" hidden></section>
-  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="heute gestern"><span>Gestern</span><strong id="kGesternSumme">–</strong><span id="kGesternAnzahl"></span></span></button><button type="button" class="kachel breit ausg" data-seite-auf="kat"><span class="ak-kopf"><b>Ausgaben</b><strong id="kAusgEuro"></strong></span><span class="ak-sub"><small id="kInfo_ueb"></small><small id="kAusgLokal"></small></span><span class="ak-balken" id="kAusgBalken"></span><span class="ak-leg" id="kAusgLeg"></span></button></section>
+  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="heute gestern"><span>Gestern</span><strong id="kGesternSumme">–</strong><span id="kGesternAnzahl"></span></span></button><button type="button" class="kachel breit ausg" data-seite-auf="kat"><span class="ak-kopf"><b>Ausgabenliste</b><strong id="kAusgEuro"></strong></span><span class="ak-sub"><small id="kInfo_ueb"></small><small id="kAusgLokal"></small></span><span class="ak-balken" id="kAusgBalken"></span><span class="ak-leg" id="kAusgLeg"></span></button></section>
   <section class="karte" id="formKarte">
     <h2 id="formTitel">Neue Ausgabe</h2>
     <div id="schnell">
-      <label for="freitext">Schnelleingabe</label>
-      <input type="text" id="freitext" placeholder="z. B. 2 Bier in Coron am 31.10.2026 für 500 php" autocomplete="off">
-      <button type="button" class="hell" id="freitextBtn" style="margin-top:8px">Ins Formular übernehmen</button>
+      <label for="freitext" class="sr-nur">Schnelleingabe</label>
+      <div class="schnell-zeile"><input type="text" id="freitext" placeholder="Schnelleingabe, z. B. 2 Bier in Coron für 500 php" autocomplete="off">
+      <button type="button" class="hell" id="freitextBtn" aria-label="Ins Formular übernehmen" title="Ins Formular übernehmen"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button></div>
       <p class="hinweis" id="freitextInfo" style="margin:6px 0 4px"></p>
     </div>
     <form id="form" autocomplete="off">
@@ -1037,11 +1069,11 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
       <p class="hinweis" id="barKursHinweis" style="margin:6px 0 0" hidden>Bar-Zahlung: Kurs und Euro-Betrag werden automatisch aus den Bargeldabhebungen berechnet (die älteste Abhebung zuerst) und sind gesperrt.</p>
       <label for="beschreibung">Beschreibung</label>
       <div class="vorschlaege" id="vorschlaege" hidden></div>
-      <textarea id="beschreibung" rows="2" placeholder="z. B. Abendessen am Strand"></textarea>
-      <label class="check"><input type="checkbox" id="geprueft"> Bereits mit Umrechnungskurs eingetragen</label>
-      <label class="check"><input type="checkbox" id="pauschal"> Kosten für die gesamte Reise (nicht im Tagesschnitt)</label>
-      <button type="submit" id="speichern">Speichern</button>
-      <button type="button" class="hell abbrechen" id="abbrechen" style="margin-top:8px">Abbrechen</button>
+      <textarea id="beschreibung" rows="1" placeholder="z. B. Abendessen am Strand"></textarea>
+      <label class="check"><input type="checkbox" id="geprueft"> Umrechnungskurs eingetragen</label>
+      <label class="check"><input type="checkbox" id="pauschal"> Kosten für die gesamte Reise</label>
+      <div class="form-knoepfe"><button type="button" class="hell abbrechen" id="abbrechen">Abbrechen</button>
+      <button type="submit" id="speichern">Speichern</button></div>
       <button type="button" class="rot abbrechen" id="eintragLoeschen" style="margin-top:8px">Ausgabe löschen</button>
     </form>
   </section>
@@ -4023,7 +4055,7 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
     $('kAusgBalken').innerHTML = reihe.map(function (k) { return '<i style="flex:' + proK[k].toFixed(4) + ';background:' + katStil(k).c + '"></i>'; }).join('');
     $('kAusgBalken').hidden = !reihe.length;
     $('kAusgLeg').innerHTML = reihe.length ? reihe.slice(0, 6).map(function (k) {
-      return '<small><i style="background:' + katStil(k).c + '"></i><span>' + esc(k) + '</span>&nbsp;' + Math.round(proK[k] / ges * 100) + '&nbsp;%</small>';
+      return '<small><i style="background:' + katStil(k).c + '"></i><span>' + esc(k) + '</span><em>' + Math.round(proK[k] / ges * 100) + '&nbsp;%</em></small>';
     }).join('') : '<small>Noch keine Ausgaben</small>';
     var offen = ausgaben.filter(function (a) { return !istGeprueft(a); }).length;
     $('kInfo_ueb').innerHTML = ohne.length + '&nbsp;' + (ohne.length === 1 ? 'Ausgabe' : 'Ausgaben') + (offen ? ' · ' + offen + '&nbsp;Kurs&nbsp;offen' : '');
@@ -4039,7 +4071,7 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
     tagBox(tagPlus(heute(), -1), 'kGesternSumme', 'kGesternAnzahl', 'nichts');
     var neu = document.querySelector('[data-seite-auf="neu"]');
     neu.disabled = gesperrt();
-    $('kInfo_neu').textContent = gesperrt() ? 'Reise ist abgeschlossen' : 'Schnell erfassen';
+    $('kInfo_neu').textContent = gesperrt() ? 'Reise ist abgeschlossen' : '';
     setTimeout(hauptEinpassen, 0);
   }
 
