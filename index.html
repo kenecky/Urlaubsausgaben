@@ -1698,6 +1698,13 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     var r = e.target.closest('.eintrag'); if (!r) return;
     var eb = r.querySelector('button[data-aktion="edit"]'); if (eb) listeKlick({ target: eb });
   });
+  // Schnitt pro Tag: alle Ausgaben (ohne Abhebungen, mit Gesamtreise) geteilt durch alle Reisetage
+  function schnittProTag() {
+    var h = heute(), s = reise.start, e = reise.ende, tage = 1, gesamtT = 0;
+    if (s) { gesamtT = e ? tageZwischen(s, e) + 1 : 0; if (h >= s) { var bis = (e && h > e) ? e : h; tage = tageZwischen(s, bis) + 1; } }
+    var n = Math.max(1, gesamtT || tage), ohne = ausgaben.filter(function (a) { return !istAbh(a); });
+    return { tage: n, euro: summeEuro(ohne) / n, lokal: summePeso(ohne) / n, mitStart: !!s };
+  }
   function kopfStubRendern() {
     var box = document.getElementById('kopfStub');
     if (!box || !reise) return;
@@ -1709,7 +1716,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
       else { var bis = (e && h > e) ? e : h; tage = tageZwischen(s, bis) + 1; tagTxt = tage + (gesamtT ? ' von ' + gesamtT : ''); }
     }
     var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
-    var schnitt = summeEuro(ohne) / Math.max(1, gesamtT || tage); // durch alle Reisetage
+    var schnitt = schnittProTag().euro; // durch alle Reisetage, gleiche Zahl wie in Übersicht → Pro Tag
     var bg = bargeldProWaehrung(), barTxt, barSub = '';
     if (!bg.length) barTxt = '0 ' + lokal.symbol;
     else if (bg.length === 1) { barTxt = Math.round(bg[0].rest).toLocaleString('de-DE') + ' ' + bg[0].symbol; if (bg[0].symbol !== '€') barSub = '≈ ' + euroFmt(bg[0].restEuro || 0); }
@@ -1916,7 +1923,8 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     var max = 0, teuer = von;
     daten.forEach(function (d) { if (proTag[d] > max) { max = proTag[d]; teuer = d; } });
     var summe = summePeso(tagListe), summeE = summeEuro(tagListe);
-    var html = '<div class="rz"><span>Durchschnitt pro Tag (' + anzahl + (anzahl === 1 ? ' Tag' : ' Tage') + ')</span><b>' + wertEuro(summe / anzahl, summeE / anzahl) + '</b></div>' +
+    var sp = schnittProTag(), dTage = sp.mitStart ? sp.tage : anzahl;
+    var html = '<div class="rz"><span>Durchschnitt pro Tag (' + dTage + (dTage === 1 ? ' Tag' : ' Tage') + ')</span><b>' + (sp.mitStart ? wertEuro(sp.lokal, sp.euro) : wertEuro(summe / anzahl, summeE / anzahl)) + '</b></div>' +
       '<div class="rz"><span>Teuerster Tag (' + esc(datumAnzeige(teuer).slice(0, 5)) + ')</span><b>' + wertEuro(max, proTagE[teuer]) + '</b></div>' +
       pausHtml +
       '<div style="height:8px"></div>';
