@@ -690,6 +690,14 @@ body.rs-haupt #themaBtn, body.rs-unter #themaBtn { display: none; }
 /* Wischen: Browser übernimmt nur senkrecht, waagerecht macht die App */
 #rkInhalt, #tabsKarte { touch-action: pan-y; }
 body { touch-action: manipulation; }
+
+/* Karussell-Wischen */
+#rkInhalt, #tabsKarte { position: relative; overflow-x: hidden; }
+#rkInhalt.wischt, #tabsKarte.wischt { overflow-y: hidden; }
+.t-sub { font-size: 12px; color: var(--grau); font-weight: 500; margin-top: 1px; white-space: nowrap; }
+/* Hauptseite einer Reise: nicht scrollbar */
+html:has(body.rs-haupt:not(.umrechner-offen):not(.reise-offen)) { overflow: hidden; overscroll-behavior: none; }
+body.rs-haupt { overflow: hidden; overscroll-behavior: none; height: 100%; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1614,20 +1622,20 @@ body { touch-action: manipulation; }
     var box = document.getElementById('kopfStub');
     if (!box || !reise) return;
     document.getElementById('ticketFlaggen').textContent = reise.laender.map(function (l) { return flagge(l.code); }).join('');
-    var h = heute(), s = reise.start, e = reise.ende, tagTxt = '–', tage = 1;
+    var h = heute(), s = reise.start, e = reise.ende, tagTxt = '–', tage = 1, gesamtT = 0;
     if (s) {
-      var gesamtT = e ? tageZwischen(s, e) + 1 : 0;
+      gesamtT = e ? tageZwischen(s, e) + 1 : 0;
       if (h < s) { tagTxt = 'in ' + tageZwischen(h, s) + ' T.'; }
       else { var bis = (e && h > e) ? e : h; tage = tageZwischen(s, bis) + 1; tagTxt = tage + (gesamtT ? ' von ' + gesamtT : ''); }
     }
     var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
-    var schnitt = summeEuro(ohne) / Math.max(1, tage);
-    var bg = bargeldProWaehrung(), barTxt;
+    var schnitt = summeEuro(ohne) / Math.max(1, gesamtT || tage); // durch alle Reisetage
+    var bg = bargeldProWaehrung(), barTxt, barSub = '';
     if (!bg.length) barTxt = '0 ' + lokal.symbol;
-    else if (bg.length === 1) barTxt = Math.round(bg[0].rest).toLocaleString('de-DE') + ' ' + bg[0].symbol;
+    else if (bg.length === 1) { barTxt = Math.round(bg[0].rest).toLocaleString('de-DE') + ' ' + bg[0].symbol; if (bg[0].symbol !== '€') barSub = '≈ ' + euroFmt(bg[0].restEuro || 0); }
     else barTxt = euroFmt(bg.reduce(function (x, b) { return x + b.restEuro; }, 0));
-    function zelle(l, w) { return '<div class="t-zelle"><div class="t-label">' + l + '</div><div class="t-wert">' + esc(w) + '</div></div>'; }
-    box.innerHTML = zelle('Reisetag', tagTxt) + zelle('Pro Tag', euroFmt(schnitt).replace(',00 €', ' €')) + zelle('Bargeld', barTxt);
+    function zelle(l, w, sub) { return '<div class="t-zelle"><div class="t-label">' + l + '</div><div class="t-wert">' + esc(w) + '</div>' + (sub ? '<div class="t-sub">' + esc(sub) + '</div>' : '') + '</div>'; }
+    box.innerHTML = zelle('Reisetag', tagTxt) + zelle('Pro Tag', euroFmt(schnitt).replace(',00 €', ' €')) + zelle('Bargeld', barTxt, barSub);
     var fort = document.getElementById('reiseFort');
     if (fort) {
       if (s && e && e >= s) {
@@ -3648,38 +3656,63 @@ body { touch-action: manipulation; }
   }
 
   // ---------- Reiter per Wischen nach links/rechts wechseln ----------
-  function reiterWischen(flaeche, liste, wechseln, seiteEl) {
-    var sx = null, sy = 0, st = 0, modus = null, el = null, dx = 0, breite = 1;
-    function setze(x, mitAnim) { if (!el) return; el.style.transition = mitAnim ? 'transform .22s ease-out, opacity .22s ease-out' : 'none'; el.style.transform = x ? 'translateX(' + x + 'px)' : ''; el.style.opacity = x ? String(Math.max(.35, 1 - Math.abs(x) / breite * .8)) : ''; }
+  // Wischen zwischen Reitern wie ein Karussell: die Nachbarseite hängt direkt daneben und zieht mit
+  function reiterWischen(flaeche, liste, wechseln, seiteEl, seiteVon, visOben, nachWechsel) {
+    var sx = null, sy = 0, st = 0, modus = null, el = null, nb = null, nbName = null, dx = 0, breite = 1, l = null, i = 0, versatz = 0, laeuft = false;
+    function stil(e, x, anim) { e.style.transition = anim ? 'transform .26s cubic-bezier(.25,.8,.3,1)' : 'none'; e.style.transform = 'translateX(' + x + 'px)'; }
+    function nbWeg() { if (nb) { nb.hidden = true; nb.style.cssText = ''; } nb = null; nbName = null; }
+    function nbHolen(richtung) { // richtung: +1 = nächste (rechts), -1 = vorherige
+      var j = i + richtung, name = (j >= 0 && j < l.length) ? l[j] : null;
+      if (name === nbName) return;
+      nbWeg(); if (!name) return;
+      nb = seiteVon(name); if (!nb || nb === el) { nb = null; return; }
+      nbName = name; nb.hidden = false;
+      nb.style.position = 'absolute'; nb.style.left = el.offsetLeft + 'px'; nb.style.width = el.offsetWidth + 'px';
+      nb.style.top = (el.offsetTop + versatz) + 'px'; nb.style.boxSizing = 'border-box'; nb.style.pointerEvents = 'none';
+    }
+    function setze(x, anim) {
+      if (el) stil(el, x, anim);
+      if (nb) stil(nb, x + (nbName === l[i + 1] ? breite : -breite), anim);
+    }
+    function aufraeumen() { if (el) el.style.cssText = ''; nbWeg(); el = null; }
     flaeche.addEventListener('touchstart', function (e) {
-      if (e.touches.length !== 1 || e.target.closest('input[type="range"], .vgl-wrap, .rk-tabs, .tabs')) { sx = null; return; }
-      sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); modus = null; dx = 0; el = seiteEl(); breite = (el && el.offsetWidth) || window.innerWidth;
+      if (laeuft || e.touches.length !== 1 || e.target.closest('input[type="range"], .vgl-wrap, .rk-tabs, .tabs')) { sx = null; return; }
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); modus = null; dx = 0;
     }, { passive: true });
     flaeche.addEventListener('touchmove', function (e) {
       if (sx === null) return;
       var mx = e.touches[0].clientX - sx, my = e.touches[0].clientY - sy;
-      if (!modus) { if (Math.abs(mx) < 8 && Math.abs(my) < 8) return; modus = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'; }
+      if (!modus) {
+        if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+        modus = Math.abs(mx) > Math.abs(my) ? 'h' : 'v';
+        if (modus === 'h') {
+          el = seiteEl(); if (!el) { modus = 'v'; return; }
+          l = liste(); i = l.indexOf(l.aktiv); breite = el.offsetWidth || window.innerWidth;
+          versatz = Math.max(0, visOben() - el.getBoundingClientRect().top);
+          flaeche.classList.add('wischt');
+        }
+      }
       if (modus !== 'h') return;
-      var l = liste(), i = l.indexOf(l.aktiv), rand = (mx > 0 && i <= 0) || (mx < 0 && i >= l.length - 1);
-      dx = rand ? mx * 0.3 : mx; setze(dx, false);
+      nbHolen(mx < 0 ? 1 : -1);
+      dx = nb ? mx : mx * 0.3; setze(dx, false);
     }, { passive: true });
     function ende() {
       if (sx === null) return; sx = null;
       if (modus !== 'h') { modus = null; return; }
-      var l = liste(), i = l.indexOf(l.aktiv), schnell = Math.abs(dx) > 40 && Date.now() - st < 300;
-      var j = i + (dx < 0 ? 1 : -1);
-      if ((Math.abs(dx) > breite * 0.28 || schnell) && j >= 0 && j < l.length) {
-        var raus = dx < 0 ? -breite : breite, altEl = el;
-        setze(raus, true);
-        setTimeout(function () {
-          if (altEl) { altEl.style.transition = 'none'; altEl.style.transform = ''; altEl.style.opacity = ''; }
-          wechseln(l[j]);
-          el = seiteEl(); if (!el) return;
-          setze(-raus * 0.6, false); void el.offsetWidth; setze(0, true);
-          setTimeout(function () { if (el) { el.style.transition = ''; } }, 240);
-        }, 200);
-      } else { setze(0, true); }
       modus = null;
+      var schnell = Math.abs(dx) > 40 && Date.now() - st < 300;
+      if (nb && (Math.abs(dx) > breite * 0.25 || schnell)) {
+        var ziel = nbName, raus = dx < 0 ? -breite : breite, v = versatz;
+        laeuft = true; setze(raus, true);
+        setTimeout(function () {
+          aufraeumen(); flaeche.classList.remove('wischt');
+          wechseln(ziel); if (nachWechsel) nachWechsel(v);
+          laeuft = false;
+        }, 270);
+      } else {
+        laeuft = true; setze(0, true);
+        setTimeout(function () { aufraeumen(); flaeche.classList.remove('wischt'); laeuft = false; }, 270);
+      }
     }
     flaeche.addEventListener('touchend', ende);
     flaeche.addEventListener('touchcancel', ende);
@@ -3687,10 +3720,15 @@ body { touch-action: manipulation; }
   reiterWischen($('rkInhalt'), function () {
     var l = Array.prototype.filter.call(document.querySelectorAll('#reiseKarte .rk-tab'), function (b) { return b.offsetParent !== null; }).map(function (b) { return b.getAttribute('data-rk'); });
     l.aktiv = rkAktiv; return l;
-  }, rkTab, function () { return document.querySelector('#reiseKarte .rk-seite:not([hidden])'); });
+  }, rkTab, function () { return document.querySelector('#reiseKarte .rk-seite:not([hidden])'); },
+  function (n) { return document.querySelector('#reiseKarte .rk-seite[data-seite="' + n + '"]'); },
+  function () { return $('rkInhalt').getBoundingClientRect().top; });
   reiterWischen($('tabsKarte'), function () {
     var l = ['ausgaben', 'zahlung', 'tag', 'orte']; l.aktiv = aktiverTab; return l;
-  }, function (n) { tabWechseln(n); zeichnen(); }, function () { return document.querySelector('#tabsKarte .tab-inhalt:not([hidden])'); });
+  }, function (n) { tabWechseln(n); zeichnen(); }, function () { return document.querySelector('#tabsKarte .tab-inhalt:not([hidden])'); },
+  function (n) { return $('tab-' + n); },
+  function () { var k = document.querySelector('#reiseAnsicht .kopf, header'); var r = k && getComputedStyle(k).position.match(/fixed|sticky/) ? k.getBoundingClientRect().bottom : 0; return Math.max(0, r); },
+  function (v) { if (v) window.scrollBy(0, -v); });
   // Ansicht wechseln
   function ansichtSetzen(start) {
     $('startseite').hidden = !start;
