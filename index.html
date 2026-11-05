@@ -790,6 +790,23 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
 .ausg .ak-leg i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 #balken .balken-zeile.alle { margin-bottom: 4px; }
 #balken .balken-zeile.alle .balken-name { grid-row: 1 / span 2; align-self: center; font-weight: 700; }
+
+/* Symbole unten rechts auf der Startseite */
+.start-fabs { position: fixed; right: max(16px, calc(50% - 304px)); bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 40; display: flex; gap: 10px; }
+.start-fab { position: relative; width: 52px; height: 52px; margin: 0; padding: 0; border-radius: 16px; background: var(--karte); color: var(--petrol); border: 1px solid var(--linie); box-shadow: 0 8px 20px -10px rgba(4,30,36,.55); display: flex; align-items: center; justify-content: center; }
+html[data-thema="dunkel"] .start-fab { color: #CFE6E4; }
+.start-fab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.fab-zahl { position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--mango); color: var(--mango-text); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+#startseite { padding-bottom: 86px; }
+/* Blatt von unten */
+.unten-blatt { position: fixed !important; left: 0; right: 0; bottom: 0; z-index: 70; max-width: 640px; margin: 0 auto !important; border-radius: 26px 26px 0 0 !important;
+  padding: 10px 20px calc(24px + env(safe-area-inset-bottom)) !important; max-height: 90vh; overflow-y: auto; box-shadow: 0 -20px 50px -20px rgba(4,30,36,.55);
+  transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; overscroll-behavior: contain; display: block !important; }
+.unten-blatt.offen { transform: none; visibility: visible; transition: transform .28s ease; }
+.unten-blatt::before { content: ''; display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--feld-rand); margin: 0 auto 12px; }
+.unten-blatt > h2 { font-size: 22px; margin: 0 0 10px; padding-right: 48px; }
+.unten-blatt > .blatt-x { display: flex; align-items: center; justify-content: center; }
+body.blatt-offen .sheet-dunkel { opacity: 1; pointer-events: auto; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -863,8 +880,12 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     <div class="wk-auswahl" id="wkAuswahl" hidden></div>
   </section>
 
-  <section class="karte" id="papierkorbKarte" hidden>
-    <h2>Papierkorb</h2>
+  <div class="start-fabs" id="startFabs">
+    <button type="button" class="start-fab" id="pkFab" aria-label="Papierkorb öffnen"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2l1-12M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/></svg><span class="fab-zahl" id="pkZahl" hidden></span></button>
+  </div>
+  <section class="karte unten-blatt" id="papierkorbKarte" role="dialog" aria-modal="true" aria-labelledby="pkTitel">
+    <button type="button" class="sheet-x blatt-x" aria-label="Papierkorb schließen">✕</button>
+    <h2 id="pkTitel">Papierkorb</h2>
     <div id="papierkorbListe"></div>
     <p class="hinweis">Gelöschte Reisen bleiben hier erhalten, bis du sie endgültig löschst.</p>
   </section>
@@ -984,7 +1005,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
   <section class="karte" id="katKarte">
     <h2>Pro Kategorie</h2>
     <div id="balken"></div>
-    <p class="hinweis">Tippe auf „Alle“ oder eine Kategorie, um die Ausgaben zu sehen.</p>
+    <p class="hinweis">Tippe auf „Alle Kategorien“ oder eine Kategorie, um die Ausgaben zu sehen.</p>
   </section>
 
   <section class="karte tabs-karte" id="tabsKarte">
@@ -2508,7 +2529,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     function prozent(wert) { return prozentText(wert, gesamtStat); }
     var gesamtE = Object.keys(proKatE).reduce(function (x, k) { return x + proKatE[k]; }, 0);
     $('balken').innerHTML = '<div class="balken-zeile alle" data-kat="" style="--k:var(--petrol)"><span class="kat-ico mini" style="--k:var(--petrol)"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></span>' +
-      '<span class="balken-name">Alle</span><span class="balken-wert">' + wertEuro(gesamtStat, gesamtE) + '</span></div>' +
+      '<span class="balken-name">Alle Kategorien</span><span class="balken-wert">' + wertEuro(gesamtStat, gesamtE) + '</span></div>' +
       Object.keys(proKat).map(function (k) {
       var breite = max > 0 ? (proKat[k] / max) * 100 : 0;
       return '<div class="balken-zeile' + (k === filterKat ? ' aktiv' : '') + '" data-kat="' + esc(k) + '" style="--k:' + katStil(k).c + '">' + katIcon(k).replace('kat-ico', 'kat-ico mini') +
@@ -3203,7 +3224,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
   themaAnwenden(document.documentElement.getAttribute('data-thema') || 'hell');
 
   // ---------- Auf- und zuklappbare Karten ----------
-  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'tabsKarte'];
+  var KARTEN = ['reisenKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'tabsKarte'];
   var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte', 'papierkorbKarte', 'abschlussKarte']; // neue Karten starten so, bis du sie einmal umschaltest
   var KEY_UI = 'reisen.v2.ui';
   function zugeklappteLaden() {
@@ -3855,6 +3876,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     var s = SEITEN[name]; if (!s) { hauptZeigen(); return; }
     if (aktSeite === 'neu' && name !== 'neu' && bearbeiteId) editVerlassen();
     aktSeite = name; document.body.classList.remove('ab-offen');
+    if (name === 'kat' && filterKat) { filterKat = ''; $('filter').value = ''; zeichnen(); }
     document.body.classList.remove('rs-haupt'); document.body.classList.add('rs-unter');
     Array.prototype.forEach.call(document.querySelectorAll('#reiseAnsicht > section.karte'), function (k) { k.classList.toggle('aktiv-seite', k.id === s.karte || (name === 'ab' && k.id === 'berichtKarte')); });
     $('kopfTitel').textContent = name === 'neu' ? $('formTitel').textContent : s.titel;
@@ -4070,7 +4092,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
   function (v) { if (v) window.scrollBy(0, -v); }, document.querySelector('#tabsKarte .tabs'));
   // Ansicht wechseln
   function ansichtSetzen(start) {
-    document.body.classList.remove('ab-offen');
+    document.body.classList.remove('ab-offen'); if (typeof blattZu === 'function') blattZu();
     $('startseite').hidden = !start;
     if (start) { document.body.classList.remove('gesperrt'); $('vergleichKarte').hidden = true; }
     $('reiseAnsicht').hidden = start;
@@ -4249,15 +4271,27 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
   // Papierkorb: wiederherstellen oder endgültig löschen
   function papierkorbRendern() {
     var tot = reisen.filter(function (r) { return r.geloescht; }).sort(function (a, b) { return b.geloescht - a.geloescht; });
-    $('papierkorbKarte').hidden = !tot.length;
-    $('papierkorbKarte').querySelector('h2').textContent = 'Papierkorb (' + tot.length + ')';
-    $('papierkorbListe').innerHTML = tot.map(function (m) {
+    $('papierkorbKarte').querySelector('h2').textContent = 'Papierkorb' + (tot.length ? ' (' + tot.length + ')' : '');
+    $('pkZahl').textContent = tot.length; $('pkZahl').hidden = !tot.length;
+    $('papierkorbListe').innerHTML = tot.length ? '' : '<p class="leer" style="margin:6px 0 4px">Der Papierkorb ist leer.</p>';
+    $('papierkorbListe').innerHTML += tot.map(function (m) {
       return '<div class="pk-zeile"><div class="pk-info"><b>' + (m.laender.length ? m.laender.map(function (x) { return flagge(x.code); }).join('') + ' ' : '') + esc(m.name) + '</b>' +
         '<div class="hinweis" style="margin:2px 0 0">' + (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) + ' · ' : '') + 'gelöscht am ' + esc(zeitStempel(m.geloescht)) + '</div></div>' +
         '<div class="pk-knoepfe"><button type="button" class="hell klein" data-pk-rest="' + esc(m.id) + '">Wiederherstellen</button>' +
         '<button type="button" class="rot klein" data-pk-weg="' + esc(m.id) + '">Endgültig löschen …</button></div></div>';
     }).join('');
   }
+  // Blätter von unten (Startseite)
+  var offenesBlatt = null;
+  function blattAuf(id) { var b = $(id); if (!b) return; blattZu(); b.scrollTop = 0; b.classList.add('offen'); document.body.classList.add('blatt-offen'); offenesBlatt = b; }
+  function blattZu() { if (offenesBlatt) offenesBlatt.classList.remove('offen'); offenesBlatt = null; document.body.classList.remove('blatt-offen'); }
+  Array.prototype.forEach.call(document.querySelectorAll('.unten-blatt'), function (b) {
+    b.querySelector('.blatt-x').addEventListener('click', blattZu);
+    wischSchliessen(b, blattZu);
+  });
+  $('sheetDunkel').addEventListener('click', blattZu);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') blattZu(); });
+  $('pkFab').addEventListener('click', function () { papierkorbRendern(); blattAuf('papierkorbKarte'); });
   $('papierkorbListe').addEventListener('click', function (e) {
     var r = e.target.closest('[data-pk-rest]'), w = e.target.closest('[data-pk-weg]');
     if (r) {
