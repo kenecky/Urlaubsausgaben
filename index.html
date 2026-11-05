@@ -891,7 +891,7 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
 .ausg .ak-leg small em { font-style: normal; margin-left: auto; padding-left: 6px; flex: none; }
 /* Kachel Neue Ausgabe: nur Titel, mittig */
 .kachel.breit[data-seite-auf="neu"] .tx { align-self: center; display: flex; flex-direction: column; justify-content: center; }
-.kachel.breit[data-seite-auf="neu"] .tx b { white-space: nowrap; }
+.kachel.breit[data-seite-auf="neu"] .tx b { white-space: normal; }
 #kInfo_neu:empty { display: none; }
 /* Formular Neue/Ändern: kompakt, Beschriftung im Feld */
 #formKarte { padding-top: 14px !important; padding-bottom: 14px !important; }
@@ -900,7 +900,7 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
 #freitextBtn { width: 46px; height: 46px; flex: none; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
 #freitextBtn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 #freitextInfo:empty { display: none; }
-#formKarte form label:not(.check) { display: block; position: relative; z-index: 1; height: 16px; line-height: 16px; margin: 6px 0 -18px 13px; font-size: 11px; font-weight: 600; color: var(--grau); pointer-events: none; white-space: nowrap; overflow: hidden; }
+#formKarte form label:not(.check) { display: block; position: relative; z-index: 1; height: 16px; line-height: 16px; margin: 11px 0 -18px 13px; font-size: 11px; font-weight: 600; color: var(--grau); pointer-events: none; white-space: nowrap; overflow: hidden; }
 #formKarte form input:not([type="checkbox"]), #formKarte form select, #formKarte form textarea { height: 46px; min-height: 46px; padding-top: 17px !important; padding-bottom: 4px !important; box-sizing: border-box; }
 #formKarte form textarea { resize: none; line-height: 1.3; }
 #formKarte form .zeile { gap: 8px; }
@@ -912,12 +912,16 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
 #formKarte .vorschlaege { margin: 6px 0 -2px; }
 .form-knoepfe { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; margin-top: 12px; }
 .form-knoepfe button { margin: 0 !important; }
+#formKarte:not(.bearbeiten) .form-knoepfe { grid-template-columns: 1fr; }
 .form-knoepfe:has(#abbrechen[hidden]), .form-knoepfe:has(#abbrechen[style*="none"]) { grid-template-columns: 1fr; }
 #formKarte #rechenHinweis { font-size: 12px; line-height: 1.3; margin-top: 4px !important; }
-#formKarte .check { margin: 6px 0 0 !important; }
+#formKarte .check { margin: 10px 0 0 !important; }
+#formKarte #schnell { margin-bottom: 4px; }
+#formKarte form .form-knoepfe { margin-top: 14px; }
+#formKarte .form-knoepfe button { height: 48px; }
 #formKarte .schnell-zeile input, #freitextBtn { height: 44px; }
 #freitextBtn { width: 44px; }
-#eintragLoeschen { margin-top: 8px !important; }
+#eintragLoeschen { margin-top: 8px !important; height: 46px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1023,13 +1027,13 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
     <div class="t-budget" id="ticketBudget" hidden></div>
   </section>
   <section class="karte sperr-banner" id="gesperrtBanner" hidden></section>
-  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="heute gestern"><span>Gestern</span><strong id="kGesternSumme">–</strong><span id="kGesternAnzahl"></span></span></button><button type="button" class="kachel breit ausg" data-seite-auf="kat"><span class="ak-kopf"><b>Ausgabenliste</b><strong id="kAusgEuro"></strong></span><span class="ak-sub"><small id="kInfo_ueb"></small><small id="kAusgLokal"></small></span><span class="ak-balken" id="kAusgBalken"></span><span class="ak-leg" id="kAusgLeg"></span></button></section>
+  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue<br>Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="heute gestern"><span>Gestern</span><strong id="kGesternSumme">–</strong><span id="kGesternAnzahl"></span></span></button><button type="button" class="kachel breit ausg" data-seite-auf="kat"><span class="ak-kopf"><b>Ausgabenliste</b><strong id="kAusgEuro"></strong></span><span class="ak-sub"><small id="kInfo_ueb"></small><small id="kAusgLokal"></small></span><span class="ak-balken" id="kAusgBalken"></span><span class="ak-leg" id="kAusgLeg"></span></button></section>
   <section class="karte" id="formKarte">
     <h2 id="formTitel">Neue Ausgabe</h2>
     <div id="schnell">
       <label for="freitext" class="sr-nur">Schnelleingabe</label>
       <div class="schnell-zeile"><input type="text" id="freitext" placeholder="Schnelleingabe, z. B. 2 Bier in Coron für 500 php" autocomplete="off">
-      <button type="button" class="hell" id="freitextBtn" aria-label="Ins Formular übernehmen" title="Ins Formular übernehmen"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button></div>
+      <button type="button" class="hell" id="freitextBtn" aria-label="Ins Formular übernehmen" title="Ins Formular übernehmen"><svg viewBox="0 0 24 24"><path d="M5 12h12M12 6l6 6-6 6"/></svg></button></div>
       <p class="hinweis" id="freitextInfo" style="margin:6px 0 4px"></p>
     </div>
     <form id="form" autocomplete="off">
