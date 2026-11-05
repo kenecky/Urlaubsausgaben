@@ -600,6 +600,25 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
 .kat-aktion { display: flex; align-items: center; gap: 6px; }
 .kat-knoepfe { margin: 0; }
 @media (prefers-reduced-motion: reduce) { #rechnerKarte.sheet, .sheet-dunkel { transition: none !important; } }
+
+/* Diese Reise als Blatt */
+#reiseKarte.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; max-width: 640px; margin: 0 auto; border-radius: 26px 26px 0 0;
+  padding: 10px 20px calc(24px + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; box-shadow: 0 -20px 50px -20px rgba(4,30,36,.55);
+  transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; }
+body.reise-offen #reiseKarte.sheet { transform: none; visibility: visible; transition: transform .28s ease; }
+#reiseKarte.sheet::before { content: ''; display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--feld-rand); margin: 0 auto 12px; }
+#reiseKarte.sheet > h2 { font-size: 22px; margin: 0 0 6px; padding-right: 48px; }
+body.reise-offen .sheet-dunkel { opacity: 1; pointer-events: auto; }
+body.reise-offen { overflow: hidden; }
+/* Zahnrad im Ticket */
+.t-rechts { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.t-zahnrad { width: 36px; height: 36px; padding: 0; margin: 0; border-radius: 12px; background: var(--feld-bg); color: var(--grau); border: 1px solid var(--feld-rand); display: flex; align-items: center; justify-content: center; }
+.t-zahnrad svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.t-oben { align-items: flex-start; }
+.t-zahnrad { position: absolute; right: 20px; top: 52px; }
+.ticket .gesamt { padding-right: 46px; }
+body.gesperrt .t-zahnrad { display: none; }
+@media (prefers-reduced-motion: reduce) { #reiseKarte.sheet { transition: none !important; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -691,7 +710,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
 
 <main id="reiseAnsicht" hidden>
   <section class="ticket" id="ticket">
-    <div class="t-oben"><span>Ausgaben bisher</span><span class="t-flaggen" id="ticketFlaggen"></span></div>
+    <div class="t-oben"><span>Ausgaben bisher</span><span class="t-rechts"><span class="t-flaggen" id="ticketFlaggen"></span><button type="button" class="t-zahnrad" id="reiseBtn" aria-label="Diese Reise bearbeiten"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></span></div>
     <div class="gesamt" id="gesamt" hidden>0,00 ₱</div>
     <div class="sub" id="gesamtSub" hidden>Keine Ausgaben</div>
     <div class="t-perf" aria-hidden="true"></div>
@@ -868,7 +887,8 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
     </details>
   </section>
 
-  <section class="karte" id="reiseKarte">
+  <section class="karte sheet" id="reiseKarte" role="dialog" aria-modal="true" aria-label="Diese Reise">
+    <button type="button" class="sheet-x" id="rkZu" aria-label="Schließen">✕</button>
     <h2>Diese Reise</h2>
     <label for="rkName">Name</label>
     <input type="text" id="rkName" maxlength="60" autocomplete="off">
@@ -2698,11 +2718,11 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
   // ---------- Schnell-Check: Landeswährung in Euro (Philippinen: Richtwert 71,26 wie im Original) ----------
   var rechnerAnpassen = function () {};
   function umrechnerAuf() { if ($('rechnerKarte').hidden) return; $('rechnerKarte').scrollTop = 0; document.body.classList.add('umrechner-offen'); }
-  // Wischen nach unten schließt das Blatt
-  (function () {
-    var blatt = $('rechnerKarte'), y0 = null, dy = 0, t0 = 0;
+  // Wischen nach unten schließt ein Blatt
+  function wischSchliessen(blatt, zu) {
+    var y0 = null, dy = 0, t0 = 0;
     blatt.addEventListener('touchstart', function (e) {
-      if (e.touches.length !== 1 || blatt.scrollTop > 0 || e.target.closest('input[type="range"]')) { y0 = null; return; }
+      if (e.touches.length !== 1 || blatt.scrollTop > 0 || e.target.closest('input, select, textarea')) { y0 = null; return; }
       y0 = e.touches[0].clientY; dy = 0; t0 = Date.now();
     }, { passive: true });
     blatt.addEventListener('touchmove', function (e) {
@@ -2714,17 +2734,23 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
       if (y0 === null) return;
       var schnell = dy > 40 && (Date.now() - t0) < 250;
       blatt.style.transition = ''; blatt.style.transform = '';
-      if (dy > 90 || schnell) umrechnerZu();
+      if (dy > 90 || schnell) zu();
       y0 = null; dy = 0;
     }
     blatt.addEventListener('touchend', ende);
     blatt.addEventListener('touchcancel', ende);
-  })();
+  }
+  wischSchliessen($('rechnerKarte'), function () { umrechnerZu(); });
+  function reiseBlattAuf() { if (!reise || reise.status === 'abgeschlossen') return; reiseFelderFuellen(); $('reiseKarte').scrollTop = 0; document.body.classList.add('reise-offen'); }
+  function reiseBlattZu() { document.body.classList.remove('reise-offen'); }
+  $('reiseBtn').addEventListener('click', reiseBlattAuf);
+  $('rkZu').addEventListener('click', reiseBlattZu);
+  wischSchliessen($('reiseKarte'), reiseBlattZu);
   function umrechnerZu() { document.body.classList.remove('umrechner-offen'); }
   $('umrechnerBtn').addEventListener('click', umrechnerAuf);
   $('rcZu').addEventListener('click', umrechnerZu);
-  $('sheetDunkel').addEventListener('click', umrechnerZu);
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') umrechnerZu(); });
+  $('sheetDunkel').addEventListener('click', function () { umrechnerZu(); reiseBlattZu(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { umrechnerZu(); reiseBlattZu(); } });
   (function () {
     var RATE = 71.26; // Landeswährung pro Euro
     var amountInput = $('rcBetrag'), slider = $('rcSlider'), euros = $('rcEuro');
@@ -2813,7 +2839,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
   themaAnwenden(document.documentElement.getAttribute('data-thema') || 'hell');
 
   // ---------- Auf- und zuklappbare Karten ----------
-  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'budgetKarte', 'tabsKarte', 'reiseKarte', 'kategorienKarte', 'backupKarte'];
+  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'budgetKarte', 'tabsKarte', 'kategorienKarte', 'backupKarte'];
   var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte', 'papierkorbKarte', 'abschlussKarte']; // neue Karten starten so, bis du sie einmal umschaltest
   var KEY_UI = 'reisen.v2.ui';
   function zugeklappteLaden() {
@@ -3084,7 +3110,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
   function wkPassend() {
     var info = wkLaender(), boxen = wkBoxenHolen(), x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, n = 0;
     Object.keys(info).forEach(function (c) {
-      if (info[c].art !== 'besucht' || !boxen[c]) return;
+      if (!boxen[c]) return;
       var r = boxen[c]; n++;
       x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.width); y1 = Math.max(y1, r.y + r.height);
     });
@@ -3099,7 +3125,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
     var a = wkAnsicht;
     if (a.w >= 999) return true;                       // nicht gezoomt: alle Länder
     var r = wkBoxenHolen()[c];
-    if (!r) return false;                              // zu klein für die Karte: nur ohne Zoom auffindbar
+    if (!r) return true;                               // zu klein für die Karte: immer als Chip zeigen
     return r.x < a.x + a.w && r.x + r.width > a.x && r.y < a.y + a.h && r.y + r.height > a.y;
   }
   function wkChipsRendern(info) {
@@ -3464,7 +3490,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
     $('zurueckBtn').hidden = start;
     $('sucheBtn').hidden = start;
     $('umrechnerBtn').hidden = start || $('rechnerKarte').hidden;
-    if (start) umrechnerZu();
+    if (start) { umrechnerZu(); reiseBlattZu(); }
     $('gesamt').hidden = start;
     $('gesamtSub').hidden = start;
     $('startSub').hidden = !start;
@@ -3619,6 +3645,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
     indexSpeichern();
     $('kopfTitel').textContent = reise.name;
     zeichnen();
+    reiseBlattZu();
     toast('Reise gespeichert');
   });
   $('rkLoeschen').addEventListener('click', function () {
