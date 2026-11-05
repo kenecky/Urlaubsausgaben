@@ -881,6 +881,11 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
 #weltKarte .wk-legende { display: none; }
 #wkBox { height: 150px; }
 #wkBox svg { width: 100%; height: 100%; }
+
+/* Neue Ausgabe: Heute und Gestern statt Plus-Kreis */
+.kachel.breit[data-seite-auf="neu"] .heute { padding: 2px 10px; min-width: 74px; }
+.kachel.breit[data-seite-auf="neu"] .heute.gestern { padding-right: 0; }
+.kachel.breit[data-seite-auf="neu"] .heute strong { font-size: 17px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -986,7 +991,7 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
     <div class="t-budget" id="ticketBudget" hidden></div>
   </section>
   <section class="karte sperr-banner" id="gesperrtBanner" hidden></section>
-  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="rund" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button><button type="button" class="kachel breit ausg" data-seite-auf="kat"><span class="ak-kopf"><b>Ausgaben</b><strong id="kAusgEuro"></strong></span><span class="ak-sub"><small id="kInfo_ueb"></small><small id="kAusgLokal"></small></span><span class="ak-balken" id="kAusgBalken"></span><span class="ak-leg" id="kAusgLeg"></span></button></section>
+  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="heute gestern"><span>Gestern</span><strong id="kGesternSumme">–</strong><span id="kGesternAnzahl"></span></span></button><button type="button" class="kachel breit ausg" data-seite-auf="kat"><span class="ak-kopf"><b>Ausgaben</b><strong id="kAusgEuro"></strong></span><span class="ak-sub"><small id="kInfo_ueb"></small><small id="kAusgLokal"></small></span><span class="ak-balken" id="kAusgBalken"></span><span class="ak-leg" id="kAusgLeg"></span></button></section>
   <section class="karte" id="formKarte">
     <h2 id="formTitel">Neue Ausgabe</h2>
     <div id="schnell">
@@ -4023,12 +4028,15 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
     var offen = ausgaben.filter(function (a) { return !istGeprueft(a); }).length;
     $('kInfo_ueb').innerHTML = ohne.length + '&nbsp;' + (ohne.length === 1 ? 'Ausgabe' : 'Ausgaben') + (offen ? ' · ' + offen + '&nbsp;Kurs&nbsp;offen' : '');
     var st = statistik({ ausgaben: ausgaben, einst: einst }, reise);
-    var heuteL = ohne.filter(function (a) { return a.datum === heute(); });
-    var hs;
-    if (multi || euroTrip) hs = euroFmt(summeEuro(heuteL)).replace(',00 €', ' €');
-    else hs = Math.round(heuteL.reduce(function (x, a) { return x + a.betrag; }, 0)).toLocaleString('de-DE') + ' ' + lokal.symbol;
-    $('kHeuteSumme').textContent = heuteL.length ? hs : '–';
-    $('kHeuteAnzahl').textContent = heuteL.length ? heuteL.length + (heuteL.length === 1 ? ' Ausgabe' : ' Ausgaben') : 'noch nichts';
+    function tagBox(datum, idS, idA, leer) {
+      var l = ohne.filter(function (a) { return a.datum === datum; }), t;
+      if (multi || euroTrip) t = euroFmt(summeEuro(l)).replace(',00 €', ' €');
+      else t = Math.round(l.reduce(function (x, a) { return x + a.betrag; }, 0)).toLocaleString('de-DE') + ' ' + lokal.symbol;
+      $(idS).textContent = l.length ? t : '–';
+      $(idA).textContent = l.length ? l.length + (l.length === 1 ? ' Ausgabe' : ' Ausgaben') : leer;
+    }
+    tagBox(heute(), 'kHeuteSumme', 'kHeuteAnzahl', 'noch nichts');
+    tagBox(tagPlus(heute(), -1), 'kGesternSumme', 'kGesternAnzahl', 'nichts');
     var neu = document.querySelector('[data-seite-auf="neu"]');
     neu.disabled = gesperrt();
     $('kInfo_neu').textContent = gesperrt() ? 'Reise ist abgeschlossen' : 'Schnell erfassen';
