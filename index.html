@@ -770,6 +770,10 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
 .t-budget.rot .ampel { background: var(--rot); box-shadow: 0 0 0 3px rgba(200,60,50,.18); }
 /* Ticket: Zeile „Alle Kategorien · x Ausgaben“ entfällt */
 #gesamtSub { display: none !important; }
+/* Lösch-Hinweis: breit, einzeilig, wegwischbar */
+.undo { left: 0; right: 0; margin: 0 auto; width: calc(100% - 24px); max-width: 520px; transform: none; box-sizing: border-box; padding: 8px 8px 8px 18px; bottom: calc(18px + env(safe-area-inset-bottom)); touch-action: pan-y; }
+.undo #undoText { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.undo button { flex: none; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1860,10 +1864,34 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
   function undoZeigen() {
     var n = loeschStapel.length;
     $('undoText').textContent = n === 1 ? 'Ausgabe gelöscht' : n + ' Ausgaben gelöscht';
-    $('undoBar').hidden = false;
+    var ub = $('undoBar'); ub.style.transition = 'none'; ub.style.transform = ''; ub.style.opacity = ''; ub.hidden = false;
     clearTimeout(undoTimer);
     undoTimer = setTimeout(function () { loeschStapel = []; $('undoBar').hidden = true; }, 10000);
   }
+  // Hinweis seitlich wegwischen = Löschen bestätigen
+  (function () {
+    var ub = $('undoBar'), sx = null, sy = 0, dx = 0, modus = null, st = 0;
+    ub.addEventListener('touchstart', function (e) { if (e.touches.length !== 1) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; modus = null; st = Date.now(); }, { passive: true });
+    ub.addEventListener('touchmove', function (e) {
+      if (sx === null) return;
+      var mx = e.touches[0].clientX - sx, my = e.touches[0].clientY - sy;
+      if (!modus) { if (Math.abs(mx) < 6 && Math.abs(my) < 6) return; modus = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'; }
+      if (modus !== 'h') return;
+      dx = mx; ub.style.transition = 'none'; ub.style.transform = 'translateX(' + dx + 'px)'; ub.style.opacity = String(Math.max(0, 1 - Math.abs(dx) / (ub.offsetWidth * 0.9)));
+    }, { passive: true });
+    function ende() {
+      if (sx === null) return; sx = null;
+      if (modus !== 'h') return;
+      var schnell = Math.abs(dx) > 40 && Date.now() - st < 300;
+      if (Math.abs(dx) > ub.offsetWidth * 0.3 || schnell) {
+        ub.style.transition = 'transform .2s ease-out, opacity .2s ease-out';
+        ub.style.transform = 'translateX(' + (dx < 0 ? -1 : 1) * (ub.offsetWidth + 40) + 'px)'; ub.style.opacity = '0';
+        clearTimeout(undoTimer); loeschStapel = [];
+        setTimeout(function () { ub.hidden = true; ub.style.transition = 'none'; ub.style.transform = ''; ub.style.opacity = ''; }, 210);
+      } else { ub.style.transition = 'transform .2s ease-out, opacity .2s'; ub.style.transform = ''; ub.style.opacity = ''; }
+    }
+    ub.addEventListener('touchend', ende); ub.addEventListener('touchcancel', ende);
+  })();
   $('undoBtn').addEventListener('click', function () {
     var x = loeschStapel.pop();
     if (!x) return;
