@@ -834,11 +834,8 @@ html[data-thema="dunkel"] .sl-knopf span { color: #CFE6E4; }
 .sl-knopf .fab-zahl { font-style: normal; }
 .start-leiste .sl-knopf { background: none !important; box-shadow: none !important; border: 0 !important; height: auto !important; border-radius: 12px !important; padding: 2px 0 !important; color: var(--grau) !important; font-size: 12px !important; }
 .start-leiste .sl-knopf.neu { color: var(--text) !important; }
-/* Neue Reise und Vergleich öffnen als Blatt von unten */
-#neueReiseKarte:not([hidden]), #vergleichKarte:not([hidden]) { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; max-width: 640px; margin: 0 auto; border-radius: 26px 26px 0 0;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; box-shadow: 0 -20px 50px -20px rgba(4,30,36,.55); animation: blattRein .28s ease; }
-@keyframes blattRein { from { transform: translateY(100%); } to { transform: none; } }
-body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:not([hidden])) .sheet-dunkel { opacity: 1; pointer-events: auto; }
+.unten-blatt > .wk-kopf { margin-bottom: 10px; }
+.unten-blatt > .wk-kopf h2 { font-size: 22px; margin: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -867,7 +864,7 @@ body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:
 </header>
 
 <main id="startseite" hidden>
-  <section class="karte" id="neueReiseKarte" hidden>
+  <section class="karte unten-blatt" id="neueReiseKarte" role="dialog" aria-modal="true">
     <div class="wk-kopf"><h2>Neue Reise</h2><button type="button" class="hell x-btn" id="nrX" aria-label="Schließen">✕</button></div>
     <label for="nrName">Name (optional)</label>
     <input type="text" id="nrName" maxlength="60" placeholder="z. B. Thailand Winter 2027" autocomplete="off">
@@ -887,7 +884,7 @@ body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:
     <button type="button" class="hell" id="nrAbbrechen" style="margin-top:8px">Abbrechen</button>
   </section>
 
-  <section class="karte" id="vergleichKarte" hidden>
+  <section class="karte unten-blatt" id="vergleichKarte" role="dialog" aria-modal="true">
     <div class="wk-kopf"><h2>Reisen vergleichen</h2><button type="button" class="hell x-btn" id="vglX" aria-label="Schließen">✕</button></div>
     <div class="wk-chips" id="vglChips"></div>
     <div class="vgl-wrap" id="vglTabelle"></div>
@@ -3886,12 +3883,10 @@ body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:
     $('vglTabelle').innerHTML = '<table class="vgl">' + kopf + '<tbody>' + rows + '</tbody></table><p class="hinweis">Alle Werte in Euro, ohne Bargeldabhebungen. Grün = günstigste Reise.</p>';
   }
   $('vergleichBtn').addEventListener('click', function () {
-    var zu = !$('vergleichKarte').hidden;
-    $('vergleichKarte').hidden = zu;
-    if (!zu) { vergleichRendern(); $('vergleichKarte').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    vergleichRendern(); blattAuf('vergleichKarte');
   });
-  $('vglZu').addEventListener('click', function () { $('vergleichKarte').hidden = true; });
-  $('vglX').addEventListener('click', function () { $('vergleichKarte').hidden = true; });
+  $('vglZu').addEventListener('click', function () { blattWeg('vergleichKarte'); });
+  $('vglX').addEventListener('click', function () { blattWeg('vergleichKarte'); });
   $('vglChips').addEventListener('click', function (e) {
     var b = e.target.closest('[data-vgl]'); if (!b) return;
     var id = b.getAttribute('data-vgl'), i = vglAuswahl.indexOf(id);
@@ -3991,7 +3986,7 @@ body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:
     function aktivHier(t) {
       var b = document.body.classList;
       if (b.contains('start-an')) {
-        return !b.contains('blatt-offen') && $('neueReiseKarte').hidden && $('vergleichKarte').hidden && !t.closest('#wkBox, .wk-chips, input, select, textarea, button') &&
+        return !b.contains('blatt-offen') && !t.closest('#wkBox, .wk-chips, input, select, textarea, button') &&
           (!t.closest('#reisenListe') || $('reisenListe').scrollTop <= 0);
       }
       return b.contains('rs-haupt') && !b.contains('reise-offen') && !b.contains('umrechner-offen') && !b.contains('ab-offen') &&
@@ -4136,7 +4131,7 @@ body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:
     document.body.classList.toggle('start-an', !!start); window.scrollTo(0, 0); setTimeout(startHoeheSetzen, 0);
     document.body.classList.remove('ab-offen'); if (typeof blattZu === 'function') blattZu();
     $('startseite').hidden = !start;
-    if (start) { document.body.classList.remove('gesperrt'); $('vergleichKarte').hidden = true; }
+    if (start) { document.body.classList.remove('gesperrt'); }
     $('reiseAnsicht').hidden = start;
     $('zurueckBtn').hidden = start;
     $('sucheBtn').hidden = start;
@@ -4144,7 +4139,7 @@ body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:
     if (start) { umrechnerZu(); reiseBlattZu(); }
     $('gesamt').hidden = start;
     $('gesamtSub').hidden = start;
-    $('startSub').hidden = !start;
+    $('startSub').hidden = true;
     $('kopfTitel').textContent = start ? 'Meine Reisen' : (reise ? reise.name : '');
     aktSeite = null;
     document.body.classList.toggle('rs-haupt', !start); document.body.classList.remove('rs-unter');
@@ -4326,12 +4321,13 @@ body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:
   // Blätter von unten (Startseite)
   var offenesBlatt = null;
   function blattAuf(id) { var b = $(id); if (!b) return; blattZu(); b.scrollTop = 0; b.classList.add('offen'); document.body.classList.add('blatt-offen'); offenesBlatt = b; }
+  function blattWeg(id) { if (offenesBlatt && offenesBlatt.id === id) blattZu(); }
   function blattZu() { if (offenesBlatt) offenesBlatt.classList.remove('offen'); offenesBlatt = null; document.body.classList.remove('blatt-offen'); }
   Array.prototype.forEach.call(document.querySelectorAll('.unten-blatt'), function (b) {
-    b.querySelector('.blatt-x').addEventListener('click', blattZu);
+    var bx = b.querySelector('.blatt-x'); if (bx) bx.addEventListener('click', blattZu);
     wischSchliessen(b, blattZu);
   });
-  $('sheetDunkel').addEventListener('click', function () { blattZu(); $('neueReiseKarte').hidden = true; $('vergleichKarte').hidden = true; });
+  $('sheetDunkel').addEventListener('click', blattZu);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') blattZu(); });
   $('pkFab').addEventListener('click', function () { papierkorbRendern(); blattAuf('papierkorbKarte'); });
   $('bkFab').addEventListener('click', function () { blattAuf('startBackupKarte'); });
@@ -4377,8 +4373,7 @@ body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:
     $('nrName').value = ''; $('nrLand').value = '';
     $('nrStart').value = heute(); $('nrEnde').value = tagPlus(heute(), 14);
     nrLandGeaendert();
-    $('neueReiseKarte').hidden = false;
-    $('neueReiseKarte').scrollIntoView({ block: 'start' });
+    blattAuf('neueReiseKarte');
   }
   $('reiseNeuBtn').addEventListener('click', neueReiseOeffnen);
   $('nrKursOnline').addEventListener('click', function () {
@@ -4412,8 +4407,8 @@ body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:
       formZuruecksetzen(); rechnerAnpassen();
     }).catch(onlineFehler);
   });
-  $('nrAbbrechen').addEventListener('click', function () { $('neueReiseKarte').hidden = true; });
-  $('nrX').addEventListener('click', function () { $('neueReiseKarte').hidden = true; });
+  $('nrAbbrechen').addEventListener('click', function () { blattWeg('neueReiseKarte'); });
+  $('nrX').addEventListener('click', function () { blattWeg('neueReiseKarte'); });
   $('nrLand').addEventListener('change', nrLandGeaendert);
   $('nrAnlegen').addEventListener('click', function () {
     var l = LAND[$('nrLand').value];
@@ -4431,7 +4426,7 @@ body:has(#neueReiseKarte:not([hidden])) .sheet-dunkel, body:has(#vergleichKarte:
     var e = einstSauber({});
     if (l.waehrung !== 'EUR') { e.startkurs = kurs; e.letzterKurs = kurs; e.kurse[l.waehrung] = kurs; }
     datenSpeichernFuer(m.id, { ausgaben: [], einst: e });
-    $('neueReiseKarte').hidden = true;
+    blattWeg('neueReiseKarte');
     reiseOeffnen(m.id);
     toast('Reise angelegt');
   });
