@@ -922,6 +922,16 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
 #formKarte .schnell-zeile input, #freitextBtn { height: 44px; }
 #freitextBtn { width: 44px; }
 #eintragLoeschen { margin-top: 8px !important; height: 46px; }
+
+/* Formular: Rechenhinweis und „Kurs online holen“ entfallen, Knopftext mittig */
+#formKarte #rechenHinweis, #formKarte #kursOnlineBtn { display: none !important; }
+#formKarte .form-knoepfe button { display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 8px !important; white-space: nowrap; }
+/* Formularseite steht still */
+html:has(body.form-fest) { overflow: hidden; overscroll-behavior: none; }
+body.form-fest { overflow: hidden; }
+body.form-eng #formKarte form label:not(.check) { margin-top: 7px; }
+body.form-eng #formKarte .check { margin-top: 6px !important; }
+body.form-eng2 #formKarte form input:not([type="checkbox"]), body.form-eng2 #formKarte form select, body.form-eng2 #formKarte form textarea { height: 42px; min-height: 42px; padding-top: 15px !important; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -3997,6 +4007,7 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
     $('kopfTitel').textContent = name === 'neu' ? $('formTitel').textContent : s.titel;
     var id = nachSeiteScroll; nachSeiteScroll = null;
     if (id) setTimeout(function () { zurueckScrollen(id); }, 30); else window.scrollTo(0, 0);
+    setTimeout(formEinpassen, 0);
   }
   function hauptZeigen() {
     if (aktSeite === 'neu' && bearbeiteId) editVerlassen();
@@ -4004,7 +4015,7 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
     document.body.classList.remove('rs-unter'); document.body.classList.add('rs-haupt');
     Array.prototype.forEach.call(document.querySelectorAll('#reiseAnsicht > section.karte'), function (k) { k.classList.remove('aktiv-seite'); });
     if (reise) $('kopfTitel').textContent = reise.name;
-    window.scrollTo(0, 0); setTimeout(hauptEinpassen, 0);
+    window.scrollTo(0, 0); setTimeout(hauptEinpassen, 0); setTimeout(formEinpassen, 0);
   }
   function editVerlassen() { var id = bearbeiteId; formZuruecksetzen(); if (id) nachSeiteScroll = id; }
   function seiteOeffnen(name, ersetzen) {
@@ -4047,6 +4058,14 @@ body.eng3 .ausg .ak-leg small:nth-child(n+3) { display: none; }
     for (var i = 0; i < stufen.length && k.getBoundingClientRect().bottom + window.scrollY > window.innerHeight - 8; i++) b.add(stufen[i]);
   }
   window.addEventListener('resize', function () { setTimeout(hauptEinpassen, 50); });
+  function formEinpassen() {
+    var b = document.body.classList; b.remove('form-fest', 'form-eng', 'form-eng2');
+    if (aktSeite !== 'neu' || $('reiseAnsicht').hidden) return;
+    b.add('form-fest'); window.scrollTo(0, 0);
+    var k = $('formKarte');
+    ['form-eng', 'form-eng2'].forEach(function (c) { if (k.getBoundingClientRect().bottom > window.innerHeight - 4) b.add(c); });
+  }
+  window.addEventListener('resize', function () { setTimeout(formEinpassen, 50); });
   function kachelnRendern() {
     if (!reise) return;
     var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
