@@ -619,6 +619,7 @@ body.reise-offen { overflow: hidden; }
 .ticket .gesamt { padding-right: 46px; }
 body.gesperrt .t-zahnrad { display: none; }
 @media (prefers-reduced-motion: reduce) { #reiseKarte.sheet { transition: none !important; } }
+.rk-kategorien { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--linie); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -912,17 +913,16 @@ body.gesperrt .t-zahnrad { display: none; }
     <button type="button" class="hell" id="rkKurseOnline" style="margin-top:8px">↻ Kurse online aktualisieren</button>
     <p class="hinweis" id="rkKurseInfo">Mehrere Länder mit verschiedenen Währungen sind möglich. Bargeldbestand und Kurs laufen dann je Währung, Summen werden in € gezeigt.</p>
     <button type="button" id="rkSpeichern">Reise speichern</button>
-    <button type="button" class="rot" id="rkLoeschen" style="margin-top:8px">Reise löschen …</button>
-  </section>
-
-  <section class="karte" id="kategorienKarte">
-    <h2>Kategorien</h2>
+    <div class="rk-kategorien">
+    <h3 class="ab-titel">Kategorien</h3>
     <div id="katListe"></div>
     <div class="zeile" style="margin-top:8px">
       <div style="flex:2"><input type="text" id="katNeu" maxlength="24" placeholder="Neue Kategorie, z. B. Souvenirs"></div>
       <div style="flex:1"><button type="button" class="hell" id="katAdd" style="margin-top:0;padding:12px 8px">Hinzufügen</button></div>
     </div>
     <p class="hinweis">„Gesamtreise“ markiert Kategorien, deren Kosten für die ganze Reise gelten (z. B. Flüge, Hunde). Sie zählen zum Budget, aber nicht zum Tagesschnitt und zur Hochrechnung. Einzelne Ausgaben markierst du im Formular. Neue Kategorien kannst du auch im Formular ganz unten über „＋ Neue Kategorie“ anlegen.</p>
+    </div>
+    <button type="button" class="rot" id="rkLoeschen" style="margin-top:18px">Reise löschen …</button>
   </section>
 
   <section class="karte" id="abschlussKarte">
@@ -1651,7 +1651,8 @@ body.gesperrt .t-zahnrad { display: none; }
       karteUmschalten('formKarte', false);
       barAktiv = false;
       kursBereichUmschalten();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      var kopfH = document.querySelector('header').offsetHeight;
+      window.scrollTo({ top: Math.max(0, $('formKarte').getBoundingClientRect().top + window.scrollY - kopfH - 10), behavior: 'smooth' });
     }
   }
   $('liste').addEventListener('click', listeKlick);
@@ -2839,7 +2840,7 @@ body.gesperrt .t-zahnrad { display: none; }
   themaAnwenden(document.documentElement.getAttribute('data-thema') || 'hell');
 
   // ---------- Auf- und zuklappbare Karten ----------
-  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'budgetKarte', 'tabsKarte', 'kategorienKarte', 'backupKarte'];
+  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'budgetKarte', 'tabsKarte', 'backupKarte'];
   var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte', 'papierkorbKarte', 'abschlussKarte']; // neue Karten starten so, bis du sie einmal umschaltest
   var KEY_UI = 'reisen.v2.ui';
   function zugeklappteLaden() {
