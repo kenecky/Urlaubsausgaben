@@ -768,6 +768,8 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
 .t-budget.gruen .ampel { background: #2E9E5B; box-shadow: 0 0 0 3px rgba(46,158,91,.18); }
 .t-budget.gelb .ampel { background: var(--mango); box-shadow: 0 0 0 3px rgba(245,165,36,.2); }
 .t-budget.rot .ampel { background: var(--rot); box-shadow: 0 0 0 3px rgba(200,60,50,.18); }
+/* Ticket: Zeile „Alle Kategorien · x Ausgaben“ entfällt */
+#gesamtSub { display: none !important; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1614,6 +1616,10 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     $('vorschlaege').hidden = true;
   });
 
+  // Vibrieren: direkt im Tipp auf „Speichern“ auslösen (Android erlaubt es nur während einer Berührung), lang genug zum Spüren
+  var summenZeit = 0;
+  function summen() { var n = Date.now(); if (n - summenZeit < 500) return; summenZeit = n; try { if (navigator.vibrate) navigator.vibrate(80); } catch (err) {} }
+  $('speichern').addEventListener('pointerup', function () { if ($('form').checkValidity()) summen(); });
   $('form').addEventListener('submit', function (e) {
     e.preventDefault();
     var betrag = feldZahl('betrag'), kurs = feldZahl('kurs'), euro = feldZahl('abgebucht');
@@ -1657,7 +1663,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
       ausgaben.push(eintrag);
       toast('Ausgabe gespeichert');
     }
-    try { if (navigator.vibrate) navigator.vibrate(35); } catch (err) {}
+    summen(); // kurzes Vibrieren als Rückmeldung
     vsCache = null;
     if (!barModus && formW() !== 'EUR') {
       einst.kurse[formW()] = kursRunden(kurs);
