@@ -4010,6 +4010,7 @@ html[data-thema="dunkel"] .sl-knopf span { color: #CFE6E4; }
       if (y0 === null) return; y0 = null;
       if (modus === 'r' && dy * 0.5 >= GRENZE) {
         ind.classList.add('laedt'); ind.style.transition = 'transform .2s'; ind.style.transform = 'translate(-50%,' + GRENZE + 'px)';
+        try { sessionStorage.setItem('reisen.neuladen', JSON.stringify({ reise: (!$('reiseAnsicht').hidden && reise) ? reise.id : null, seite: aktSeite || null })); } catch (err) {}
         setTimeout(function () { location.reload(); }, 250);
       } else { ind.style.transition = 'transform .2s, opacity .2s'; ind.style.transform = 'translate(-50%,0)'; ind.style.opacity = '0'; ind.classList.remove('bereit'); }
       modus = null; dy = 0;
@@ -4524,6 +4525,12 @@ html[data-thema="dunkel"] .sl-knopf span { color: #CFE6E4; }
   try { history.replaceState({ start: true }, ''); } catch (e) {}
   zeigeStart();
   (function () {
+    // Nach „Ziehen zum Aktualisieren“: genau dort weitermachen, wo man war
+    var nl = null; try { nl = JSON.parse(sessionStorage.getItem('reisen.neuladen')); sessionStorage.removeItem('reisen.neuladen'); } catch (e) {}
+    if (nl) {
+      if (nl.reise && aktive().some(function (m) { return m.id === nl.reise; })) { reiseOeffnen(nl.reise); if (nl.seite && nl.seite !== 'neu') seiteOeffnen(nl.seite); }
+      return;
+    }
     // Läuft genau eine Reise (oder war zuletzt eine laufende offen), geht die App direkt hinein
     var g = globalLaden();
     var laufend = aktive().filter(function (m) { return reiseStatus(m) === 'laeuft'; });
