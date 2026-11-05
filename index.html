@@ -624,6 +624,12 @@ body.reise-offen { overflow: hidden; }
 .rk-tab { flex: 1 1 auto; width: auto; margin: 0; padding: 9px 4px; border-radius: 10px; background: transparent; color: var(--grau); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .rk-tab.aktiv { background: var(--karte); color: var(--text); box-shadow: 0 1px 3px rgba(14,74,85,.18); }
 .rk-seite > label:first-child { margin-top: 0; }
+
+
+#reiseKarte.sheet { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
+#reiseKarte .rk-inhalt { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -20px; padding: 2px 20px calc(24px + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
+#reiseKarte.messen .rk-inhalt { flex: none; overflow: visible; }
+#reiseKarte .rk-tabs { flex: none; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -854,6 +860,7 @@ body.reise-offen { overflow: hidden; }
     <button type="button" class="sheet-x" id="rkZu" aria-label="Schließen">✕</button>
     <h2>Reise-Einstellungen</h2>
     <div class="rk-tabs" role="tablist"><button type="button" class="rk-tab aktiv" data-rk="reise" role="tab">Diese Reise</button><button type="button" class="rk-tab" data-rk="kat" role="tab">Kategorien</button><button type="button" class="rk-tab" data-rk="budget" role="tab">Reisebudget</button><button type="button" class="rk-tab" data-rk="backup" role="tab">Backup</button></div>
+    <div class="rk-inhalt" id="rkInhalt">
     <div class="rk-seite" data-seite="reise">
     <label for="rkName">Name</label>
     <input type="text" id="rkName" maxlength="60" autocomplete="off">
@@ -937,6 +944,7 @@ body.reise-offen { overflow: hidden; }
     <p class="hinweis" id="mergeInfo"></p>
     <input type="file" id="importDatei" accept=".json,application/json" hidden>
     <p class="hinweis">Deine Daten liegen nur auf diesem Handy. Sichere sie ab und zu, falls du Browserdaten löschst. Das Backup enthält auch Budget und eigene Kategorien. „Backup zusammenführen“ gleicht mit dem Backup des anderen Handys ab: Es ergänzt fehlende Einträge, aktualisiert geänderte und entfernt gelöschte. Eigene Einträge gehen dabei nicht verloren.</p>
+    </div>
     </div>
   </section>
 
@@ -2723,10 +2731,10 @@ body.reise-offen { overflow: hidden; }
   var rechnerAnpassen = function () {};
   function umrechnerAuf() { if ($('rechnerKarte').hidden) return; $('rechnerKarte').scrollTop = 0; document.body.classList.add('umrechner-offen'); }
   // Wischen nach unten schließt ein Blatt
-  function wischSchliessen(blatt, zu) {
+  function wischSchliessen(blatt, zu, scrollEl) {
     var y0 = null, dy = 0, t0 = 0;
     blatt.addEventListener('touchstart', function (e) {
-      if (e.touches.length !== 1 || blatt.scrollTop > 0 || e.target.closest('input, select, textarea')) { y0 = null; return; }
+      if (e.touches.length !== 1 || blatt.scrollTop > 0 || (scrollEl && scrollEl.contains(e.target) && scrollEl.scrollTop > 0) || e.target.closest('input, select, textarea')) { y0 = null; return; }
       y0 = e.touches[0].clientY; dy = 0; t0 = Date.now();
     }, { passive: true });
     blatt.addEventListener('touchmove', function (e) {
@@ -2751,14 +2759,23 @@ body.reise-offen { overflow: hidden; }
     rkAktiv = name;
     Array.prototype.forEach.call(document.querySelectorAll('#reiseKarte .rk-seite'), function (d) { d.hidden = d.getAttribute('data-seite') !== name; });
     Array.prototype.forEach.call(document.querySelectorAll('#reiseKarte .rk-tab'), function (b) { var an = b.getAttribute('data-rk') === name; b.classList.toggle('aktiv', an); b.setAttribute('aria-selected', String(an)); });
-    $('reiseKarte').scrollTop = 0;
+    $('rkInhalt').scrollTop = 0;
   }
   $('reiseKarte').querySelector('.rk-tabs').addEventListener('click', function (e) { var b = e.target.closest('.rk-tab'); if (b) rkTab(b.getAttribute('data-rk')); });
-  function reiseBlattAuf(tab) { if (!reise) return; if (!gesperrt()) reiseFelderFuellen(); rkTab(typeof tab === 'string' ? tab : rkAktiv); document.body.classList.add('reise-offen'); }
+  // Alle Reiter gleich hoch: Höhe des Reiters „Backup“ (der kürzeste) gilt für das ganze Blatt
+  function rkHoeheSetzen() {
+    var k = $('reiseKarte'), seiten = k.querySelectorAll('.rk-seite'), vorher = [];
+    k.style.height = ''; k.classList.add('messen');
+    Array.prototype.forEach.call(seiten, function (d) { vorher.push(d.hidden); d.hidden = d.getAttribute('data-seite') !== 'backup'; });
+    var h = k.offsetHeight; k.classList.remove('messen');
+    Array.prototype.forEach.call(seiten, function (d, i) { d.hidden = vorher[i]; });
+    k.style.height = Math.min(h, Math.round(window.innerHeight * 0.9)) + 'px';
+  }
+  function reiseBlattAuf(tab) { if (!reise) return; if (!gesperrt()) reiseFelderFuellen(); rkHoeheSetzen(); rkTab(typeof tab === 'string' ? tab : rkAktiv); document.body.classList.add('reise-offen'); }
   function reiseBlattZu() { document.body.classList.remove('reise-offen'); }
   $('reiseBtn').addEventListener('click', function () { reiseBlattAuf(); });
   $('rkZu').addEventListener('click', reiseBlattZu);
-  wischSchliessen($('reiseKarte'), reiseBlattZu);
+  wischSchliessen($('reiseKarte'), reiseBlattZu, $('rkInhalt'));
   function umrechnerZu() { document.body.classList.remove('umrechner-offen'); }
   $('umrechnerBtn').addEventListener('click', umrechnerAuf);
   $('rcZu').addEventListener('click', umrechnerZu);
