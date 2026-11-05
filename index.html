@@ -774,6 +774,22 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
 .undo { left: 0; right: 0; margin: 0 auto; width: calc(100% - 24px); max-width: 520px; transform: none; box-sizing: border-box; padding: 8px 8px 8px 18px; bottom: calc(18px + env(safe-area-inset-bottom)); touch-action: pan-y; }
 .undo #undoText { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
 .undo button { flex: none; white-space: nowrap; }
+
+/* Kachel „Ausgaben“ (Kategorien + Übersicht) */
+.kachel.breit.ausg { display: block; text-align: left; padding: 16px 20px 14px; }
+.ausg .ak-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.ausg .ak-kopf b { font-size: 19px; }
+.ausg .ak-kopf strong { font-family: var(--display); font-size: 19px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+.ausg .ak-sub { display: flex; justify-content: space-between; gap: 10px; margin: 2px 0 12px; }
+.ausg .ak-sub small { color: var(--grau); white-space: nowrap; }
+.ausg .ak-balken { display: flex; height: 10px; border-radius: 10px; overflow: hidden; gap: 2px; }
+.ausg .ak-balken i { min-width: 3px; }
+.ausg .ak-leg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 10px; }
+.ausg .ak-leg small { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; color: var(--grau); font-size: 13px; }
+.ausg .ak-leg small span { overflow: hidden; text-overflow: ellipsis; }
+.ausg .ak-leg i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.balken-zeile.alle { border: 0; box-shadow: none; background: var(--feld-bg); border-radius: 14px; padding: 10px 12px; margin: 0 -4px 10px; align-items: center; }
+.balken-zeile.alle .balken-name { font-weight: 700; align-self: center; font-size: 17px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -875,7 +891,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     <div class="t-budget" id="ticketBudget" hidden></div>
   </section>
   <section class="karte sperr-banner" id="gesperrtBanner" hidden></section>
-  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="rund" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button><button type="button" class="kachel" data-seite-auf="kat"><span class="ic" style="--k:#1C8A8F"><svg viewBox="0 0 24 24"><path d="M12 3v9h9A9 9 0 1 1 12 3zM15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span><b>Kategorien</b><small id="kInfo_kat"></small></button><button type="button" class="kachel" data-seite-auf="ueb"><span class="ic" style="--k:#3D6FB6"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></span><b>Übersicht</b><small id="kInfo_ueb"></small></button></section>
+  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="rund" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button><button type="button" class="kachel breit ausg" data-seite-auf="kat"><span class="ak-kopf"><b>Ausgaben</b><strong id="kAusgEuro"></strong></span><span class="ak-sub"><small id="kInfo_ueb"></small><small id="kAusgLokal"></small></span><span class="ak-balken" id="kAusgBalken"></span><span class="ak-leg" id="kAusgLeg"></span></button></section>
   <section class="karte" id="formKarte">
     <h2 id="formTitel">Neue Ausgabe</h2>
     <div id="schnell">
@@ -968,7 +984,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
   <section class="karte" id="katKarte">
     <h2>Pro Kategorie</h2>
     <div id="balken"></div>
-    <p class="hinweis">Tippe auf eine Kategorie, um die Liste zu filtern.</p>
+    <p class="hinweis">Tippe auf „Alle“ oder eine Kategorie, um die Ausgaben zu sehen.</p>
   </section>
 
   <section class="karte tabs-karte" id="tabsKarte">
@@ -2483,7 +2499,10 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     var max = Math.max.apply(null, Object.keys(proKat).map(function (k) { return proKat[k]; }).concat([0]));
     var gesamtStat = Object.keys(proKat).reduce(function (s, k) { return s + proKat[k]; }, 0);
     function prozent(wert) { return prozentText(wert, gesamtStat); }
-    $('balken').innerHTML = Object.keys(proKat).map(function (k) {
+    var gesamtE = Object.keys(proKatE).reduce(function (x, k) { return x + proKatE[k]; }, 0);
+    $('balken').innerHTML = '<div class="balken-zeile alle" data-kat="" style="--k:var(--petrol)"><span class="kat-ico mini" style="--k:var(--petrol)"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></span>' +
+      '<span class="balken-name">Alle</span><span class="balken-wert">' + wertEuro(gesamtStat, gesamtE) + '</span></div>' +
+      Object.keys(proKat).map(function (k) {
       var breite = max > 0 ? (proKat[k] / max) * 100 : 0;
       return '<div class="balken-zeile' + (k === filterKat ? ' aktiv' : '') + '" data-kat="' + esc(k) + '" style="--k:' + katStil(k).c + '">' + katIcon(k).replace('kat-ico', 'kat-ico mini') +
         '<span class="balken-name">' + esc(k) + '<span class="b-pct">' + pct2(proKat[k], gesamtStat) + '</span></span>' +
@@ -2520,12 +2539,12 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     var zeile = e.target.closest('.balken-zeile');
     if (!zeile) return;
     var k = zeile.getAttribute('data-kat');
-    filterKat = (filterKat === k) ? '' : k;
+    filterKat = k; // „Alle“ = ohne Filter
     $('filter').value = filterKat;
     tabWechseln('ausgaben');
     karteUmschalten('tabsKarte', false);
     zeichnen();
-    if (filterKat && aktSeite === 'kat') seiteOeffnen('ueb');
+    seiteOeffnen('ueb');
   });
   $('filter').addEventListener('change', function () { filterKat = $('filter').value; zeichnen(); });
   $('nurOffen').addEventListener('change', function () { nurOffen = $('nurOffen').checked; zeichnen(); });
@@ -3879,9 +3898,15 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
     var proK = {}, ges = 0;
     ohne.forEach(function (a) { var w = euroVon(a); proK[a.kategorie] = (proK[a.kategorie] || 0) + w; ges += w; });
-    var top = Object.keys(proK).sort(function (a, b) { return proK[b] - proK[a]; }).slice(0, 2);
-    var kurz = function (k) { return esc(k.split(/[ &]/)[0]); };
-    $('kInfo_kat').innerHTML = top.length ? top.map(function (k) { return kurz(k) + '&nbsp;' + Math.round(proK[k] / ges * 100) + '&nbsp;%'; }).join(' · ') : 'Noch keine Ausgaben';
+    var reihe = Object.keys(proK).filter(function (k) { return proK[k] > 0; }).sort(function (a, b) { return proK[b] - proK[a]; });
+    $('kAusgEuro').textContent = Math.round(ges).toLocaleString('de-DE') + ' €';
+    var lokSum = ohne.reduce(function (x, a) { return x + lokalWert(a); }, 0);
+    $('kAusgLokal').textContent = (multi || euroTrip) ? '' : Math.round(lokSum).toLocaleString('de-DE') + ' ' + lokal.symbol;
+    $('kAusgBalken').innerHTML = reihe.map(function (k) { return '<i style="flex:' + proK[k].toFixed(4) + ';background:' + katStil(k).c + '"></i>'; }).join('');
+    $('kAusgBalken').hidden = !reihe.length;
+    $('kAusgLeg').innerHTML = reihe.length ? reihe.slice(0, 4).map(function (k) {
+      return '<small><i style="background:' + katStil(k).c + '"></i><span>' + esc(k) + '</span>&nbsp;' + Math.round(proK[k] / ges * 100) + '&nbsp;%</small>';
+    }).join('') : '<small>Noch keine Ausgaben</small>';
     var offen = ausgaben.filter(function (a) { return !istGeprueft(a); }).length;
     $('kInfo_ueb').innerHTML = ohne.length + '&nbsp;' + (ohne.length === 1 ? 'Ausgabe' : 'Ausgaben') + (offen ? ' · ' + offen + '&nbsp;Kurs&nbsp;offen' : '');
     var st = statistik({ ausgaben: ausgaben, einst: einst }, reise);
