@@ -167,7 +167,7 @@
   .wk-auswahl { margin-top: 10px; border-top: 1px solid var(--linie); padding-top: 8px; }
   .wk-auswahl h3 { margin: 0 0 4px; font-size: 15px; }
   /* Abschluss, Bericht, Vergleich */
-  body.gesperrt #formKarte, body.gesperrt #reiseKarte, body.gesperrt #kategorienKarte, body.gesperrt #budgetDetails,
+  body.gesperrt #formKarte, body.gesperrt .rk-tab[data-rk="reise"], body.gesperrt .rk-tab[data-rk="kat"], body.gesperrt #budgetDetails,
   body.gesperrt .aktionen, body.gesperrt #mergeBtn, body.gesperrt #importBtn, body.gesperrt #undoBar, body.gesperrt #barZuweisen { display: none !important; }
   body.gesperrt #restbei { pointer-events: none; opacity: .6; }
   .sperr-banner { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
@@ -617,9 +617,13 @@ body.reise-offen { overflow: hidden; }
 .t-oben { align-items: flex-start; }
 .t-zahnrad { position: absolute; right: 20px; top: 52px; }
 .ticket .gesamt { padding-right: 46px; }
-body.gesperrt .t-zahnrad { display: none; }
 @media (prefers-reduced-motion: reduce) { #reiseKarte.sheet { transition: none !important; } }
 .rk-kategorien { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--linie); }
+
+.rk-tabs { display: flex; gap: 2px; padding: 4px; margin: 6px 0 14px; background: var(--feld-bg); border: 1px solid var(--linie); border-radius: 14px; overflow-x: auto; }
+.rk-tab { flex: 1 1 auto; width: auto; margin: 0; padding: 9px 4px; border-radius: 10px; background: transparent; color: var(--grau); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.rk-tab.aktiv { background: var(--karte); color: var(--text); box-shadow: 0 1px 3px rgba(14,74,85,.18); }
+.rk-seite > label:first-child { margin-top: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -711,7 +715,7 @@ body.gesperrt .t-zahnrad { display: none; }
 
 <main id="reiseAnsicht" hidden>
   <section class="ticket" id="ticket">
-    <div class="t-oben"><span>Ausgaben bisher</span><span class="t-rechts"><span class="t-flaggen" id="ticketFlaggen"></span><button type="button" class="t-zahnrad" id="reiseBtn" aria-label="Diese Reise bearbeiten"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></span></div>
+    <div class="t-oben"><span>Ausgaben bisher</span><span class="t-rechts"><span class="t-flaggen" id="ticketFlaggen"></span><button type="button" class="t-zahnrad" id="reiseBtn" aria-label="Reise-Einstellungen"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></span></div>
     <div class="gesamt" id="gesamt" hidden>0,00 ₱</div>
     <div class="sub" id="gesamtSub" hidden>Keine Ausgaben</div>
     <div class="t-perf" aria-hidden="true"></div>
@@ -846,8 +850,44 @@ body.gesperrt .t-zahnrad { display: none; }
     <div class="tab-inhalt" id="tab-orte" hidden></div>
   </section>
 
-  <section class="karte" id="budgetKarte">
-    <h2>Reisebudget</h2>
+  <section class="karte sheet" id="reiseKarte" role="dialog" aria-modal="true" aria-label="Reise-Einstellungen">
+    <button type="button" class="sheet-x" id="rkZu" aria-label="Schließen">✕</button>
+    <h2>Reise-Einstellungen</h2>
+    <div class="rk-tabs" role="tablist"><button type="button" class="rk-tab aktiv" data-rk="reise" role="tab">Diese Reise</button><button type="button" class="rk-tab" data-rk="kat" role="tab">Kategorien</button><button type="button" class="rk-tab" data-rk="budget" role="tab">Reisebudget</button><button type="button" class="rk-tab" data-rk="backup" role="tab">Backup</button></div>
+    <div class="rk-seite" data-seite="reise">
+    <label for="rkName">Name</label>
+    <input type="text" id="rkName" maxlength="60" autocomplete="off">
+    <div class="zeile">
+      <div><label for="rkStart">Reisebeginn</label><input type="date" id="rkStart"></div>
+      <div><label for="rkEnde">Reiseende</label><input type="date" id="rkEnde"></div>
+    </div>
+    <label>Länder und Zeiträume</label>
+    <div id="rkLaender"></div>
+    <label for="rkLandNeu">Land hinzufügen</label>
+    <select id="rkLandNeu"></select>
+    <div class="zeile">
+      <div><label for="rkLandVon">von</label><input type="date" id="rkLandVon"></div>
+      <div><label for="rkLandBis">bis</label><input type="date" id="rkLandBis"></div>
+    </div>
+    <div id="rkLandKursBlock" hidden>
+      <label for="rkLandKurs" id="rkLandKursLabel">Kurs</label>
+      <input type="number" id="rkLandKurs" inputmode="decimal" step="any" min="0.0001">
+    </div>
+    <button type="button" class="hell" id="rkLandAdd" style="margin-top:10px">Land hinzufügen</button>
+    <button type="button" class="hell" id="rkKurseOnline" style="margin-top:8px">↻ Kurse online aktualisieren</button>
+    <p class="hinweis" id="rkKurseInfo">Mehrere Länder mit verschiedenen Währungen sind möglich. Bargeldbestand und Kurs laufen dann je Währung, Summen werden in € gezeigt.</p>
+    <button type="button" id="rkSpeichern">Reise speichern</button>
+    <button type="button" class="rot" id="rkLoeschen" style="margin-top:18px">Reise löschen …</button>
+    </div>
+    <div class="rk-seite" data-seite="kat" hidden>
+    <div id="katListe"></div>
+    <div class="zeile" style="margin-top:8px">
+      <div style="flex:2"><input type="text" id="katNeu" maxlength="24" placeholder="Neue Kategorie, z. B. Souvenirs"></div>
+      <div style="flex:1"><button type="button" class="hell" id="katAdd" style="margin-top:0;padding:12px 8px">Hinzufügen</button></div>
+    </div>
+    <p class="hinweis">„Gesamtreise“ markiert Kategorien, deren Kosten für die ganze Reise gelten (z. B. Flüge, Hunde). Sie zählen zum Budget, aber nicht zum Tagesschnitt und zur Hochrechnung. Einzelne Ausgaben markierst du im Formular. Neue Kategorien kannst du auch im Formular ganz unten über „＋ Neue Kategorie“ anlegen.</p>
+    </div>
+    <div class="rk-seite" data-seite="budget" hidden>
     <div id="budgetInfo"></div>
     <div class="budget-verlauf">
     <h3 class="ab-titel">Verlauf</h3>
@@ -886,43 +926,18 @@ body.gesperrt .t-zahnrad { display: none; }
       <button type="button" id="budgetSpeichern">Budget speichern</button>
       <p class="hinweis">Leeres Budget entfernt das Budget wieder.</p>
     </details>
-  </section>
-
-  <section class="karte sheet" id="reiseKarte" role="dialog" aria-modal="true" aria-label="Diese Reise">
-    <button type="button" class="sheet-x" id="rkZu" aria-label="Schließen">✕</button>
-    <h2>Diese Reise</h2>
-    <label for="rkName">Name</label>
-    <input type="text" id="rkName" maxlength="60" autocomplete="off">
+    </div>
+    <div class="rk-seite" data-seite="backup" hidden>
     <div class="zeile">
-      <div><label for="rkStart">Reisebeginn</label><input type="date" id="rkStart"></div>
-      <div><label for="rkEnde">Reiseende</label><input type="date" id="rkEnde"></div>
+      <div><button class="hell" id="exportJson" type="button" style="margin-top:0">Sichern (JSON)</button></div>
+      <div><button class="hell" id="exportCsv" type="button" style="margin-top:0">Als CSV</button></div>
     </div>
-    <label>Länder und Zeiträume</label>
-    <div id="rkLaender"></div>
-    <label for="rkLandNeu">Land hinzufügen</label>
-    <select id="rkLandNeu"></select>
-    <div class="zeile">
-      <div><label for="rkLandVon">von</label><input type="date" id="rkLandVon"></div>
-      <div><label for="rkLandBis">bis</label><input type="date" id="rkLandBis"></div>
+    <button class="hell" id="mergeBtn" type="button" style="margin-top:10px">Backup zusammenführen</button>
+    <button class="hell" id="importBtn" type="button" style="margin-top:8px">Backup laden (ersetzt alles)</button>
+    <p class="hinweis" id="mergeInfo"></p>
+    <input type="file" id="importDatei" accept=".json,application/json" hidden>
+    <p class="hinweis">Deine Daten liegen nur auf diesem Handy. Sichere sie ab und zu, falls du Browserdaten löschst. Das Backup enthält auch Budget und eigene Kategorien. „Backup zusammenführen“ gleicht mit dem Backup des anderen Handys ab: Es ergänzt fehlende Einträge, aktualisiert geänderte und entfernt gelöschte. Eigene Einträge gehen dabei nicht verloren.</p>
     </div>
-    <div id="rkLandKursBlock" hidden>
-      <label for="rkLandKurs" id="rkLandKursLabel">Kurs</label>
-      <input type="number" id="rkLandKurs" inputmode="decimal" step="any" min="0.0001">
-    </div>
-    <button type="button" class="hell" id="rkLandAdd" style="margin-top:10px">Land hinzufügen</button>
-    <button type="button" class="hell" id="rkKurseOnline" style="margin-top:8px">↻ Kurse online aktualisieren</button>
-    <p class="hinweis" id="rkKurseInfo">Mehrere Länder mit verschiedenen Währungen sind möglich. Bargeldbestand und Kurs laufen dann je Währung, Summen werden in € gezeigt.</p>
-    <button type="button" id="rkSpeichern">Reise speichern</button>
-    <div class="rk-kategorien">
-    <h3 class="ab-titel">Kategorien</h3>
-    <div id="katListe"></div>
-    <div class="zeile" style="margin-top:8px">
-      <div style="flex:2"><input type="text" id="katNeu" maxlength="24" placeholder="Neue Kategorie, z. B. Souvenirs"></div>
-      <div style="flex:1"><button type="button" class="hell" id="katAdd" style="margin-top:0;padding:12px 8px">Hinzufügen</button></div>
-    </div>
-    <p class="hinweis">„Gesamtreise“ markiert Kategorien, deren Kosten für die ganze Reise gelten (z. B. Flüge, Hunde). Sie zählen zum Budget, aber nicht zum Tagesschnitt und zur Hochrechnung. Einzelne Ausgaben markierst du im Formular. Neue Kategorien kannst du auch im Formular ganz unten über „＋ Neue Kategorie“ anlegen.</p>
-    </div>
-    <button type="button" class="rot" id="rkLoeschen" style="margin-top:18px">Reise löschen …</button>
   </section>
 
   <section class="karte" id="abschlussKarte">
@@ -944,18 +959,6 @@ body.gesperrt .t-zahnrad { display: none; }
     <button type="button" class="hell" id="berichtZu" style="margin-top:8px">Schließen</button>
   </section>
 
-  <section class="karte" id="backupKarte">
-    <h2>Backup</h2>
-    <div class="zeile">
-      <div><button class="hell" id="exportJson" type="button" style="margin-top:0">Sichern (JSON)</button></div>
-      <div><button class="hell" id="exportCsv" type="button" style="margin-top:0">Als CSV</button></div>
-    </div>
-    <button class="hell" id="mergeBtn" type="button" style="margin-top:10px">Backup zusammenführen</button>
-    <button class="hell" id="importBtn" type="button" style="margin-top:8px">Backup laden (ersetzt alles)</button>
-    <p class="hinweis" id="mergeInfo"></p>
-    <input type="file" id="importDatei" accept=".json,application/json" hidden>
-    <p class="hinweis">Deine Daten liegen nur auf diesem Handy. Sichere sie ab und zu, falls du Browserdaten löschst. Das Backup enthält auch Budget und eigene Kategorien. „Backup zusammenführen“ gleicht mit dem Backup des anderen Handys ab: Es ergänzt fehlende Einträge, aktualisiert geänderte und entfernt gelöschte. Eigene Einträge gehen dabei nicht verloren.</p>
-  </section>
 </main>
 
 <div class="suche" id="suche" hidden>
@@ -2742,9 +2745,18 @@ body.gesperrt .t-zahnrad { display: none; }
     blatt.addEventListener('touchcancel', ende);
   }
   wischSchliessen($('rechnerKarte'), function () { umrechnerZu(); });
-  function reiseBlattAuf() { if (!reise || reise.status === 'abgeschlossen') return; reiseFelderFuellen(); $('reiseKarte').scrollTop = 0; document.body.classList.add('reise-offen'); }
+  var rkAktiv = 'reise';
+  function rkTab(name) {
+    if (gesperrt() && (name === 'reise' || name === 'kat')) name = 'budget';
+    rkAktiv = name;
+    Array.prototype.forEach.call(document.querySelectorAll('#reiseKarte .rk-seite'), function (d) { d.hidden = d.getAttribute('data-seite') !== name; });
+    Array.prototype.forEach.call(document.querySelectorAll('#reiseKarte .rk-tab'), function (b) { var an = b.getAttribute('data-rk') === name; b.classList.toggle('aktiv', an); b.setAttribute('aria-selected', String(an)); });
+    $('reiseKarte').scrollTop = 0;
+  }
+  $('reiseKarte').querySelector('.rk-tabs').addEventListener('click', function (e) { var b = e.target.closest('.rk-tab'); if (b) rkTab(b.getAttribute('data-rk')); });
+  function reiseBlattAuf(tab) { if (!reise) return; if (!gesperrt()) reiseFelderFuellen(); rkTab(typeof tab === 'string' ? tab : rkAktiv); document.body.classList.add('reise-offen'); }
   function reiseBlattZu() { document.body.classList.remove('reise-offen'); }
-  $('reiseBtn').addEventListener('click', reiseBlattAuf);
+  $('reiseBtn').addEventListener('click', function () { reiseBlattAuf(); });
   $('rkZu').addEventListener('click', reiseBlattZu);
   wischSchliessen($('reiseKarte'), reiseBlattZu);
   function umrechnerZu() { document.body.classList.remove('umrechner-offen'); }
@@ -2840,7 +2852,7 @@ body.gesperrt .t-zahnrad { display: none; }
   themaAnwenden(document.documentElement.getAttribute('data-thema') || 'hell');
 
   // ---------- Auf- und zuklappbare Karten ----------
-  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'budgetKarte', 'tabsKarte', 'backupKarte'];
+  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'tabsKarte'];
   var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte', 'papierkorbKarte', 'abschlussKarte']; // neue Karten starten so, bis du sie einmal umschaltest
   var KEY_UI = 'reisen.v2.ui';
   function zugeklappteLaden() {
