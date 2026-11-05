@@ -698,6 +698,17 @@ body { touch-action: manipulation; }
 /* Hauptseite einer Reise: nicht scrollbar */
 html:has(body.rs-haupt:not(.umrechner-offen):not(.reise-offen)) { overflow: hidden; overscroll-behavior: none; }
 body.rs-haupt { overflow: hidden; overscroll-behavior: none; height: 100%; }
+
+/* Kompakte Filter in Übersicht → Ausgaben */
+#tab-ausgaben .filterleiste { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; margin-bottom: 4px; }
+#tab-ausgaben .filterleiste label { font-size: 11.5px; margin: 0 0 2px 2px; line-height: 1.2; }
+#tab-ausgaben .filterleiste select, #tab-ausgaben .filterleiste input { padding: 7px 10px; font-size: 14.5px; border-radius: 10px; min-height: 38px; height: 38px; width: 100%; box-sizing: border-box; }
+#tab-ausgaben .filterleiste select { padding-right: 30px; background-position: calc(100% - 17px) 52%, calc(100% - 12px) 52%; }
+#tab-ausgaben .filterleiste input[type="date"]::-webkit-calendar-picker-indicator { margin-left: 2px; opacity: .6; }
+#tab-ausgaben .fl-reset { grid-column: 1 / -1; width: auto; margin: 0; padding: 4px 2px; background: none; border: 0; color: var(--blau-text); font-size: 13px; font-weight: 600; text-align: left; box-shadow: none; min-height: 0; }
+/* Aktiver Reiter in Petrol */
+html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { background: #1C6E76; }
+.tab.aktiv, .rk-tab.aktiv { background: var(--petrol); color: #fff; box-shadow: 0 2px 6px -2px rgba(14,74,85,.55); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -917,6 +928,15 @@ body.rs-haupt { overflow: hidden; overscroll-behavior: none; height: 100%; }
             <option value="kategorie">Kategorie A–Z</option>
           </select>
         </div>
+        <div class="fl-datum">
+          <label for="filterVon">Von</label>
+          <input type="date" id="filterVon">
+        </div>
+        <div class="fl-datum">
+          <label for="filterBis">Bis</label>
+          <input type="date" id="filterBis">
+        </div>
+        <button type="button" class="fl-reset" id="filterReset" hidden>Zeitraum zurücksetzen ×</button>
       </div>
       <label class="check" style="margin:4px 0 10px"><input type="checkbox" id="nurOffen"> <span id="nurOffenText">Nur: Kurs noch nicht eingetragen</span></label>
       <div id="liste" class="liste"></div>
@@ -1323,7 +1343,7 @@ body.rs-haupt { overflow: hidden; overscroll-behavior: none; height: 100%; }
 
   // ---------- Formular ----------
   var bearbeiteId = null;
-  var filterKat = '';
+  var filterKat = '', filterVon = '', filterBis = '';
   var nurOffen = false;
 
   function formW() { return $('waehrung').value || lokal.code; }
@@ -1553,7 +1573,7 @@ body.rs-haupt { overflow: hidden; overscroll-behavior: none; height: 100%; }
 
   // ---------- Listen ----------
   function gefiltert() {
-    return ausgaben.filter(function (a) { return (!filterKat || a.kategorie === filterKat) && (!nurOffen || !istGeprueft(a)); });
+    return ausgaben.filter(function (a) { return (!filterKat || a.kategorie === filterKat) && (!nurOffen || !istGeprueft(a)) && (!filterVon || a.datum >= filterVon) && (!filterBis || a.datum <= filterBis); });
   }
   function sortiert(liste) {
     var modus = $('sortierung').value;
@@ -2249,6 +2269,7 @@ body.rs-haupt { overflow: hidden; overscroll-behavior: none; height: 100%; }
     }
 
     if (nurOffen) $('gesamtSub').textContent += ' · Kurs noch offen';
+    if (filterVon || filterBis) $('gesamtSub').textContent += ' · ' + (filterVon ? datumAnzeige(filterVon).slice(0, 5) : '…') + '–' + (filterBis ? datumAnzeige(filterBis).slice(0, 5) : '…');
     $('nurOffenText').textContent = 'Nur: Kurs noch nicht eingetragen (' + ausgaben.filter(function (a) { return !istGeprueft(a); }).length + ')';
 
     // Balken (nur Ausgaben, ohne Abhebungen)
@@ -2311,6 +2332,14 @@ body.rs-haupt { overflow: hidden; overscroll-behavior: none; height: 100%; }
   $('filter').addEventListener('change', function () { filterKat = $('filter').value; zeichnen(); });
   $('nurOffen').addEventListener('change', function () { nurOffen = $('nurOffen').checked; zeichnen(); });
   $('sortierung').addEventListener('change', zeichnen);
+  function zeitraumSetzen() {
+    filterVon = $('filterVon').value; filterBis = $('filterBis').value;
+    if (filterVon && filterBis && filterBis < filterVon) { filterBis = filterVon; $('filterBis').value = filterVon; }
+    $('filterReset').hidden = !(filterVon || filterBis); zeichnen();
+  }
+  $('filterVon').addEventListener('change', zeitraumSetzen);
+  $('filterBis').addEventListener('change', zeitraumSetzen);
+  $('filterReset').addEventListener('click', function () { $('filterVon').value = ''; $('filterBis').value = ''; zeitraumSetzen(); });
 
   // ---------- Export / Import ----------
   function download(name, inhalt, typ) {
@@ -3869,7 +3898,7 @@ body.rs-haupt { overflow: hidden; overscroll-behavior: none; height: 100%; }
     lokalSetzen(m.laender[0] ? m.laender[0].waehrung : 'EUR');
     multiSetzen();
     globalSpeichern({ aktiv: id });
-    filterKat = ''; nurOffen = false; $('nurOffen').checked = false; verlaufW = null;
+    filterKat = ''; filterVon = ''; filterBis = ''; $('filterVon').value = ''; $('filterBis').value = ''; $('filterReset').hidden = true; nurOffen = false; $('nurOffen').checked = false; verlaufW = null;
     offenZahlung = {}; offenTag = {}; offenOrt = {}; loeschStapel = []; $('undoBar').hidden = true;
     tabWechseln('ausgaben');
     berechneFifo();
