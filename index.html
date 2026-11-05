@@ -651,6 +651,11 @@ body.rs-unter #reiseAnsicht > section.tabs-karte.aktiv-seite { padding-top: 14px
 body.rs-unter:has(#reiseAnsicht:not([hidden])) { background: var(--bg); }
 body.rs-unter main { padding-top: 14px; }
 body.rs-unter #themaBtn { display: none; }
+.eintrag .meta .m-zeile { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eintrag .meta { font-size: 12.5px; }
+.eintrag { column-gap: 9px; }
+.eintrag .betrag .e-status { display: block; font-family: 'Figtree', sans-serif; font-size: 12.5px; font-weight: 700; line-height: 1.6; margin-top: 1px; }
+.eintrag .betrag .e-status .offen-tag { margin: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1602,11 +1607,13 @@ body.rs-unter #themaBtn { display: none; }
     }
   }
   function eintragHtml(a) {
-    var meta = esc(a.kategorie) + ' · ' + esc(datumAnzeige(a.datum).slice(0, 6)) + (a.ort ? ' · ' + esc(a.ort) : '') + (a.zahlung ? ' · ' + esc(a.zahlung) : '') +
-      (!istAbh(a) && istPauschal(a) ? ' · Gesamtreise' : '') + (istGeprueft(a) ? ' · <span class="ok">✓</span>' : '');
+    var zeile1 = esc(a.kategorie) + ' · ' + esc(datumAnzeige(a.datum));
+    var status = istGeprueft(a) ? '<span class="e-status ok">✓</span>' : '<span class="e-status"><span class="offen-tag">Kurs offen</span></span>';
+    var teile2 = [a.ort ? esc(a.ort) : '', a.zahlung ? esc(a.zahlung) : '', (!istAbh(a) && istPauschal(a)) ? 'Gesamtreise' : ''].filter(Boolean);
+    var meta = '<span class="m-zeile">' + zeile1 + '</span><span class="m-zeile">' + (teile2.length ? teile2.join(' · ') : '–') + '</span>';
     return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' + katIcon(a.kategorie) +
-      '<div class="e-mitte"><div class="beschr">' + esc(a.beschreibung || a.kategorie) + '</div><div class="meta">' + (istGeprueft(a) ? '' : '<span class="offen-tag">Kurs offen</span>') + meta + '</div></div>' +
-      '<div class="betrag">' + eintragBetragHtml(a) + '</div>' +
+      '<div class="e-mitte"><div class="beschr">' + esc(a.beschreibung || a.kategorie) + '</div><div class="meta">' + meta + '</div></div>' +
+      '<div class="betrag">' + eintragBetragHtml(a) + status + '</div>' +
       '<div class="aktionen">' +
       '<button type="button" class="klein hell" data-aktion="edit" aria-label="Ändern"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg></button>' +
       '<button type="button" class="klein rot" data-aktion="del" aria-label="Löschen"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>' +
@@ -2798,7 +2805,7 @@ body.rs-unter #themaBtn { display: none; }
     Array.prototype.forEach.call(seiten, function (d) { vorher.push(d.hidden); d.hidden = d.getAttribute('data-seite') !== 'backup'; });
     var h = k.offsetHeight; k.classList.remove('messen');
     Array.prototype.forEach.call(seiten, function (d, i) { d.hidden = vorher[i]; });
-    k.style.height = Math.min(h, Math.round(window.innerHeight * 0.9)) + 'px';
+    k.style.height = Math.round(window.innerHeight * 0.9) + 'px'; // alle Reiter gleich hoch, freier Platz bleibt leer
   }
   function reiseBlattAuf(tab) { if (!reise) return; if (!gesperrt()) reiseFelderFuellen(); rkHoeheSetzen(); rkTab(typeof tab === 'string' ? tab : rkAktiv); document.body.classList.add('reise-offen'); }
   function reiseBlattZu() { document.body.classList.remove('reise-offen'); }
