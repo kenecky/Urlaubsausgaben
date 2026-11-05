@@ -725,6 +725,35 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
 .filter-summe small { grid-column: 2; text-align: right; font-size: 12.5px; color: var(--grau); }
 /* Pro Tag: Lücken */
 .tag-luecke { margin: 6px 0; padding: 10px 12px; border: 1px dashed var(--linie); border-radius: 10px; color: var(--grau); font-size: 13px; text-align: center; }
+
+/* Einträge: Tippen öffnet direkt „Ändern“ */
+.eintrag .aktionen { display: none !important; }
+.eintrag { cursor: pointer; }
+#eintragLoeschen { width: 100%; }
+/* Abschluss/Verrechnung als Blatt */
+body.ab-offen #abschlussKarte { display: block !important; }
+#abschlussKarte.karte { }
+body.rs-haupt #abschlussKarte, body.ab-offen #abschlussKarte { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; max-width: 640px; margin: 0 auto; border-radius: 26px 26px 0 0;
+  padding: 10px 20px calc(24px + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; box-shadow: 0 -20px 50px -20px rgba(4,30,36,.55);
+  transform: translateY(105%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+body.rs-haupt #abschlussKarte { display: block !important; }
+body.ab-offen #abschlussKarte { transform: none; visibility: visible; transition: transform .28s ease; }
+body.rs-haupt #abschlussKarte::before { content: ''; display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--feld-rand); margin: 0 auto 12px; }
+body.rs-haupt #abschlussKarte > h2 { display: block; font-size: 22px; margin: 0 0 6px; padding-right: 48px; }
+body.rs-haupt #abschlussKarte > .sheet-x { display: flex; align-items: center; justify-content: center; }
+#abschlussKarte > .sheet-x { display: none; }
+body.ab-offen #abschlussKarte #berichtKarte:not([hidden]) { display: block !important; position: static; transform: none; box-shadow: none; padding: 14px 0 0; margin: 0; }
+body.ab-offen .sheet-dunkel { opacity: 1; pointer-events: auto; }
+body.rs-haupt #abschlussKarte > .karte-inhalt { display: block !important; }
+body.rs-haupt #abschlussKarte > h2 { pointer-events: none; margin-bottom: 6px; }
+body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte .kopf-klick::after { display: none !important; content: none; }
+/* Ziehen zum Aktualisieren */
+#ptrInd { position: fixed; top: calc(6px + env(safe-area-inset-top)); left: 50%; z-index: 90; width: 40px; height: 40px; margin-top: -40px; border-radius: 50%; background: var(--karte); color: var(--petrol);
+  box-shadow: 0 4px 14px -4px rgba(4,30,36,.45); display: flex; align-items: center; justify-content: center; opacity: 0; transform: translate(-50%,0); pointer-events: none; }
+#ptrInd svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+#ptrInd.bereit { background: var(--petrol); color: #fff; }
+#ptrInd.laedt svg { animation: ptrDreh .7s linear infinite; }
+@keyframes ptrDreh { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -743,7 +772,7 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
         <svg class="ic-mond" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
         <svg class="ic-sonne" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
       </button>
-      <button type="button" class="icon-btn" id="umrechnerBtn" aria-label="Umrechner öffnen" hidden><svg viewBox="0 0 24 24"><path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/></svg></button>
+      <button type="button" class="icon-btn" id="umrechnerBtn" aria-label="Währungsrechner öffnen" hidden><svg viewBox="0 0 24 24"><path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/></svg></button>
       <button type="button" class="icon-btn" id="sucheBtn" aria-label="Suche" hidden>
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
       </button>
@@ -875,6 +904,7 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
       <label class="check"><input type="checkbox" id="pauschal"> Kosten für die gesamte Reise (nicht im Tagesschnitt)</label>
       <button type="submit" id="speichern">Speichern</button>
       <button type="button" class="hell abbrechen" id="abbrechen" style="margin-top:8px">Abbrechen</button>
+      <button type="button" class="rot abbrechen" id="eintragLoeschen" style="margin-top:8px">Ausgabe löschen</button>
     </form>
   </section>
 
@@ -886,8 +916,8 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
   </section>
 
   <section class="karte sheet" id="rechnerKarte" role="dialog" aria-modal="true" aria-labelledby="rcTitel">
-    <button type="button" class="sheet-x" id="rcZu" aria-label="Umrechner schließen">✕</button>
-    <h2 id="rcTitel">Umrechner</h2>
+    <button type="button" class="sheet-x" id="rcZu" aria-label="Währungsrechner schließen">✕</button>
+    <h2 id="rcTitel">Währungsrechner</h2>
     <div class="sheet-sub" id="rcSub"></div>
     <div class="w-chips" id="rcRichtung"><button type="button" class="w-chip an" data-ri="zu">₱ → €</button><button type="button" class="w-chip" data-ri="von">€ → ₱</button></div>
     <select id="rcWaehrung" hidden style="margin-top:8px"></select>
@@ -1581,6 +1611,18 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
     if (editId) nachSeiteScroll = rueckScroll ? editId : null;
     if (aktSeite === 'neu') seiteSchliessen(); else if (editId) zurueckScrollen(editId);
   });
+  $('eintragLoeschen').addEventListener('click', function () {
+    var id = bearbeiteId; if (!id) return;
+    if (reise && reise.status === 'abgeschlossen') { toast('Die Reise ist abgeschlossen. Zum Ändern zuerst wieder öffnen.'); return; }
+    if (!confirm('Diese Ausgabe wirklich löschen?')) return;
+    var idx = ausgaben.findIndex(function (x) { return x.id === id; }); if (idx < 0) return;
+    var a = ausgaben[idx];
+    ausgaben.splice(idx, 1); einst.geloescht[id] = Date.now(); loeschStapel.push({ a: a, i: idx });
+    formZuruecksetzen(); speichern(); speichernEinst(); zeichnen(); undoZeigen();
+    nachSeiteScroll = null; var r = rueckScroll; rueckScroll = null;
+    if (aktSeite === 'neu') seiteSchliessen();
+    if (r) setTimeout(function () { window.scrollTo(0, r.y); }, 60);
+  });
   $('abbrechen').addEventListener('click', function () {
     var id = bearbeiteId;
     formZuruecksetzen();
@@ -1652,8 +1694,9 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
   }
   // Ticket-Abschnitt: Reisetag, Schnitt pro Tag, Bargeld
   document.addEventListener('click', function (e) {
-    if (e.target.closest('button')) return;
-    var r = e.target.closest('.eintrag'); if (r) r.classList.toggle('offen');
+    if (e.target.closest('button, a, input, select, textarea')) return;
+    var r = e.target.closest('.eintrag'); if (!r) return;
+    var eb = r.querySelector('button[data-aktion="edit"]'); if (eb) listeKlick({ target: eb });
   });
   function kopfStubRendern() {
     var box = document.getElementById('kopfStub');
@@ -1687,7 +1730,7 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
     }
   }
   function eintragHtml(a) {
-    var zeile1 = esc(a.kategorie) + ' · ' + esc(datumAnzeige(a.datum));
+    var zeile1 = esc(istAbh(a) ? 'Bargeld' : a.kategorie) + ' · ' + esc(datumAnzeige(a.datum));
     var status = istGeprueft(a) ? '<span class="e-status ok">✓</span>' : '<span class="e-status"><span class="offen-tag">Kurs offen</span></span>';
     var teile2 = [a.ort ? esc(a.ort) : '', a.zahlung ? esc(a.zahlung) : '', (!istAbh(a) && istPauschal(a)) ? 'Gesamtreise' : ''].filter(Boolean);
     var meta = '<span class="m-zeile">' + zeile1 + '</span><span class="m-zeile">' + (teile2.length ? teile2.join(' · ') : '–') + '</span>';
@@ -3659,7 +3702,7 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
   function seiteZeigen(name) {
     var s = SEITEN[name]; if (!s) { hauptZeigen(); return; }
     if (aktSeite === 'neu' && name !== 'neu' && bearbeiteId) editVerlassen();
-    aktSeite = name;
+    aktSeite = name; document.body.classList.remove('ab-offen');
     document.body.classList.remove('rs-haupt'); document.body.classList.add('rs-unter');
     Array.prototype.forEach.call(document.querySelectorAll('#reiseAnsicht > section.karte'), function (k) { k.classList.toggle('aktiv-seite', k.id === s.karte || (name === 'ab' && k.id === 'berichtKarte')); });
     $('kopfTitel').textContent = name === 'neu' ? $('formTitel').textContent : s.titel;
@@ -3684,7 +3727,20 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
     if (history.state && history.state.seite) { try { history.back(); return; } catch (e) {} }
     hauptZeigen();
   }
-  $('abschlussBtn').addEventListener('click', function () { seiteOeffnen('ab'); });
+  // Abschluss/Verrechnung als Blatt von unten
+  (function () {
+    var k = $('abschlussKarte'), h2 = k.querySelector('h2');
+    var x = document.createElement('button'); x.type = 'button'; x.className = 'sheet-x'; x.id = 'abZu'; x.setAttribute('aria-label', 'Abschluss schließen'); x.textContent = '✕';
+    k.insertBefore(x, h2); k.appendChild($('berichtKarte'));
+    k.setAttribute('role', 'dialog'); k.setAttribute('aria-modal', 'true');
+  })();
+  function abBlattAuf() { if (!reise) return; renderAbrechnung(); var k = $('abschlussKarte'); k.scrollTop = 0; document.body.classList.add('ab-offen'); }
+  function abBlattZu() { document.body.classList.remove('ab-offen'); }
+  $('abschlussBtn').addEventListener('click', abBlattAuf);
+  $('abZu').addEventListener('click', abBlattZu);
+  $('sheetDunkel').addEventListener('click', abBlattZu);
+  wischSchliessen($('abschlussKarte'), abBlattZu);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') abBlattZu(); });
   $('themaBtn2').addEventListener('click', function () { $('themaBtn').click(); });
   $('kacheln').addEventListener('click', function (e) {
     var b = e.target.closest('[data-seite-auf]'); if (!b || b.disabled) return;
@@ -3713,6 +3769,43 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
     neu.disabled = gesperrt();
     $('kInfo_neu').textContent = gesperrt() ? 'Reise ist abgeschlossen' : 'Schnell erfassen';
   }
+
+  // ---------- Hauptseite: nach unten ziehen = neu laden (die Seite selbst scrollt nicht) ----------
+  (function () {
+    var ind = document.createElement('div'); ind.id = 'ptrInd'; ind.setAttribute('aria-hidden', 'true');
+    ind.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg>';
+    document.body.appendChild(ind);
+    var y0 = null, x0 = 0, dy = 0, modus = null, GRENZE = 80;
+    function aktivHier(t) {
+      var b = document.body.classList;
+      return b.contains('rs-haupt') && !b.contains('reise-offen') && !b.contains('umrechner-offen') && !b.contains('ab-offen') &&
+        !$('reiseAnsicht').hidden && !t.closest('.sheet, input, select, textarea, #suche');
+    }
+    document.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1 || !aktivHier(e.target)) { y0 = null; return; }
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; modus = null;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (y0 === null) return;
+      var my = e.touches[0].clientY - y0, mx = e.touches[0].clientX - x0;
+      if (!modus) { if (Math.abs(my) < 8 && Math.abs(mx) < 8) return; modus = (my > 0 && my > Math.abs(mx)) ? 'r' : 'x'; }
+      if (modus !== 'r') return;
+      dy = Math.max(0, my); var z = Math.min(dy * 0.5, GRENZE + 20);
+      ind.style.transition = 'none'; ind.style.opacity = String(Math.min(1, dy / GRENZE));
+      ind.style.transform = 'translate(-50%,' + z + 'px) rotate(' + (dy * 2) + 'deg)';
+      ind.classList.toggle('bereit', dy * 0.5 >= GRENZE);
+    }, { passive: true });
+    function ende() {
+      if (y0 === null) return; y0 = null;
+      if (modus === 'r' && dy * 0.5 >= GRENZE) {
+        ind.classList.add('laedt'); ind.style.transition = 'transform .2s'; ind.style.transform = 'translate(-50%,' + GRENZE + 'px)';
+        setTimeout(function () { location.reload(); }, 250);
+      } else { ind.style.transition = 'transform .2s, opacity .2s'; ind.style.transform = 'translate(-50%,0)'; ind.style.opacity = '0'; ind.classList.remove('bereit'); }
+      modus = null; dy = 0;
+    }
+    document.addEventListener('touchend', ende);
+    document.addEventListener('touchcancel', ende);
+  })();
 
   // ---------- Reiter per Wischen nach links/rechts wechseln ----------
   // Wischen zwischen Reitern wie ein Karussell: die Nachbarseite hängt direkt daneben und zieht mit
@@ -3819,6 +3912,7 @@ html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
   function (v) { if (v) window.scrollBy(0, -v); }, document.querySelector('#tabsKarte .tabs'));
   // Ansicht wechseln
   function ansichtSetzen(start) {
+    document.body.classList.remove('ab-offen');
     $('startseite').hidden = !start;
     if (start) { document.body.classList.remove('gesperrt'); $('vergleichKarte').hidden = true; }
     $('reiseAnsicht').hidden = start;
