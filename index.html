@@ -671,6 +671,12 @@ body.rs-haupt #themaBtn, body.rs-unter #themaBtn { display: none; }
 .kachel.breit { grid-column: 1 / -1; min-height: 0; flex-direction: row; align-items: center; gap: 14px; }
 .kachel.breit .ic { margin-bottom: 0; }
 .kachel.breit .tx { display: flex; flex-direction: column; gap: 2px; }
+
+@keyframes reinRechts { from { opacity: .3; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes reinLinks { from { opacity: .3; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+.rein-rechts { animation: reinRechts .22s ease-out; }
+.rein-links { animation: reinLinks .22s ease-out; }
+@media (prefers-reduced-motion: reduce) { .rein-rechts, .rein-links { animation: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -2784,14 +2790,15 @@ body.rs-haupt #themaBtn, body.rs-unter #themaBtn { display: none; }
   function umrechnerAuf() { if ($('rechnerKarte').hidden) return; $('rechnerKarte').scrollTop = 0; document.body.classList.add('umrechner-offen'); }
   // Wischen nach unten schließt ein Blatt
   function wischSchliessen(blatt, zu, scrollEl) {
-    var y0 = null, dy = 0, t0 = 0;
+    var y0 = null, x0 = 0, dy = 0, t0 = 0;
     blatt.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 1 || blatt.scrollTop > 0 || (scrollEl && scrollEl.contains(e.target) && scrollEl.scrollTop > 0) || e.target.closest('input, select, textarea')) { y0 = null; return; }
-      y0 = e.touches[0].clientY; dy = 0; t0 = Date.now();
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; t0 = Date.now();
     }, { passive: true });
     blatt.addEventListener('touchmove', function (e) {
       if (y0 === null) return;
       dy = e.touches[0].clientY - y0;
+      if (Math.abs(e.touches[0].clientX - x0) > Math.abs(dy)) { if (blatt.style.transform) { blatt.style.transition = ''; blatt.style.transform = ''; } dy = 0; return; }
       if (dy > 0) { blatt.style.transition = 'none'; blatt.style.transform = 'translateY(' + dy + 'px)'; }
     }, { passive: true });
     function ende() {
@@ -3620,6 +3627,31 @@ body.rs-haupt #themaBtn, body.rs-unter #themaBtn { display: none; }
     neu.disabled = gesperrt();
     $('kInfo_neu').textContent = gesperrt() ? 'Reise ist abgeschlossen' : 'Schnell erfassen';
   }
+
+  // ---------- Reiter per Wischen nach links/rechts wechseln ----------
+  function reiterWischen(flaeche, liste, wechseln, animEl) {
+    var sx = null, sy = 0, st = 0;
+    flaeche.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1 || e.target.closest('input[type="range"], .vgl-wrap, .rk-tabs, .tabs')) { sx = null; return; }
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now();
+    }, { passive: true });
+    flaeche.addEventListener('touchend', function (e) {
+      if (sx === null) return;
+      var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5 || Date.now() - st > 800) return;
+      var l = liste(), i = l.indexOf(l.aktiv), j = i + (dx < 0 ? 1 : -1);
+      if (i < 0 || j < 0 || j >= l.length) return;
+      wechseln(l[j]);
+      var el = animEl(); if (el) { el.classList.remove('rein-links', 'rein-rechts'); void el.offsetWidth; el.classList.add(dx < 0 ? 'rein-rechts' : 'rein-links'); }
+    }, { passive: true });
+  }
+  reiterWischen($('rkInhalt'), function () {
+    var l = Array.prototype.filter.call(document.querySelectorAll('#reiseKarte .rk-tab'), function (b) { return b.offsetParent !== null; }).map(function (b) { return b.getAttribute('data-rk'); });
+    l.aktiv = rkAktiv; return l;
+  }, rkTab, function () { return document.querySelector('#reiseKarte .rk-seite:not([hidden])'); });
+  reiterWischen($('tabsKarte'), function () {
+    var l = ['ausgaben', 'zahlung', 'tag', 'orte']; l.aktiv = aktiverTab; return l;
+  }, function (n) { tabWechseln(n); zeichnen(); }, function () { return document.querySelector('#tabsKarte .tab-inhalt:not([hidden])'); });
   // Ansicht wechseln
   function ansichtSetzen(start) {
     $('startseite').hidden = !start;
