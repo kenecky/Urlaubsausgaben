@@ -630,6 +630,27 @@ body.reise-offen { overflow: hidden; }
 #reiseKarte .rk-inhalt { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -20px; padding: 2px 20px calc(24px + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
 #reiseKarte.messen .rk-inhalt { flex: none; overflow: visible; }
 #reiseKarte .rk-tabs { flex: none; }
+
+/* Kacheln auf der Reise-Startseite */
+.kacheln { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.kachel { margin: 0; text-align: left; background: var(--karte); color: var(--text); border-radius: 20px; padding: 16px; box-shadow: var(--schatten); display: flex; flex-direction: column; gap: 4px; min-height: 150px; }
+.kachel:active { transform: scale(.98); }
+.kachel:disabled { opacity: .5; }
+.kachel .ic { margin-bottom: 10px; width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--k) 14%, transparent); color: var(--k); }
+.kachel .ic svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.kachel b { font-family: var(--display); font-size: 17px; font-weight: 700; }
+.kachel small { font-size: 12.5px; color: var(--grau); font-weight: 500; line-height: 1.35; }
+/* Hauptseite: nur Ticket + Kacheln; Unterseite: nur der gewählte Bereich */
+body.rs-haupt #formKarte, body.rs-haupt #katKarte, body.rs-haupt #tabsKarte, body.rs-haupt #abschlussKarte, body.rs-haupt #berichtKarte { display: none !important; }
+body.rs-unter #ticket, body.rs-unter #kacheln, body.rs-unter #gesperrtBanner { display: none !important; }
+body.rs-unter #reiseAnsicht > section.karte:not(.sheet):not(.aktiv-seite) { display: none !important; }
+body.rs-unter #reiseAnsicht > section.karte.aktiv-seite > h2 { display: none; }
+body.rs-unter #reiseAnsicht > section.karte.aktiv-seite.zu > .karte-inhalt { display: block; }
+body.rs-unter #berichtKarte.aktiv-seite > h2 { display: block; }
+body.rs-unter #reiseAnsicht > section.tabs-karte.aktiv-seite { padding-top: 14px; }
+body.rs-unter:has(#reiseAnsicht:not([hidden])) { background: var(--bg); }
+body.rs-unter main { padding-top: 14px; }
+body.rs-unter #themaBtn { display: none; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -729,6 +750,7 @@ body.reise-offen { overflow: hidden; }
     <div class="t-fort" id="reiseFort" hidden></div>
   </section>
   <section class="karte sperr-banner" id="gesperrtBanner" hidden></section>
+  <section class="kacheln" id="kacheln"><button type="button" class="kachel" data-seite-auf="neu"><span class="ic" style="--k:#E0782F"><svg viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 8v8M8 12h8"/></svg></span><b>Neue Ausgabe</b><small id="kInfo_neu"></small></button><button type="button" class="kachel" data-seite-auf="kat"><span class="ic" style="--k:#1C8A8F"><svg viewBox="0 0 24 24"><path d="M12 3v9h9A9 9 0 1 1 12 3zM15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span><b>Kategorien</b><small id="kInfo_kat"></small></button><button type="button" class="kachel" data-seite-auf="ueb"><span class="ic" style="--k:#3D6FB6"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></span><b>Übersicht</b><small id="kInfo_ueb"></small></button><button type="button" class="kachel" data-seite-auf="ab"><span class="ic" style="--k:#7E62C2"><svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h12l-2.5 4L17 12H5"/></svg></span><b>Abschluss</b><small id="kInfo_ab"></small></button></section>
   <section class="karte" id="formKarte">
     <h2 id="formTitel">Neue Ausgabe</h2>
     <div id="schnell">
@@ -1471,12 +1493,14 @@ body.reise-offen { overflow: hidden; }
     $('freitext').value = '';
     $('datum').value = datumMerken; // praktisch, wenn mehrere Ausgaben am selben Tag erfasst werden
     zeichnen();
-    if (editId) zurueckScrollen(editId);
+    if (editId) nachSeiteScroll = rueckScroll ? editId : null;
+    if (aktSeite === 'neu') seiteSchliessen(); else if (editId) zurueckScrollen(editId);
   });
   $('abbrechen').addEventListener('click', function () {
     var id = bearbeiteId;
     formZuruecksetzen();
-    if (id) zurueckScrollen(id);
+    if (id) nachSeiteScroll = rueckScroll ? id : null;
+    if (aktSeite === 'neu') seiteSchliessen(); else if (id) zurueckScrollen(id);
   });
 
   // ---------- Listen ----------
@@ -1638,7 +1662,8 @@ body.reise-offen { overflow: hidden; }
       speichern(); speichernEinst(); zeichnen(); undoZeigen();
     } else {
       rueckScroll = { y: window.scrollY };
-      if (!$('suche').hidden) schliesseSuche();
+      var ausSuche = !$('suche').hidden;
+      if (ausSuche) schliesseSuche(true);
       bearbeiteId = id;
       $('datum').value = a.datum;
       anker = gueltigerAnker(a.anker) ? a.anker.slice() : (a.abgebucht > 0 ? ['php', 'eur'] : ['php', 'kurs']);
@@ -1662,8 +1687,8 @@ body.reise-offen { overflow: hidden; }
       karteUmschalten('formKarte', false);
       barAktiv = false;
       kursBereichUmschalten();
-      var kopfH = document.querySelector('header').offsetHeight;
-      window.scrollTo({ top: Math.max(0, $('formKarte').getBoundingClientRect().top + window.scrollY - kopfH - 10), behavior: 'smooth' });
+      if (ausSuche) rueckScroll = null;
+      seiteOeffnen('neu', ausSuche && history.state && history.state.suche);
     }
   }
   $('liste').addEventListener('click', listeKlick);
@@ -2140,6 +2165,8 @@ body.reise-offen { overflow: hidden; }
   $('sucheZu').addEventListener('click', function () { schliesseSuche(false); });
   window.addEventListener('popstate', function () {
     if (!$('suche').hidden) { schliesseSuche(true); return; }
+    var st = history.state || {};
+    if (reise && st.reise === reise.id) { if (st.seite) seiteZeigen(st.seite); else hauptZeigen(); return; }
     if (reise) zeigeStart();
   });
   ['sucheText', 'sucheKat', 'sucheVon', 'sucheBis'].forEach(function (id) {
@@ -2216,6 +2243,7 @@ body.reise-offen { overflow: hidden; }
     renderProTag();
     renderOrte();
     renderAbrechnung();
+    kachelnRendern();
     if (!$('suche').hidden) renderSuche();
   }
 
@@ -2228,6 +2256,7 @@ body.reise-offen { overflow: hidden; }
     tabWechseln('ausgaben');
     karteUmschalten('tabsKarte', false);
     zeichnen();
+    if (filterKat && aktSeite === 'kat') seiteOeffnen('ueb');
   });
   $('filter').addEventListener('change', function () { filterKat = $('filter').value; zeichnen(); });
   $('nurOffen').addEventListener('change', function () { nurOffen = $('nurOffen').checked; zeichnen(); });
@@ -3389,7 +3418,7 @@ body.reise-offen { overflow: hidden; }
       if (ck.getAttribute('data-ck') === 'kurs') {
         nurOffen = true; $('nurOffen').checked = true; tabWechseln('ausgaben'); zeichnen();
       } else { tabWechseln('orte'); zeichnen(); }
-      var z = document.getElementById(ck.getAttribute('data-ck') === 'kurs' ? 'liste' : 'tabsKarte'); if (z) z.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      seiteOeffnen('ueb');
       return;
     }
     var b = e.target.closest('[data-ab]'); if (!b) return;
@@ -3401,11 +3430,11 @@ body.reise-offen { overflow: hidden; }
       var warn = abschlussCheck().filter(function (x) { return x.w; }).length;
       if (!confirm('Reise „' + reise.name + '“ jetzt abschließen?' + (warn ? '\n\nEs gibt noch ' + warn + (warn === 1 ? ' Hinweis' : ' Hinweise') + ' im Check.' : '') + '\n\nDanach kann nichts mehr geändert werden, bis du die Reise wieder öffnest.')) return;
       reise.status = 'abgeschlossen'; reise.abgeschlossenAm = Date.now(); indexSpeichern();
-      reiseOeffnen(reise.id, true); toast('Reise abgeschlossen');
+      var warSeite = aktSeite; reiseOeffnen(reise.id, true); if (warSeite) seiteZeigen(warSeite); toast('Reise abgeschlossen');
     } else if (a === 'oeffnen') {
       if (!confirm('Reise „' + reise.name + '“ wieder öffnen?\n\nDanach können Einträge wieder geändert und gelöscht werden.')) return;
       reise.status = 'aktiv'; reise.abgeschlossenAm = 0; indexSpeichern();
-      reiseOeffnen(reise.id, true); toast('Reise ist wieder offen');
+      var warSeite = aktSeite; reiseOeffnen(reise.id, true); if (warSeite) seiteZeigen(warSeite); toast('Reise ist wieder offen');
     }
   });
 
@@ -3512,6 +3541,61 @@ body.reise-offen { overflow: hidden; }
     vergleichRendern();
   });
 
+
+  // ---------- Kacheln und Unterseiten (eigene Seite ohne Ticket) ----------
+  var SEITEN = { neu: { karte: 'formKarte', titel: 'Neue Ausgabe' }, kat: { karte: 'katKarte', titel: 'Kategorien' },
+                 ueb: { karte: 'tabsKarte', titel: 'Übersicht' }, ab: { karte: 'abschlussKarte', titel: 'Abschluss' } };
+  var aktSeite = null, nachSeiteScroll = null;
+  function seiteZeigen(name) {
+    var s = SEITEN[name]; if (!s) { hauptZeigen(); return; }
+    if (aktSeite === 'neu' && name !== 'neu' && bearbeiteId) editVerlassen();
+    aktSeite = name;
+    document.body.classList.remove('rs-haupt'); document.body.classList.add('rs-unter');
+    Array.prototype.forEach.call(document.querySelectorAll('#reiseAnsicht > section.karte'), function (k) { k.classList.toggle('aktiv-seite', k.id === s.karte || (name === 'ab' && k.id === 'berichtKarte')); });
+    $('kopfTitel').textContent = name === 'neu' ? $('formTitel').textContent : s.titel;
+    var id = nachSeiteScroll; nachSeiteScroll = null;
+    if (id) setTimeout(function () { zurueckScrollen(id); }, 30); else window.scrollTo(0, 0);
+  }
+  function hauptZeigen() {
+    if (aktSeite === 'neu' && bearbeiteId) editVerlassen();
+    aktSeite = null; nachSeiteScroll = null;
+    document.body.classList.remove('rs-unter'); document.body.classList.add('rs-haupt');
+    Array.prototype.forEach.call(document.querySelectorAll('#reiseAnsicht > section.karte'), function (k) { k.classList.remove('aktiv-seite'); });
+    if (reise) $('kopfTitel').textContent = reise.name;
+    window.scrollTo(0, 0);
+  }
+  function editVerlassen() { var id = bearbeiteId; formZuruecksetzen(); if (id) nachSeiteScroll = id; }
+  function seiteOeffnen(name, ersetzen) {
+    if (!reise) return;
+    try { (ersetzen ? history.replaceState : history.pushState).call(history, { reise: reise.id, seite: name }, ''); } catch (e) {}
+    seiteZeigen(name);
+  }
+  function seiteSchliessen() {
+    if (history.state && history.state.seite) { try { history.back(); return; } catch (e) {} }
+    hauptZeigen();
+  }
+  $('kacheln').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-seite-auf]'); if (!b || b.disabled) return;
+    var n = b.getAttribute('data-seite-auf');
+    if (n === 'neu' && bearbeiteId) formZuruecksetzen();
+    seiteOeffnen(n);
+  });
+  function kachelnRendern() {
+    if (!reise) return;
+    var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
+    var proK = {}, ges = 0;
+    ohne.forEach(function (a) { var w = euroVon(a); proK[a.kategorie] = (proK[a.kategorie] || 0) + w; ges += w; });
+    var top = Object.keys(proK).sort(function (a, b) { return proK[b] - proK[a]; }).slice(0, 2);
+    var kurz = function (k) { return esc(k.split(/[ &]/)[0]); };
+    $('kInfo_kat').innerHTML = top.length ? top.map(function (k) { return kurz(k) + '&nbsp;' + Math.round(proK[k] / ges * 100) + '&nbsp;%'; }).join(' · ') : 'Noch keine Ausgaben';
+    var offen = ausgaben.filter(function (a) { return !istGeprueft(a); }).length;
+    $('kInfo_ueb').innerHTML = ohne.length + '&nbsp;' + (ohne.length === 1 ? 'Ausgabe' : 'Ausgaben') + (offen ? ' · ' + offen + '&nbsp;Kurs&nbsp;offen' : '');
+    var st = statistik({ ausgaben: ausgaben, einst: einst }, reise);
+    $('kInfo_ab').innerHTML = gesperrt() ? 'Abgeschlossen' : esc(saldoText(st)).replace(/ (\d[\d.,]*) €$/, function (m, z) { return ' ' + z.replace(/,\d\d$/, '') + '&nbsp;€'; });
+    var neu = document.querySelector('[data-seite-auf="neu"]');
+    neu.disabled = gesperrt();
+    $('kInfo_neu').textContent = gesperrt() ? 'Reise ist abgeschlossen' : 'Schnell erfassen';
+  }
   // Ansicht wechseln
   function ansichtSetzen(start) {
     $('startseite').hidden = !start;
@@ -3525,6 +3609,9 @@ body.reise-offen { overflow: hidden; }
     $('gesamtSub').hidden = start;
     $('startSub').hidden = !start;
     $('kopfTitel').textContent = start ? 'Meine Reisen' : (reise ? reise.name : '');
+    aktSeite = null;
+    document.body.classList.toggle('rs-haupt', !start); document.body.classList.remove('rs-unter');
+    Array.prototype.forEach.call(document.querySelectorAll('#reiseAnsicht > section.karte'), function (k) { k.classList.remove('aktiv-seite'); });
   }
   function zeigeStart() {
     if (!$('suche').hidden) schliesseSuche(true);
@@ -3534,6 +3621,7 @@ body.reise-offen { overflow: hidden; }
     window.scrollTo(0, 0);
   }
   $('zurueckBtn').addEventListener('click', function () {
+    if (aktSeite) { seiteSchliessen(); return; }
     if (history.state && history.state.reise) history.back(); else zeigeStart();
   });
   function reisewaehrungen() {
