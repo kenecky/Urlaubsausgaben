@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0E4A55">
 <meta name="color-scheme" content="light dark">
 <script>
@@ -677,6 +677,19 @@ body.rs-haupt #themaBtn, body.rs-unter #themaBtn { display: none; }
 .rein-rechts { animation: reinRechts .22s ease-out; }
 .rein-links { animation: reinLinks .22s ease-out; }
 @media (prefers-reduced-motion: reduce) { .rein-rechts, .rein-links { animation: none; } }
+
+/* Kachel „Neue Ausgabe“: Text links, Heute-Wert, runder Plus-Button */
+.kachel.breit { padding: 16px 16px 16px 20px; gap: 12px; }
+.kachel.breit .tx { flex: 1; min-width: 0; }
+.kachel.breit .heute { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; padding: 2px 12px 2px 12px; border-left: 1px solid var(--linie); text-align: right; }
+.kachel.breit .heute span { font-size: 12px; color: var(--grau); font-weight: 500; white-space: nowrap; }
+.kachel.breit .heute strong { font-family: var(--display); font-size: 18px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+.kachel.breit .rund { width: 50px; height: 50px; border-radius: 50%; background: var(--mango); color: var(--mango-text); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 18px -8px rgba(245,165,36,.9); flex: none; }
+.kachel.breit .rund svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+.kachel.breit:disabled .rund { background: var(--feld-bg); color: var(--grau); box-shadow: none; }
+/* Wischen: Browser übernimmt nur senkrecht, waagerecht macht die App */
+#rkInhalt, #tabsKarte { touch-action: pan-y; }
+body { touch-action: manipulation; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -777,7 +790,7 @@ body.rs-haupt #themaBtn, body.rs-unter #themaBtn { display: none; }
     <div class="t-fort" id="reiseFort" hidden></div>
   </section>
   <section class="karte sperr-banner" id="gesperrtBanner" hidden></section>
-  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="ic" style="--k:#E0782F"><svg viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 8v8M8 12h8"/></svg></span><span class="tx"><b>Neue Ausgabe</b><small id="kInfo_neu"></small></span></button><button type="button" class="kachel" data-seite-auf="kat"><span class="ic" style="--k:#1C8A8F"><svg viewBox="0 0 24 24"><path d="M12 3v9h9A9 9 0 1 1 12 3zM15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span><b>Kategorien</b><small id="kInfo_kat"></small></button><button type="button" class="kachel" data-seite-auf="ueb"><span class="ic" style="--k:#3D6FB6"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></span><b>Übersicht</b><small id="kInfo_ueb"></small></button></section>
+  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="rund" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button><button type="button" class="kachel" data-seite-auf="kat"><span class="ic" style="--k:#1C8A8F"><svg viewBox="0 0 24 24"><path d="M12 3v9h9A9 9 0 1 1 12 3zM15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span><b>Kategorien</b><small id="kInfo_kat"></small></button><button type="button" class="kachel" data-seite-auf="ueb"><span class="ic" style="--k:#3D6FB6"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></span><b>Übersicht</b><small id="kInfo_ueb"></small></button></section>
   <section class="karte" id="formKarte">
     <h2 id="formTitel">Neue Ausgabe</h2>
     <div id="schnell">
@@ -3623,27 +3636,53 @@ body.rs-haupt #themaBtn, body.rs-unter #themaBtn { display: none; }
     var offen = ausgaben.filter(function (a) { return !istGeprueft(a); }).length;
     $('kInfo_ueb').innerHTML = ohne.length + '&nbsp;' + (ohne.length === 1 ? 'Ausgabe' : 'Ausgaben') + (offen ? ' · ' + offen + '&nbsp;Kurs&nbsp;offen' : '');
     var st = statistik({ ausgaben: ausgaben, einst: einst }, reise);
+    var heuteL = ohne.filter(function (a) { return a.datum === heute(); });
+    var hs;
+    if (multi || euroTrip) hs = euroFmt(summeEuro(heuteL)).replace(',00 €', ' €');
+    else hs = Math.round(heuteL.reduce(function (x, a) { return x + a.betrag; }, 0)).toLocaleString('de-DE') + ' ' + lokal.symbol;
+    $('kHeuteSumme').textContent = heuteL.length ? hs : '–';
+    $('kHeuteAnzahl').textContent = heuteL.length ? heuteL.length + (heuteL.length === 1 ? ' Ausgabe' : ' Ausgaben') : 'noch nichts';
     var neu = document.querySelector('[data-seite-auf="neu"]');
     neu.disabled = gesperrt();
     $('kInfo_neu').textContent = gesperrt() ? 'Reise ist abgeschlossen' : 'Schnell erfassen';
   }
 
   // ---------- Reiter per Wischen nach links/rechts wechseln ----------
-  function reiterWischen(flaeche, liste, wechseln, animEl) {
-    var sx = null, sy = 0, st = 0;
+  function reiterWischen(flaeche, liste, wechseln, seiteEl) {
+    var sx = null, sy = 0, st = 0, modus = null, el = null, dx = 0, breite = 1;
+    function setze(x, mitAnim) { if (!el) return; el.style.transition = mitAnim ? 'transform .22s ease-out, opacity .22s ease-out' : 'none'; el.style.transform = x ? 'translateX(' + x + 'px)' : ''; el.style.opacity = x ? String(Math.max(.35, 1 - Math.abs(x) / breite * .8)) : ''; }
     flaeche.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 1 || e.target.closest('input[type="range"], .vgl-wrap, .rk-tabs, .tabs')) { sx = null; return; }
-      sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now();
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); modus = null; dx = 0; el = seiteEl(); breite = (el && el.offsetWidth) || window.innerWidth;
     }, { passive: true });
-    flaeche.addEventListener('touchend', function (e) {
+    flaeche.addEventListener('touchmove', function (e) {
       if (sx === null) return;
-      var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
-      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5 || Date.now() - st > 800) return;
-      var l = liste(), i = l.indexOf(l.aktiv), j = i + (dx < 0 ? 1 : -1);
-      if (i < 0 || j < 0 || j >= l.length) return;
-      wechseln(l[j]);
-      var el = animEl(); if (el) { el.classList.remove('rein-links', 'rein-rechts'); void el.offsetWidth; el.classList.add(dx < 0 ? 'rein-rechts' : 'rein-links'); }
+      var mx = e.touches[0].clientX - sx, my = e.touches[0].clientY - sy;
+      if (!modus) { if (Math.abs(mx) < 8 && Math.abs(my) < 8) return; modus = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'; }
+      if (modus !== 'h') return;
+      var l = liste(), i = l.indexOf(l.aktiv), rand = (mx > 0 && i <= 0) || (mx < 0 && i >= l.length - 1);
+      dx = rand ? mx * 0.3 : mx; setze(dx, false);
     }, { passive: true });
+    function ende() {
+      if (sx === null) return; sx = null;
+      if (modus !== 'h') { modus = null; return; }
+      var l = liste(), i = l.indexOf(l.aktiv), schnell = Math.abs(dx) > 40 && Date.now() - st < 300;
+      var j = i + (dx < 0 ? 1 : -1);
+      if ((Math.abs(dx) > breite * 0.28 || schnell) && j >= 0 && j < l.length) {
+        var raus = dx < 0 ? -breite : breite, altEl = el;
+        setze(raus, true);
+        setTimeout(function () {
+          if (altEl) { altEl.style.transition = 'none'; altEl.style.transform = ''; altEl.style.opacity = ''; }
+          wechseln(l[j]);
+          el = seiteEl(); if (!el) return;
+          setze(-raus * 0.6, false); void el.offsetWidth; setze(0, true);
+          setTimeout(function () { if (el) { el.style.transition = ''; } }, 240);
+        }, 200);
+      } else { setze(0, true); }
+      modus = null;
+    }
+    flaeche.addEventListener('touchend', ende);
+    flaeche.addEventListener('touchcancel', ende);
   }
   reiterWischen($('rkInhalt'), function () {
     var l = Array.prototype.filter.call(document.querySelectorAll('#reiseKarte .rk-tab'), function (b) { return b.offsetParent !== null; }).map(function (b) { return b.getAttribute('data-rk'); });
