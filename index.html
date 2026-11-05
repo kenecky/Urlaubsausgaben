@@ -829,6 +829,15 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
   <section class="karte" id="budgetKarte">
     <h2>Reisebudget</h2>
     <div id="budgetInfo"></div>
+    <div class="budget-verlauf">
+    <h3 class="ab-titel">Verlauf</h3>
+    <div class="seg">
+      <button type="button" class="klein hell" data-vw="LOKAL" id="vwLokal">₱ Pesos</button>
+      <button type="button" class="klein hell" data-vw="EUR">€ Euro</button>
+    </div>
+    <div id="verlaufChart"></div>
+    <p class="hinweis" id="verlaufInfo"></p>
+    </div>
     <details id="budgetDetails">
       <summary>Budget und Reisezeitraum einstellen</summary>
       <div class="zeile">
@@ -857,16 +866,6 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
       <button type="button" id="budgetSpeichern">Budget speichern</button>
       <p class="hinweis">Leeres Budget entfernt das Budget wieder.</p>
     </details>
-  </section>
-
-  <section class="karte" id="verlaufKarte">
-    <h2>Verlauf</h2>
-    <div class="seg">
-      <button type="button" class="klein hell" data-vw="LOKAL" id="vwLokal">₱ Pesos</button>
-      <button type="button" class="klein hell" data-vw="EUR">€ Euro</button>
-    </div>
-    <div id="verlaufChart"></div>
-    <p class="hinweis" id="verlaufInfo"></p>
   </section>
 
   <section class="karte" id="reiseKarte">
@@ -1203,7 +1202,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
 
   // ---------- Dropdowns ----------
   function optionen(liste) {
-    return liste.map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('');
+    return liste.map(function (k) { return '<option value="' + esc(k) + '">' + esc(k) + '</option>'; }).join('');
   }
   var letzteKategorie = '';
   function dropdownsFuellen() {
@@ -1296,6 +1295,11 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
     }
   }
   function kursBereichUmschalten() {
+    var barOpt = $('zahlung').querySelector('option[value="Bar"]'), abhKat = $('kategorie').value === ABHEBUNG;
+    if (barOpt) {
+      barOpt.disabled = abhKat;
+      if (abhKat && $('zahlung').value === 'Bar') $('zahlung').value = ZAHLUNGSMITTEL.filter(function (z) { return z !== 'Bar'; })[0];
+    }
     var bar = istBarModus();
     $('kursZeile').hidden = formEuro();
     $('kursOnlineBtn').hidden = bar || formEuro();
@@ -1384,6 +1388,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
   $('form').addEventListener('submit', function (e) {
     e.preventDefault();
     var betrag = feldZahl('betrag'), kurs = feldZahl('kurs'), euro = feldZahl('abgebucht');
+    if ($('kategorie').value === ABHEBUNG && $('zahlung').value === 'Bar') { toast('Eine Bargeldabhebung kann nicht bar bezahlt werden. Bitte die Karte wählen.'); return; }
     var barModus = $('zahlung').value === 'Bar' && $('kategorie').value !== ABHEBUNG;
     if (formEuro()) { kurs = 1; euro = 0; anker = ['kurs', 'php']; }
     if (!(betrag > 0)) { toast('Bitte einen gültigen Betrag (' + waehrungSymbol(formW()) + ' oder €) eingeben.'); return; }
@@ -1477,6 +1482,8 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
     'Einkaufen': { c: '#7E62C2', i: 'M5 8h14l-1.2 12H6.2zM9 8V6.5a3 3 0 0 1 6 0V8' },
     'Sonstiges': { c: '#6B7F84', i: 'M11.5 7.5a4.25 1.8 0 1 0 8.5 0 4.25 1.8 0 1 0-8.5 0M11.5 7.5v10c0 1 1.9 1.8 4.25 1.8S20 18.5 20 17.5v-10M11.5 10.8c0 1 1.9 1.8 4.25 1.8S20 11.8 20 10.8M11.5 14.1c0 1 1.9 1.8 4.25 1.8S20 15.1 20 14.1M7 19.3a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM7 13.5v3.6' },
     'Massage': { c: '#A8743A', i: 'M4.5 18.6a7.5 2.4 0 1 0 15 0 7.5 2.4 0 1 0-15 0M6.6 13.8a5.4 2.1 0 1 0 10.8 0 5.4 2.1 0 1 0-10.8 0M8.6 9.6a3.4 1.7 0 1 0 6.8 0 3.4 1.7 0 1 0-6.8 0M15.5 6.4c.3-2.4 2.1-3.9 4.6-3.9-.2 2.5-2 4-4.6 3.9zM15.5 6.4l2.8-2.4' },
+    'Flüge': { c: '#3E86C9', i: 'M2 22h20M6.36 17.4 4 17l-2-4 1.1-.55a2 2 0 0 1 1.8 0l.17.1a2 2 0 0 0 1.8 0L8 12 5 6l.9-.45a2 2 0 0 1 2.09.2l4.02 3a2 2 0 0 0 2.1.2l4.19-2.06a2.41 2.41 0 0 1 1.73-.17L21 7a1.4 1.4 0 0 1 .87 1.99l-.38.76c-.23.46-.6.84-1.07 1.08L7.58 17.2a2 2 0 0 1-1.22.18Z' },
+    'Hunde': { c: '#5E8C3A', i: 'M13 4a2 2 0 1 1-4 0 2 2 0 0 1 4 0M20 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0M22 16a2 2 0 1 1-4 0 2 2 0 0 1 4 0M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.05Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z' },
     'Bargeldabhebung': { c: '#4A6B70', i: 'M4 3.5h16v10H4zM7 6.3h10v3.4H7zM7 12.3h10M8.5 12.3v8.2h7v-8.2M12 17.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z' }
   };
   var KAT_EXTRA = ['#2E9E6B', '#B5832B', '#5468C4', '#C2553F', '#3E8FB0', '#8E5BB5', '#2F7D5B', '#C7731E', '#A04566', '#4F7A8C'];
@@ -1486,7 +1493,8 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
   function katStil(k) {
     k = String(k || '');
     if (KAT_STIL[k]) return KAT_STIL[k];
-    var kl = k.toLowerCase(), treffer = Object.keys(KAT_STIL).filter(function (n) { return n.toLowerCase() === kl; })[0];
+    var kl = k.toLowerCase(), alias = { 'flug': 'Flüge', 'fluege': 'Flüge', 'hund': 'Hunde', 'massagen': 'Massage' };
+    var treffer = alias[kl] || Object.keys(KAT_STIL).filter(function (n) { return n.toLowerCase() === kl; })[0];
     if (treffer) return KAT_STIL[treffer];
     var gem = katStileLaden();
     if (gem[k] && gem[k].c) return gem[k];
@@ -1666,11 +1674,13 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
         '<div class="zm-sub">' + sub + '</div></div>' +
         (offen ? (inhalt.length ? aufklapp(inhalt) : '<div class="leer">Keine Einträge.</div>') : '') + '</div>';
     }
+    var zmGesamt = summePeso(ohneAbh), zmMax = Math.max.apply(null, ZAHLUNGSMITTEL.map(function (m) { return summePeso(ohneAbh.filter(function (a) { return a.zahlung === m; })); }).concat([0]));
     var html = ZAHLUNGSMITTEL.map(function (m) {
       var ausg = ohneAbh.filter(function (a) { return a.zahlung === m; });
       var abh = ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === m; });
       var sub = ausg.length + (ausg.length === 1 ? ' Ausgabe' : ' Ausgaben');
       if (m !== 'Bar' && abh.length) sub += ' · Abhebungen: ' + geld(summePeso(abh)) + ((euroTrip || multi) ? '' : ' (≈ ' + euroFmt(summeEuro(abh)) + ')');
+      sub += '<div style="margin-top:6px">' + balkenSpur(zmMax > 0 ? summePeso(ausg) / zmMax * 100 : 0, pct2(summePeso(ausg), zmGesamt)) + '</div>';
       return zeile(m, m, ausg, abh, sub);
     }).join('');
     var ohneZ = ohneAbh.filter(function (a) { return !a.zahlung; });
@@ -2584,7 +2594,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
     if (r.eur !== null) erkannt.push(euroFmt(r.eur));
     erkannt.push(datumAnzeige($('datum').value));
     if (r.ort) erkannt.push(r.ort);
-    erkannt.push(r.kategorie, r.zahlung);
+    erkannt.push(r.kategorie, $('zahlung').value);
     $('freitextInfo').innerHTML = 'Erkannt: ' + esc(erkannt.join(' · ')) +
       (r.notizen.length ? '<br><span class="warnung">Bitte prüfen: ' + esc(r.notizen.join('; ')) + '</span>' : '') +
       '<br>Prüfe das Formular und tippe auf „Speichern“.';
@@ -2687,7 +2697,29 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
 
   // ---------- Schnell-Check: Landeswährung in Euro (Philippinen: Richtwert 71,26 wie im Original) ----------
   var rechnerAnpassen = function () {};
-  function umrechnerAuf() { if ($('rechnerKarte').hidden) return; document.body.classList.add('umrechner-offen'); setTimeout(function () { try { $('rcBetrag').focus({ preventScroll: true }); } catch (e) {} }, 300); }
+  function umrechnerAuf() { if ($('rechnerKarte').hidden) return; $('rechnerKarte').scrollTop = 0; document.body.classList.add('umrechner-offen'); }
+  // Wischen nach unten schließt das Blatt
+  (function () {
+    var blatt = $('rechnerKarte'), y0 = null, dy = 0, t0 = 0;
+    blatt.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1 || blatt.scrollTop > 0 || e.target.closest('input[type="range"]')) { y0 = null; return; }
+      y0 = e.touches[0].clientY; dy = 0; t0 = Date.now();
+    }, { passive: true });
+    blatt.addEventListener('touchmove', function (e) {
+      if (y0 === null) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy > 0) { blatt.style.transition = 'none'; blatt.style.transform = 'translateY(' + dy + 'px)'; }
+    }, { passive: true });
+    function ende() {
+      if (y0 === null) return;
+      var schnell = dy > 40 && (Date.now() - t0) < 250;
+      blatt.style.transition = ''; blatt.style.transform = '';
+      if (dy > 90 || schnell) umrechnerZu();
+      y0 = null; dy = 0;
+    }
+    blatt.addEventListener('touchend', ende);
+    blatt.addEventListener('touchcancel', ende);
+  })();
   function umrechnerZu() { document.body.classList.remove('umrechner-offen'); }
   $('umrechnerBtn').addEventListener('click', umrechnerAuf);
   $('rcZu').addEventListener('click', umrechnerZu);
@@ -2758,7 +2790,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
       $('rcWaehrung').hidden = codes.length < 2;
       $('rcWaehrung').innerHTML = codes.map(function (c) { return '<option value="' + c + '">' + esc(waehrungName(c)) + ' (' + c + ')</option>'; }).join('');
       $('rcWaehrung').value = code;
-      RATE = code === 'PHP' ? 71.26 : kursFuer(code);
+      RATE = kursFuer(code);
       rcSym = waehrungSymbol(code); rcName = waehrungName(code);
       $('rcHinweis').textContent = 'Rechenbasis: 1 € = ' + kursFmt(RATE) + ' ' + code;
       skala();
@@ -2781,7 +2813,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
   themaAnwenden(document.documentElement.getAttribute('data-thema') || 'hell');
 
   // ---------- Auf- und zuklappbare Karten ----------
-  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'budgetKarte', 'verlaufKarte', 'tabsKarte', 'reiseKarte', 'kategorienKarte', 'backupKarte'];
+  var KARTEN = ['reisenKarte', 'weltKarte', 'papierkorbKarte', 'startBackupKarte', 'formKarte', 'barKarte', 'katKarte', 'abschlussKarte', 'budgetKarte', 'tabsKarte', 'reiseKarte', 'kategorienKarte', 'backupKarte'];
   var KARTEN_STANDARD_ZU = ['rechnerKarte', 'reiseKarte', 'papierkorbKarte', 'abschlussKarte']; // neue Karten starten so, bis du sie einmal umschaltest
   var KEY_UI = 'reisen.v2.ui';
   function zugeklappteLaden() {
@@ -3038,13 +3070,31 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
   var wkBoxen = null;
   function wkBoxenHolen() {
     if (wkBoxen) return wkBoxen;
-    var b = {}, gueltig = false;
-    Array.prototype.forEach.call($('wkSvg').querySelectorAll('path'), function (pa) {
-      try { var r = pa.getBBox(); if (r.width > 0) { gueltig = true; b[pa.getAttribute('data-c')] = r; } } catch (e) {}
+    var b = {};
+    Object.keys(KARTE.pfade).forEach(function (c) {
+      var z = KARTE.pfade[c].match(/-?\d+(?:\.\d+)?/g); if (!z) return;
+      var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (var i = 0; i + 1 < z.length; i += 2) { var x = +z[i], y = +z[i + 1]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      b[c] = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
     });
-    if (gueltig) wkBoxen = b;
+    wkBoxen = b;
     return b;
   }
+  // Ausschnitt so wählen, dass alle besuchten Länder zu sehen sind
+  function wkPassend() {
+    var info = wkLaender(), boxen = wkBoxenHolen(), x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, n = 0;
+    Object.keys(info).forEach(function (c) {
+      if (info[c].art !== 'besucht' || !boxen[c]) return;
+      var r = boxen[c]; n++;
+      x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.width); y1 = Math.max(y1, r.y + r.height);
+    });
+    if (!n) return { x: 0, y: 0, w: 1000, h: 520 };
+    var rand = 0.12, w = (x1 - x0) * (1 + 2 * rand), h = (y1 - y0) * (1 + 2 * rand);
+    w = Math.max(w, h / 0.52, 160); w = Math.min(w, 1000); h = w * 0.52;
+    var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    return { x: Math.max(0, Math.min(1000 - w, cx - w / 2)), y: Math.max(0, Math.min(520 - h, cy - h / 2)), w: w, h: h };
+  }
+  var wkSelbstGezoomt = false;
   function wkImAusschnitt(c) {
     var a = wkAnsicht;
     if (a.w >= 999) return true;                       // nicht gezoomt: alle Länder
@@ -3067,6 +3117,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
       svg.innerHTML = h; wkGezeichnet = true;
     }
     var info = wkLaender();
+    if (!wkSelbstGezoomt) { wkAnsicht = wkPassend(); wkViewBox(); }
     Array.prototype.forEach.call(svg.querySelectorAll('path'), function (pa) {
       var e = info[pa.getAttribute('data-c')];
       pa.setAttribute('class', 'wk-land' + (e ? ' ' + e.art : ''));
@@ -3108,6 +3159,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
     var k = ev.target.closest('[data-reise]'); if (k) reiseOeffnen(k.getAttribute('data-reise'));
   });
   function wkZoom(f, cx, cy) {
+    wkSelbstGezoomt = true;
     var a = wkAnsicht, nw = Math.min(1000, Math.max(80, a.w / f)), nh = nw * 0.52;
     var fx = cx === undefined ? .5 : cx, fy = cy === undefined ? .5 : cy;
     a.x += (a.w - nw) * fx; a.y += (a.h - nh) * fy; a.w = nw; a.h = nh;
@@ -3116,7 +3168,7 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
   }
   $('wkPlus').addEventListener('click', function () { wkZoom(1.6); });
   $('wkMinus').addEventListener('click', function () { wkZoom(1 / 1.6); });
-  $('wkReset').addEventListener('click', function () { wkAnsicht = { x: 0, y: 0, w: 1000, h: 520 }; wkViewBox(); });
+  $('wkReset').addEventListener('click', function () { wkSelbstGezoomt = false; wkAnsicht = wkPassend(); wkViewBox(); });
   // Ziehen mit einem Finger, Zoomen mit zwei Fingern
   var wkZog = false, wkPtr = {}, wkGeste = null;
   function wkPunkte() { return Object.keys(wkPtr).map(function (k) { return wkPtr[k]; }); }
@@ -3150,14 +3202,14 @@ html[data-thema="dunkel"] .w-chip.an { background: var(--blau); border-color: va
       wkAnsicht.w = nw; wkAnsicht.h = nh;
       wkAnsicht.x = Math.max(0, Math.min(1000 - nw, px - fx * nw));
       wkAnsicht.y = Math.max(0, Math.min(520 - nh, py - fy * nh));
-      wkZog = true; wkViewBox();
+      wkZog = true; wkSelbstGezoomt = true; wkViewBox();
     } else if (!g.zwei) {
       var ex = ev.clientX - g.px, ey = ev.clientY - g.py;
       if (!wkZog && Math.abs(ex) + Math.abs(ey) < 6) return;
-      wkZog = true;
+      if (!wkZog && Math.abs(ey) >= Math.abs(ex)) { delete wkPtr[ev.pointerId]; wkGesteNeu(); return; } // senkrecht = Seite scrollen
+      wkZog = true; wkSelbstGezoomt = true;
       var f = wkAnsicht.w / r.width;
       wkAnsicht.x = Math.max(0, Math.min(1000 - wkAnsicht.w, g.x - ex * f));
-      wkAnsicht.y = Math.max(0, Math.min(520 - wkAnsicht.h, g.y - ey * f));
       wkViewBox();
     }
   });
