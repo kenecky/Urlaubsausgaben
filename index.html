@@ -788,8 +788,8 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
 .ausg .ak-leg small { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; color: var(--grau); font-size: 13px; }
 .ausg .ak-leg small span { overflow: hidden; text-overflow: ellipsis; }
 .ausg .ak-leg i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-.balken-zeile.alle { border: 0; box-shadow: none; background: var(--feld-bg); border-radius: 14px; padding: 10px 12px; margin: 0 -4px 10px; align-items: center; }
-.balken-zeile.alle .balken-name { font-weight: 700; align-self: center; font-size: 17px; }
+#balken .balken-zeile.alle { margin-bottom: 4px; }
+#balken .balken-zeile.alle .balken-name { grid-row: 1 / span 2; align-self: center; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1814,8 +1814,15 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     box.setAttribute('aria-label', txt + (sub ? ', ' + sub : '') + (farbe === 'gruen' ? ', im Plan' : farbe === 'gelb' ? ', knapp' : ', über Plan'));
     box.hidden = false;
   }
+  function knoepfeMitteln() {
+    var k = document.querySelector('#ticket .t-knoepfe'), perf = document.querySelector('#ticket .t-perf');
+    if (!k || !perf || !k.offsetHeight) return;
+    k.style.top = Math.max(8, Math.round((perf.offsetTop - k.offsetHeight) / 2)) + 'px';
+  }
+  window.addEventListener('resize', knoepfeMitteln);
+  if (window.ResizeObserver) new ResizeObserver(knoepfeMitteln).observe($('ticket'));
   function kopfStubRendern() {
-    ticketBudgetRendern();
+    ticketBudgetRendern(); setTimeout(knoepfeMitteln, 0);
     var box = document.getElementById('kopfStub');
     if (!box || !reise) return;
     document.getElementById('ticketFlaggen').textContent = reise.laender.map(function (l) { return flagge(l.code); }).join('');
@@ -3904,7 +3911,7 @@ body.rs-haupt #abschlussKarte .kopf-klick::before, body.rs-haupt #abschlussKarte
     $('kAusgLokal').textContent = (multi || euroTrip) ? '' : Math.round(lokSum).toLocaleString('de-DE') + ' ' + lokal.symbol;
     $('kAusgBalken').innerHTML = reihe.map(function (k) { return '<i style="flex:' + proK[k].toFixed(4) + ';background:' + katStil(k).c + '"></i>'; }).join('');
     $('kAusgBalken').hidden = !reihe.length;
-    $('kAusgLeg').innerHTML = reihe.length ? reihe.slice(0, 4).map(function (k) {
+    $('kAusgLeg').innerHTML = reihe.length ? reihe.slice(0, 6).map(function (k) {
       return '<small><i style="background:' + katStil(k).c + '"></i><span>' + esc(k) + '</span>&nbsp;' + Math.round(proK[k] / ges * 100) + '&nbsp;%</small>';
     }).join('') : '<small>Noch keine Ausgaben</small>';
     var offen = ausgaben.filter(function (a) { return !istGeprueft(a); }).length;
