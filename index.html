@@ -709,6 +709,22 @@ body.rs-haupt { overflow: hidden; overscroll-behavior: none; height: 100%; }
 /* Aktiver Reiter in Petrol */
 html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { background: #1C6E76; }
 .tab.aktiv, .rk-tab.aktiv { background: var(--petrol); color: #fff; box-shadow: 0 2px 6px -2px rgba(14,74,85,.55); }
+
+/* Reiter-Pille */
+.tabs, .rk-tabs { position: relative; }
+.tab-pille { position: absolute; left: 0; top: 0; z-index: 0; border-radius: 10px; background: var(--petrol); box-shadow: 0 2px 6px -2px rgba(14,74,85,.55); pointer-events: none; will-change: transform, width; }
+html[data-thema="dunkel"] .tab-pille { background: #1C6E76; }
+.tabs .tab, .rk-tabs .rk-tab { position: relative; z-index: 1; }
+.mit-pille .tab.aktiv, .mit-pille .rk-tab.aktiv { background: transparent; box-shadow: none; color: var(--grau); }
+.mit-pille .tab, .mit-pille .rk-tab { transition: color .18s; }
+.mit-pille .tab.tx-weiss, .mit-pille .rk-tab.tx-weiss { color: #fff; }
+/* Summe bei Filter */
+.filter-summe { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 0 10px; margin: 2px 0 10px; padding: 10px 14px; border-radius: 12px; background: var(--blau-hell); }
+.filter-summe span { font-size: 13px; color: var(--grau); font-weight: 600; }
+.filter-summe b { font-family: var(--display); font-size: 17px; font-weight: 800; text-align: right; }
+.filter-summe small { grid-column: 2; text-align: right; font-size: 12.5px; color: var(--grau); }
+/* Pro Tag: Lücken */
+.tag-luecke { margin: 6px 0; padding: 10px 12px; border: 1px dashed var(--linie); border-radius: 10px; color: var(--grau); font-size: 13px; text-align: center; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -939,6 +955,7 @@ html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { 
         <button type="button" class="fl-reset" id="filterReset" hidden>Zeitraum zurücksetzen ×</button>
       </div>
       <label class="check" style="margin:4px 0 10px"><input type="checkbox" id="nurOffen"> <span id="nurOffenText">Nur: Kurs noch nicht eingetragen</span></label>
+      <div class="filter-summe" id="filterSumme" hidden></div>
       <div id="liste" class="liste"></div>
     </div>
     <div class="tab-inhalt" id="tab-zahlung" hidden></div>
@@ -1774,6 +1791,7 @@ html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { 
     Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
       b.classList.toggle('aktiv', b.getAttribute('data-tab') === name);
     });
+    if (window.pilleAktivG) window.pilleAktivG(document.querySelector('#tabsKarte .tabs'), true);
   }
   document.querySelector('.tabs').addEventListener('click', function (e) {
     var b = e.target.closest('.tab');
@@ -1861,6 +1879,10 @@ html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { 
       '<div style="height:8px"></div>';
     for (var i = anzahl - 1; i >= 0; i--) {
       var d = tagPlus(von, i);
+      if (!proTag[d]) { // mehrere leere Tage hintereinander zu einer Zeile zusammenfassen
+        var k = i; while (k - 1 >= 0 && !proTag[tagPlus(von, k - 1)]) k--;
+        if (i - k >= 1) { html += '<div class="tag-luecke">' + esc(datumAnzeige(tagPlus(von, k)).slice(0, 5)) + '–' + esc(datumAnzeige(d).slice(0, 5)) + ' · ' + (i - k + 1) + ' Tage ohne Ausgaben</div>'; i = k; continue; }
+      }
       var w = proTag[d] || 0;
       var eintraege = tagListe.filter(function (a) { return a.datum === d; });
       var klickbar = eintraege.length > 0;
@@ -2269,6 +2291,13 @@ html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { 
     }
 
     if (nurOffen) $('gesamtSub').textContent += ' · Kurs noch offen';
+    var istGefiltert = !!(filterKat || nurOffen || filterVon || filterBis);
+    $('filterSumme').hidden = !istGefiltert;
+    if (istGefiltert) {
+      var fsE = summeEuro(statListe), fsL = summePeso(statListe);
+      $('filterSumme').innerHTML = '<span>Summe · ' + esc(zaehler) + '</span><b>' + esc(geld(fsL)) + '</b>' +
+        ((multi || euroTrip) ? '' : '<small>≈ ' + esc(euroFmt(fsE)) + '</small>');
+    }
     if (filterVon || filterBis) $('gesamtSub').textContent += ' · ' + (filterVon ? datumAnzeige(filterVon).slice(0, 5) : '…') + '–' + (filterBis ? datumAnzeige(filterBis).slice(0, 5) : '…');
     $('nurOffenText').textContent = 'Nur: Kurs noch nicht eingetragen (' + ausgaben.filter(function (a) { return !istGeprueft(a); }).length + ')';
 
@@ -2869,6 +2898,7 @@ html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { 
     Array.prototype.forEach.call(document.querySelectorAll('#reiseKarte .rk-seite'), function (d) { d.hidden = d.getAttribute('data-seite') !== name; });
     Array.prototype.forEach.call(document.querySelectorAll('#reiseKarte .rk-tab'), function (b) { var an = b.getAttribute('data-rk') === name; b.classList.toggle('aktiv', an); b.setAttribute('aria-selected', String(an)); });
     $('rkInhalt').scrollTop = 0;
+    if (window.pilleAktivG) window.pilleAktivG($('reiseKarte').querySelector('.rk-tabs'), true);
   }
   $('reiseKarte').querySelector('.rk-tabs').addEventListener('click', function (e) { var b = e.target.closest('.rk-tab'); if (b) rkTab(b.getAttribute('data-rk')); });
   // Alle Reiter gleich hoch: Höhe des Reiters „Backup“ (der kürzeste) gilt für das ganze Blatt
@@ -3686,7 +3716,32 @@ html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { 
 
   // ---------- Reiter per Wischen nach links/rechts wechseln ----------
   // Wischen zwischen Reitern wie ein Karussell: die Nachbarseite hängt direkt daneben und zieht mit
-  function reiterWischen(flaeche, liste, wechseln, seiteEl, seiteVon, visOben, nachWechsel) {
+  // Petrol-Pille unter den Reitern: gleitet beim Wischen und Tippen mit
+  function pilleTabs(leiste) { return Array.prototype.filter.call(leiste.querySelectorAll('.tab, .rk-tab'), function (b) { return b.offsetParent !== null; }); }
+  function pilleSetzen(leiste, von, nach, p, anim) {
+    if (!leiste) return;
+    var tabs = pilleTabs(leiste), a = tabs[von], z = tabs[nach] || a;
+    if (!a || !a.offsetWidth) return;
+    var pil = leiste.querySelector('.tab-pille');
+    if (!pil) { pil = document.createElement('span'); pil.className = 'tab-pille'; pil.setAttribute('aria-hidden', 'true'); leiste.insertBefore(pil, leiste.firstChild); }
+    var x = a.offsetLeft + (z.offsetLeft - a.offsetLeft) * p, w = a.offsetWidth + (z.offsetWidth - a.offsetWidth) * p;
+    pil.style.transition = anim ? 'transform .26s cubic-bezier(.25,.8,.3,1), width .26s cubic-bezier(.25,.8,.3,1)' : 'none';
+    pil.style.top = a.offsetTop + 'px'; pil.style.height = a.offsetHeight + 'px';
+    pil.style.width = w + 'px'; pil.style.transform = 'translateX(' + x + 'px)';
+    tabs.forEach(function (t, k) { t.classList.toggle('tx-weiss', p < 0.5 ? k === von : k === nach); });
+    leiste.classList.add('mit-pille');
+  }
+  function pilleAktiv(leiste, anim) {
+    if (!leiste) return; var tabs = pilleTabs(leiste), i = -1;
+    tabs.forEach(function (t, k) { if (t.classList.contains('aktiv')) i = k; });
+    if (i >= 0) pilleSetzen(leiste, i, i, 0, anim);
+  }
+  if (window.ResizeObserver) {
+    var pilleRO = new ResizeObserver(function (es) { es.forEach(function (e) { pilleAktiv(e.target, false); }); });
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs, .rk-tabs'), function (l) { pilleRO.observe(l); });
+  }
+  window.pilleAktivG = pilleAktiv;
+  function reiterWischen(flaeche, liste, wechseln, seiteEl, seiteVon, visOben, nachWechsel, leiste) {
     var sx = null, sy = 0, st = 0, modus = null, el = null, nb = null, nbName = null, dx = 0, breite = 1, l = null, i = 0, versatz = 0, laeuft = false;
     function stil(e, x, anim) { e.style.transition = anim ? 'transform .26s cubic-bezier(.25,.8,.3,1)' : 'none'; e.style.transform = 'translateX(' + x + 'px)'; }
     function nbWeg() { if (nb) { nb.hidden = true; nb.style.cssText = ''; } nb = null; nbName = null; }
@@ -3701,6 +3756,10 @@ html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { 
     }
     function setze(x, anim) {
       if (el) stil(el, x, anim);
+      if (leiste) { var lt = pilleTabs(leiste), ai = -1, zi;
+        lt.forEach(function (t, k) { if (t.classList.contains('aktiv')) ai = k; });
+        zi = nb ? ai + (nbName === l[i + 1] ? 1 : -1) : ai;
+        if (ai >= 0) pilleSetzen(leiste, ai, zi, nb ? Math.min(1, Math.abs(x) / breite) : 0, anim); }
       if (nb) stil(nb, x + (nbName === l[i + 1] ? breite : -breite), anim);
     }
     function aufraeumen() { if (el) el.style.cssText = ''; nbWeg(); el = null; }
@@ -3735,7 +3794,7 @@ html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { 
         laeuft = true; setze(raus, true);
         setTimeout(function () {
           aufraeumen(); flaeche.classList.remove('wischt');
-          wechseln(ziel); if (nachWechsel) nachWechsel(v);
+          wechseln(ziel); if (nachWechsel) nachWechsel(v); if (leiste) pilleAktiv(leiste, false);
           laeuft = false;
         }, 270);
       } else {
@@ -3751,13 +3810,13 @@ html[data-thema="dunkel"] .tab.aktiv, html[data-thema="dunkel"] .rk-tab.aktiv { 
     l.aktiv = rkAktiv; return l;
   }, rkTab, function () { return document.querySelector('#reiseKarte .rk-seite:not([hidden])'); },
   function (n) { return document.querySelector('#reiseKarte .rk-seite[data-seite="' + n + '"]'); },
-  function () { return $('rkInhalt').getBoundingClientRect().top; });
+  function () { return $('rkInhalt').getBoundingClientRect().top; }, null, $('reiseKarte').querySelector('.rk-tabs'));
   reiterWischen($('tabsKarte'), function () {
     var l = ['ausgaben', 'zahlung', 'tag', 'orte']; l.aktiv = aktiverTab; return l;
   }, function (n) { tabWechseln(n); zeichnen(); }, function () { return document.querySelector('#tabsKarte .tab-inhalt:not([hidden])'); },
   function (n) { return $('tab-' + n); },
   function () { var k = document.querySelector('#reiseAnsicht .kopf, header'); var r = k && getComputedStyle(k).position.match(/fixed|sticky/) ? k.getBoundingClientRect().bottom : 0; return Math.max(0, r); },
-  function (v) { if (v) window.scrollBy(0, -v); });
+  function (v) { if (v) window.scrollBy(0, -v); }, document.querySelector('#tabsKarte .tabs'));
   // Ansicht wechseln
   function ansichtSetzen(start) {
     $('startseite').hidden = !start;
