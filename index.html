@@ -1143,6 +1143,26 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .jr-zahlen span { font-size: 11.5px; color: var(--grau); }
 .jr-reisen { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .jr-reisen span { font-size: 12.5px; background: var(--feld-bg); border-radius: 8px; padding: 3px 8px; }
+
+/* GPS-Zeile im Formular */
+.geo-zeile { display: flex; align-items: center; gap: 6px; margin: 4px 2px 0; font-size: 12.5px; color: var(--grau); }
+.geo-zeile svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.geo-zeile.mit { color: var(--blau-text); }
+.geo-zeile span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.geo-zeile button { width: auto; min-height: 0; height: 26px; margin: 0; padding: 0 10px; font-size: 12.5px; border-radius: 8px; background: var(--blau-hell); color: var(--blau-text); border: 0; box-shadow: none; }
+/* Kartenblatt */
+.geo-blatt { height: 88vh; display: flex !important; flex-direction: column; }
+.geo-blatt .geo-hinweis { margin: 0 0 8px; font-size: 13px; color: var(--grau); }
+.geo-map { flex: 1; min-height: 200px; border-radius: 14px; overflow: hidden; background: #E3EEEC; }
+.geo-knoepfe { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; margin-top: 10px; }
+.geo-knoepfe[hidden] { display: none; }
+.geo-knoepfe button { margin: 0; height: 46px; padding: 0 6px; font-size: 14px; }
+.geo-pop { display: flex; flex-direction: column; gap: 2px; min-width: 170px; font-family: 'Figtree', sans-serif; }
+.geo-pop b { font-size: 14px; } .geo-pop span { font-size: 12px; color: #5E7377; } .geo-pop strong { font-size: 13.5px; margin: 2px 0 6px; }
+.geo-pop button { margin: 0; height: 32px; }
+.geo-pin span { display: block; width: 26px; height: 26px; margin: 2px; border-radius: 50% 50% 50% 0; background: var(--mango); border: 3px solid #fff; transform: rotate(-45deg); box-shadow: 0 3px 8px rgba(0,0,0,.35); }
+.geo-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 12px; }
+.geo-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1279,7 +1299,8 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
         <div class="verteil-info" id="gebuehrInfo"></div>
       </div>
       <label for="ort">Ort</label>
-      <div class="ort-feld"><input type="text" id="ort" list="orteListe" maxlength="40" placeholder="z. B. Coron" autocomplete="off"><button type="button" class="ort-gps" id="ortGps" aria-label="Aktuellen Ort per GPS übernehmen"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg></button></div>
+      <input type="text" id="ort" list="orteListe" maxlength="40" placeholder="z. B. Coron" autocomplete="off">
+      <div class="geo-zeile" id="geoZeile"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg><span id="geoText">Standort wird beim Speichern erfasst</span><button type="button" id="geoKarteBtn">Karte</button></div>
       <datalist id="orteListe"></datalist>
       <div id="waehrungBlock" hidden>
         <label for="waehrung">Währung</label>
@@ -1533,6 +1554,13 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 </div>
 
 <div id="berichtDruck" class="bericht"></div>
+<section class="karte unten-blatt geo-blatt" id="geoKarte" role="dialog" aria-modal="true" aria-labelledby="geoTitel">
+  <button type="button" class="sheet-x blatt-x" aria-label="Karte schließen">✕</button>
+  <h2 id="geoTitel">Karte</h2>
+  <p class="geo-hinweis" id="geoHinweis"></p>
+  <div class="geo-map" id="geoMap"></div>
+  <div class="geo-knoepfe" id="geoKnoepfe"><button type="button" class="hell" id="geoHier">Mein Standort</button><button type="button" class="hell" id="geoWeg">Entfernen</button><button type="button" id="geoOk">Übernehmen</button></div>
+</section>
 <div class="sheet-dunkel" id="sheetDunkel"></div>
 <div class="vollbild" id="vollbild" hidden><div class="vb-innen" id="vbInnen"></div><button type="button" class="vb-zu" id="vbZu" aria-label="Vollbild schließen">✕</button></div>
 <div class="undo" id="undoBar" hidden><span id="undoText"></span><button type="button" id="undoBtn">Rückgängig</button></div>
@@ -1984,6 +2012,7 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
     $('ort').value = einst.letzterOrt || '';
     anker = ['kurs'];
     $('verteilen').checked = false; $('datumBis').value = ''; verteilUmschalten(); $('gebuehr').value = '';
+    formGeo = null; if (!geoLetzt || Date.now() - geoLetzt.zeit > 120000) geoHolen(); geoAnzeigen();
     letzteKategorie = $('kategorie').value;
     barAktiv = false;
     kursBereichUmschalten();
@@ -2060,23 +2089,31 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
   var summenZeit = 0;
   function summen() { var n = Date.now(); if (n - summenZeit < 500) return; summenZeit = n; try { if (navigator.vibrate) navigator.vibrate(80); } catch (err) {} }
   $('speichern').addEventListener('pointerup', function () { if ($('form').checkValidity()) summen(); });
-  // Ort per GPS (nur auf Tipp; Ortsname über OpenStreetMap)
-  $('ortGps').addEventListener('click', function () {
-    if (!navigator.geolocation) { toast('Standort wird auf diesem Gerät nicht unterstützt.'); return; }
-    var btn = $('ortGps'); btn.classList.add('laedt');
+  // ---------- GPS-Standort je Ausgabe (wird beim Speichern erfasst, im Formular änderbar) ----------
+  var formGeo = null, geoLetzt = null, geoStatus = '';
+  function geoSauber(g) { return g && isFinite(g.lat) && isFinite(g.lon) && Math.abs(g.lat) <= 90 && Math.abs(g.lon) <= 180 ? { lat: Math.round(g.lat * 1e5) / 1e5, lon: Math.round(g.lon * 1e5) / 1e5, acc: g.acc > 0 ? Math.round(g.acc) : undefined, hand: g.hand ? true : undefined } : null; }
+  function geoHolen(fertig) {
+    if (!navigator.geolocation) { geoStatus = 'aus'; geoAnzeigen(); if (fertig) fertig(null); return; }
     navigator.geolocation.getCurrentPosition(function (pos) {
-      var u = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=12&accept-language=de&lat=' + pos.coords.latitude.toFixed(5) + '&lon=' + pos.coords.longitude.toFixed(5);
-      fetch(u).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
-        var ad = (d && d.address) || {};
-        var name = ad.city || ad.town || ad.village || ad.municipality || ad.suburb || ad.county || ad.state || '';
-        btn.classList.remove('laedt');
-        if (!name) { toast('Kein Ortsname gefunden.'); return; }
-        $('ort').value = name.slice(0, 40); toast('Ort: ' + name);
-      }).catch(function () { btn.classList.remove('laedt'); toast('Ortsname nicht abrufbar (Internet?).'); });
-    }, function (err) {
-      btn.classList.remove('laedt');
-      toast(err && err.code === 1 ? 'Standort-Zugriff wurde nicht erlaubt.' : 'Standort nicht ermittelbar.');
-    }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 120000 });
+      geoLetzt = { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy, zeit: Date.now() };
+      geoStatus = 'ok'; geoAnzeigen(); if (fertig) fertig(geoLetzt);
+    }, function (err) { geoStatus = err && err.code === 1 ? 'verboten' : 'fehler'; geoAnzeigen(); if (fertig) fertig(null); },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 });
+  }
+  function geoAnzeigen() {
+    var t;
+    if (formGeo) t = (formGeo.hand ? 'Standort (angepasst): ' : 'Standort: ') + formGeo.lat.toFixed(4) + ', ' + formGeo.lon.toFixed(4);
+    else if (bearbeiteId) t = 'Kein Standort gespeichert';
+    else if (geoStatus === 'verboten') t = 'Standort nicht erlaubt (Handy-Einstellungen)';
+    else if (geoStatus === 'fehler' || geoStatus === 'aus') t = 'Standort nicht verfügbar';
+    else if (geoLetzt) t = 'Standort wird beim Speichern erfasst' + (geoLetzt.acc >= 1 ? ' (±' + Math.round(geoLetzt.acc) + ' m)' : '');
+    else t = 'Standort wird ermittelt …';
+    $('geoText').textContent = t;
+    $('geoZeile').classList.toggle('mit', !!formGeo || (!bearbeiteId && !!geoLetzt));
+  }
+  $('geoKarteBtn').addEventListener('click', function () {
+    var start = formGeo || (!bearbeiteId && geoLetzt ? geoSauber(geoLetzt) : null);
+    geoKarteAuf('wahl', start);
   });
 
   // Über mehrere Tage verteilen: Von/Bis
@@ -2129,6 +2166,9 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
     var ort = $('ort').value.trim().slice(0, 40);
     if (ort) eintrag.ort = ort;
     if (formGebuehr() > 0) eintrag.gebuehr = Math.round(formGebuehr() * 100) / 100;
+    var geoNeu = formGeo || (!bearbeiteId && geoLetzt && Date.now() - geoLetzt.zeit < 600000 ? geoLetzt : null);
+    if (geoNeu) eintrag.geo = geoSauber(geoNeu);
+    else if (!bearbeiteId) { (function (id) { geoHolen(function (g) { var x = ausgaben.filter(function (a) { return a.id === id; })[0]; if (g && x && !x.geo) { x.geo = geoSauber(g); speichern(); } }); })(eintrag.id); }
     if (!barModus) {
       eintrag.kurs = kurs;
       if (euroManuell) eintrag.abgebucht = Math.round(euro * 100) / 100;
@@ -2438,6 +2478,7 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
       $('geprueft').checked = istGeprueft(a);
       $('verteilen').checked = !!a.bis; $('datumBis').value = a.bis || ''; verteilUmschalten();
       $('gebuehr').value = a.gebuehr > 0 ? a.gebuehr : ''; waehrungLabels();
+      formGeo = a.geo ? Object.assign({}, a.geo) : null; geoAnzeigen();
       $('formTitel').textContent = 'Ausgabe ändern';
       $('speichern').textContent = 'Änderung speichern';
       $('formKarte').classList.add('bearbeiten');
@@ -2642,8 +2683,11 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
         '<span class="zm-wert">' + wertEuro(summePeso(liste), summeEuro(liste)) + '</span></div>' +
         '<div class="zm-sub">' + sub + '</div></div>' + (offen ? aufklapp(liste) : '') + '</div>';
     }).join('');
+    var nGeo = ohneAbh.filter(function (a) { return a.geo; }).length;
+    html = '<button type="button" class="hell geo-btn" id="geoUebersicht"><svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Karte der Ausgaben' + (nGeo ? ' (' + nGeo + ')' : '') + '</button>' + html;
     $('tab-orte').innerHTML = html;
   }
+  $('tab-orte').addEventListener('click', function (e) { if (e.target.closest('#geoUebersicht')) { geoKarteAuf('alle'); return; } });
   $('tab-orte').addEventListener('click', function (e) {
     if (e.target.closest('button[data-aktion]')) { listeKlick(e); return; }
     var k = e.target.closest('[data-ort]');
@@ -3134,6 +3178,7 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
     if (a.geprueft === true) e.geprueft = true;
     if (a.pauschal === true) e.pauschal = true;
     if (a.gebuehr > 0 && isFinite(a.gebuehr)) e.gebuehr = a.gebuehr;
+    if (geoSauber(a.geo)) e.geo = geoSauber(a.geo);
     if (typeof a.bis === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.bis) && a.bis > a.datum) e.bis = a.bis;
     if (gueltigerAnker(a.anker)) e.anker = a.anker.slice();
     if (typeof a.ort === 'string' && a.ort.trim()) e.ort = a.ort.trim().slice(0, 40);
@@ -3613,7 +3658,7 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
   function wischSchliessen(blatt, zu, scrollEl) {
     var y0 = null, x0 = 0, dy = 0, t0 = 0;
     blatt.addEventListener('touchstart', function (e) {
-      if (e.touches.length !== 1 || blatt.scrollTop > 0 || (scrollEl && scrollEl.contains(e.target) && scrollEl.scrollTop > 0) || e.target.closest('input, select, textarea')) { y0 = null; return; }
+      if (e.touches.length !== 1 || blatt.scrollTop > 0 || (scrollEl && scrollEl.contains(e.target) && scrollEl.scrollTop > 0) || e.target.closest('input, select, textarea, .leaflet-container')) { y0 = null; return; }
       y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; t0 = Date.now();
     }, { passive: true });
     blatt.addEventListener('touchmove', function (e) {
@@ -4707,6 +4752,66 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
   window.addEventListener('pagehide', ortMerken);
   window.addEventListener('beforeunload', ortMerken);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') ortMerken(); });
+  // ---------- Karte mit OpenStreetMap (Leaflet wird bei Bedarf geladen, braucht Internet) ----------
+  var lfLaden = null, geoMapObj = null, geoSchicht = null, geoMarker = null, geoModus = '', geoWahl = null;
+  function leafletLaden() {
+    if (window.L) return Promise.resolve();
+    if (lfLaden) return lfLaden;
+    lfLaden = new Promise(function (ok, nein) {
+      var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css);
+      var js = document.createElement('script'); js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      js.onload = function () { ok(); }; js.onerror = function () { lfLaden = null; js.remove(); nein(); };
+      document.head.appendChild(js);
+    });
+    return lfLaden;
+  }
+  function geoKarteAuf(modus, start) {
+    geoModus = modus; geoWahl = start ? { lat: start.lat, lon: start.lon } : null;
+    $('geoTitel').textContent = modus === 'wahl' ? 'Standort der Ausgabe' : 'Karte der Ausgaben';
+    $('geoKnoepfe').hidden = modus !== 'wahl';
+    $('geoHinweis').textContent = modus === 'wahl' ? 'Tippe auf die Karte oder ziehe die Markierung, um den Standort zu ändern.' : 'Lade Karte …';
+    var istStart = !$('startseite').hidden;
+    blattAuf('geoKarte');
+    leafletLaden().then(function () { setTimeout(geoKarteZeichnen, 80); }, function () { $('geoHinweis').textContent = 'Die Karte braucht Internet. Bitte später noch einmal öffnen.'; });
+  }
+  function geoKarteZeichnen() {
+    var L = window.L;
+    if (!geoMapObj) {
+      geoMapObj = L.map('geoMap', { zoomControl: true, attributionControl: true });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(geoMapObj);
+      geoMapObj.on('click', function (e) { if (geoModus === 'wahl') { geoWahl = { lat: e.latlng.lat, lon: e.latlng.lng }; geoMarkerSetzen(); } });
+    }
+    geoMapObj.invalidateSize();
+    if (geoSchicht) { geoSchicht.remove(); geoSchicht = null; }
+    if (geoMarker) { geoMarker.remove(); geoMarker = null; }
+    if (geoModus === 'wahl') {
+      if (geoWahl) { geoMarkerSetzen(); geoMapObj.setView([geoWahl.lat, geoWahl.lon], 16); }
+      else { var mit = ausgaben.filter(function (a) { return a.geo; }); if (mit.length) geoMapObj.setView([mit[mit.length - 1].geo.lat, mit[mit.length - 1].geo.lon], 13); else geoMapObj.setView([20, 100], 3); }
+      return;
+    }
+    var liste = ausgaben.filter(function (a) { return a.geo && !istAbh(a); }), punkte = [];
+    geoSchicht = L.layerGroup().addTo(geoMapObj);
+    liste.forEach(function (a) {
+      var m = L.circleMarker([a.geo.lat, a.geo.lon], { radius: 9, weight: 2, color: '#fff', fillColor: katStil(a.kategorie).c, fillOpacity: .95 }).addTo(geoSchicht);
+      m.bindPopup('<div class="geo-pop"><b>' + esc(a.beschreibung || a.kategorie) + '</b><span>' + esc(datumAnzeige(a.datum)) + ' · ' + esc(a.kategorie) + (a.ort ? ' · ' + esc(a.ort) : '') + '</span><strong>' + esc(geld(lokalWert(a))) + (multi || euroTrip ? '' : ' · ' + esc(euroFmt(euroVon(a)))) + '</strong><button type="button" class="klein" data-geo-edit="' + esc(a.id) + '">Ändern</button></div>');
+      punkte.push([a.geo.lat, a.geo.lon]);
+    });
+    $('geoHinweis').textContent = liste.length ? liste.length + (liste.length === 1 ? ' Ausgabe mit Standort' : ' Ausgaben mit Standort') + ' · Farbe = Kategorie' : 'Noch keine Ausgabe mit Standort. Neue Ausgaben bekommen ihn beim Speichern.';
+    if (punkte.length) geoMapObj.fitBounds(punkte, { padding: [30, 30], maxZoom: 15 }); else geoMapObj.setView([20, 100], 3);
+  }
+  function geoMarkerSetzen() {
+    var L = window.L;
+    if (!geoMarker) { geoMarker = L.marker([geoWahl.lat, geoWahl.lon], { draggable: true, icon: L.divIcon({ className: 'geo-pin', html: '<span></span>', iconSize: [30, 40], iconAnchor: [15, 38] }) }).addTo(geoMapObj); geoMarker.on('dragend', function () { var p = geoMarker.getLatLng(); geoWahl = { lat: p.lat, lon: p.lng }; }); }
+    else geoMarker.setLatLng([geoWahl.lat, geoWahl.lon]);
+  }
+  $('geoHier').addEventListener('click', function () { geoHolen(function (g) { if (!g) { toast('Standort nicht verfügbar.'); return; } geoWahl = { lat: g.lat, lon: g.lon }; if (geoMapObj) { geoMarkerSetzen(); geoMapObj.setView([g.lat, g.lon], 16); } }); });
+  $('geoWeg').addEventListener('click', function () { formGeo = null; geoWahl = null; geoLetzt = bearbeiteId ? geoLetzt : null; if (!bearbeiteId) geoStatus = 'fehler'; geoAnzeigen(); blattZu(); toast('Standort entfernt'); });
+  $('geoOk').addEventListener('click', function () { if (geoWahl) { formGeo = geoSauber({ lat: geoWahl.lat, lon: geoWahl.lon, hand: true }); geoAnzeigen(); } blattZu(); });
+  $('geoMap').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-geo-edit]'); if (!b) return;
+    var id = b.getAttribute('data-geo-edit'); blattZu();
+    setTimeout(function () { var el = document.createElement('div'); el.className = 'eintrag'; el.setAttribute('data-id', id); el.innerHTML = '<button data-aktion="edit"></button>'; listeKlick({ target: el.firstChild }); }, 350);
+  });
   function kachelnRendern() {
     if (!reise) return;
     var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
