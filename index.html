@@ -1093,6 +1093,12 @@ body.rs-haupt #zurueckBtn { display: none !important; }
 #berichtDruck .p-ergebnis small { font-size: 10.5pt; opacity: .85; }
 #berichtDruck .p-notiz { background: #FFF3DF; border-radius: 4mm; padding: 4mm 6mm; font-size: 11pt; }
 #berichtDruck .p-notiz p { margin: 1mm 0 0; white-space: pre-wrap; }
+
+/* Über mehrere Tage verteilen */
+.verteil-zeile { align-items: end; }
+.verteil-zeile[hidden] { display: none !important; }
+#formKarte:not(.bearbeiten) #abbrechen, #formKarte:not(.bearbeiten) #eintragLoeschen { display: none !important; }
+.verteil-info { align-self: center; padding: 18px 0 0 4px; font-size: 13.5px; font-weight: 600; color: var(--blau-text); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1210,7 +1216,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     <form id="form" autocomplete="off">
       <div class="zeile">
         <div>
-          <label for="datum">Datum</label>
+          <label for="datum" id="datumLabel">Datum</label>
           <input type="date" id="datum" required>
         </div>
         <div>
@@ -1246,7 +1252,11 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       <div class="vorschlaege" id="vorschlaege" hidden></div>
       <textarea id="beschreibung" rows="1" placeholder="z. B. Abendessen am Strand"></textarea>
       <label class="check"><input type="checkbox" id="geprueft"> Umrechnungskurs eingetragen</label>
-      <label class="check"><input type="checkbox" id="pauschal"> Kosten für die gesamte Reise</label>
+      <label class="check"><input type="checkbox" id="verteilen"> Über mehrere Tage verteilen</label>
+      <div class="zeile verteil-zeile" id="verteilZeile" hidden>
+        <div><label for="datumBis">Bis</label><input type="date" id="datumBis"></div>
+        <div class="verteil-info" id="verteilInfo"></div>
+      </div>
       <div class="form-knoepfe"><button type="button" class="hell abbrechen" id="abbrechen">Abbrechen</button>
       <button type="submit" id="speichern">Speichern</button></div>
       <button type="button" class="rot abbrechen" id="eintragLoeschen" style="margin-top:8px">Ausgabe löschen</button>
@@ -1375,7 +1385,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       <div style="flex:2"><input type="text" id="katNeu" maxlength="24" placeholder="Neue Kategorie, z. B. Souvenirs"></div>
       <div style="flex:1"><button type="button" class="hell" id="katAdd" style="margin-top:0;padding:12px 8px">Hinzufügen</button></div>
     </div>
-    <p class="hinweis">„Gesamtreise“ markiert Kategorien, deren Kosten für die ganze Reise gelten (z. B. Flüge, Hunde). Sie zählen zum Budget, aber nicht zum Tagesschnitt und zur Hochrechnung. Einzelne Ausgaben markierst du im Formular. Neue Kategorien kannst du auch im Formular ganz unten über „＋ Neue Kategorie“ anlegen.</p>
+    <p class="hinweis">Kosten für mehrere Tage (z. B. Unterkunft oder Flüge für die ganze Reise) verteilst du im Formular mit „Über mehrere Tage verteilen“ und Von/Bis. Neue Kategorien kannst du auch im Formular ganz unten über „＋ Neue Kategorie“ anlegen.</p>
     </div>
     <div class="rk-seite" data-seite="budget" hidden>
     <div id="budgetInfo"></div>
@@ -1642,7 +1652,30 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   }
   function istAbh(a) { return a.kategorie === ABHEBUNG; }
   // Kosten für die gesamte Reise (z. B. Flüge, Hunde): zählen zum Budget, aber nicht zum Tagesschnitt
-  function istPauschal(a) { return a.pauschal === true || einst.pauschal.indexOf(a.kategorie) >= 0; }
+  // Über mehrere Tage verteilte Ausgabe (Von = datum, Bis = bis)
+  function istPauschal(a) { return !!(a.bis && a.bis > a.datum); }
+  function verteilTage(a) { return istPauschal(a) ? tageZwischen(a.datum, a.bis) + 1 : 1; }
+  // Anteil je Tag: { 'YYYY-MM-DD': wert }
+  function proTagVerteilt(liste, wert) {
+    var m = {};
+    liste.forEach(function (a) { var n = verteilTage(a), w = wert(a) / n; for (var i = 0; i < n; i++) { var d = tagPlus(a.datum, i); m[d] = (m[d] || 0) + w; } });
+    return m;
+  }
+  function liegtAufTag(a, d) { return a.datum === d || (istPauschal(a) && a.datum <= d && a.bis >= d); }
+  // Alte „Gesamtreise“-Kennzeichen einmalig umstellen: über die ganze Reise verteilen
+  function pauschalUmstellen() {
+    if (!reise || !reise.start || !reise.ende) return false;
+    var alt = einst.pauschal || [], geaendert = false;
+    ausgaben.forEach(function (a) {
+      if (istAbh(a)) return;
+      if (a.pauschal === true || alt.indexOf(a.kategorie) >= 0) {
+        if (!a.bis) { a.datum = reise.start; a.bis = reise.ende; }
+        delete a.pauschal; a.geaendert = Date.now(); geaendert = true;
+      }
+    });
+    if (alt.length) { einst.pauschal = []; geaendert = true; }
+    return geaendert;
+  }
   function hauptCode() { return kontext ? kontext.haupt : lokal.code; }
   function waehrungVon(a) { return a.waehrung || hauptCode(); }
   // Rückfall-Kurs für Einträge ohne eigenen Kurs: eigene Kurse der Reise, Startkurs, online geholt, Richtwert
@@ -1875,6 +1908,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     $('kurs').value = startKurs();
     $('ort').value = einst.letzterOrt || '';
     anker = ['kurs'];
+    $('verteilen').checked = false; $('datumBis').value = ''; verteilUmschalten();
     letzteKategorie = $('kategorie').value;
     barAktiv = false;
     kursBereichUmschalten();
@@ -1951,8 +1985,28 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   var summenZeit = 0;
   function summen() { var n = Date.now(); if (n - summenZeit < 500) return; summenZeit = n; try { if (navigator.vibrate) navigator.vibrate(80); } catch (err) {} }
   $('speichern').addEventListener('pointerup', function () { if ($('form').checkValidity()) summen(); });
+  // Über mehrere Tage verteilen: Von/Bis
+  function verteilInfo() {
+    var v = $('datum').value, bi = $('datumBis').value, b = feldZahl('betrag');
+    if (!$('verteilen').checked || !v || !bi) { $('verteilInfo').textContent = ''; return; }
+    if (bi < v) { $('verteilInfo').textContent = '„Bis“ liegt vor „Von“'; return; }
+    var n = tageZwischen(v, bi) + 1;
+    $('verteilInfo').textContent = n + (n === 1 ? ' Tag' : ' Tage') + (b > 0 && n > 1 ? ' · je ' + Math.round(b / n).toLocaleString('de-DE') + ' ' + waehrungSymbol(formW()) : '');
+  }
+  function verteilUmschalten() {
+    var an = $('verteilen').checked;
+    $('verteilZeile').hidden = !an;
+    $('datumLabel').textContent = an ? 'Von' : 'Datum';
+    if (an && !$('datumBis').value && $('datum').value) $('datumBis').value = $('datum').value;
+    verteilInfo();
+    if (typeof formEinpassen === 'function') setTimeout(formEinpassen, 0);
+  }
+  $('verteilen').addEventListener('change', verteilUmschalten);
+  ['datum', 'datumBis', 'betrag'].forEach(function (id) { $(id).addEventListener('input', verteilInfo); $(id).addEventListener('change', verteilInfo); });
+
   $('form').addEventListener('submit', function (e) {
     e.preventDefault();
+    if ($('verteilen').checked && $('datumBis').value && $('datumBis').value < $('datum').value) { toast('„Bis“ darf nicht vor „Von“ liegen.'); return; }
     var betrag = feldZahl('betrag'), kurs = feldZahl('kurs'), euro = feldZahl('abgebucht');
     if ($('kategorie').value === ABHEBUNG && $('zahlung').value === 'Bar') { toast('Eine Bargeldabhebung kann nicht bar bezahlt werden. Bitte die Karte wählen.'); return; }
     var barModus = $('zahlung').value === 'Bar' && $('kategorie').value !== ABHEBUNG;
@@ -1986,7 +2040,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       eintrag.anker = anker.slice(); // merkt sich, welche Werte von Hand eingegeben wurden
     }
     if ($('geprueft').checked) eintrag.geprueft = true;
-    if ($('pauschal').checked) eintrag.pauschal = true;
+    if ($('verteilen').checked && $('datumBis').value && $('datumBis').value > eintrag.datum) eintrag.bis = $('datumBis').value;
     if (bearbeiteId) {
       ausgaben = ausgaben.map(function (a) { return a.id === bearbeiteId ? eintrag : a; });
       toast('Änderung gespeichert');
@@ -2165,9 +2219,9 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     }
   }
   function eintragHtml(a) {
-    var zeile1 = esc(istAbh(a) ? 'Bargeld' : a.kategorie) + ' · ' + esc(datumAnzeige(a.datum));
+    var zeile1 = esc(istAbh(a) ? 'Bargeld' : a.kategorie) + ' · ' + (istPauschal(a) ? esc(datumAnzeige(a.datum).slice(0, 6) + '–' + datumAnzeige(a.bis).slice(0, 6)) + ' · ' + verteilTage(a) + ' Tage' : esc(datumAnzeige(a.datum)));
     var status = istGeprueft(a) ? '<span class="e-status ok">✓</span>' : '<span class="e-status"><span class="offen-tag">Kurs offen</span></span>';
-    var teile2 = [a.ort ? esc(a.ort) : '', a.zahlung ? esc(a.zahlung) : '', (!istAbh(a) && istPauschal(a)) ? 'Gesamtreise' : ''].filter(Boolean);
+    var teile2 = [a.ort ? esc(a.ort) : '', a.zahlung ? esc(a.zahlung) : ''].filter(Boolean);
     var meta = '<span class="m-zeile">' + zeile1 + '</span><span class="m-zeile">' + (teile2.length ? teile2.join(' · ') : '–') + '</span>';
     return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' + katIcon(a.kategorie) +
       '<div class="e-mitte"><div class="beschr">' + esc(a.beschreibung || a.kategorie) + '</div><div class="meta">' + meta + '</div></div>' +
@@ -2269,7 +2323,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       $('beschreibung').value = a.beschreibung || '';
       $('ort').value = a.ort || '';
       $('geprueft').checked = istGeprueft(a);
-      $('pauschal').checked = a.pauschal === true;
+      $('verteilen').checked = !!a.bis; $('datumBis').value = a.bis || ''; verteilUmschalten();
       $('formTitel').textContent = 'Ausgabe ändern';
       $('speichern').textContent = 'Änderung speichern';
       $('formKarte').classList.add('bearbeiten');
@@ -2354,23 +2408,12 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   // Reiter „Pro Tag“
   function renderProTag() {
     var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
-    var tagListe = ohneAbh.filter(function (a) { return !istPauschal(a); });
-    var pausListe = ohneAbh.filter(istPauschal);
-    var pausOffen = !!offenTag.__pausch__;
-    var pausHtml = pausListe.length
-      ? '<div class="rz klick" data-tag="__pausch__" role="button" aria-expanded="' + pausOffen + '"><span>' + pfeil(pausOffen) + 'Gesamtreise-Kosten (nicht enthalten)</span><b>' +
-        wertEuro(summePeso(pausListe), summeEuro(pausListe)) + '</b></div>' +
-        (pausOffen ? aufklapp(pausListe) : '')
-      : '';
+    var tagListe = ohneAbh, pausHtml = '';
     if (!tagListe.length) {
       $('tab-tag').innerHTML = pausHtml + '<div class="leer">Noch keine Tagesausgaben erfasst.</div>';
       return;
     }
-    var proTag = {}, proTagE = {};
-    tagListe.forEach(function (a) {
-      proTag[a.datum] = (proTag[a.datum] || 0) + lokalWert(a);
-      proTagE[a.datum] = (proTagE[a.datum] || 0) + euroVon(a);
-    });
+    var proTag = proTagVerteilt(tagListe, lokalWert), proTagE = proTagVerteilt(tagListe, euroVon);
     var daten = Object.keys(proTag).sort();
     var von = daten[0], bis = daten[daten.length - 1];
     var anzahl = tageZwischen(von, bis) + 1;
@@ -2389,7 +2432,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
         if (i - k >= 1) { html += '<div class="tag-luecke">' + esc(datumAnzeige(tagPlus(von, k)).slice(0, 5)) + '–' + esc(datumAnzeige(d).slice(0, 5)) + ' · ' + (i - k + 1) + ' Tage ohne Ausgaben</div>'; i = k; continue; }
       }
       var w = proTag[d] || 0;
-      var eintraege = tagListe.filter(function (a) { return a.datum === d; });
+      var eintraege = tagListe.filter(function (a) { return liegtAufTag(a, d); });
       var klickbar = eintraege.length > 0;
       var offen = klickbar && !!offenTag[d];
       html += '<div class="tag-block"><div class="tag-zeile' + (klickbar ? ' klick' : '') + '"' +
@@ -2603,7 +2646,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     h += '<div class="rz"><span>Budget</span><b>' + fmt(b.betrag) + '</b></div>';
     h += '<div class="rz"><span>Ausgegeben</span><b>' + fmt(ausgegeben) + '</b></div>';
     if (pauschalK > 0.004) {
-      h += '<div class="rz sub"><span>davon Gesamtreise (z. B. Flüge, Hunde)</span><span>' + fmt(pauschalK) + '</span></div>';
+      h += '<div class="rz sub"><span>davon über mehrere Tage verteilt</span><span>' + fmt(pauschalK) + '</span></div>';
     }
     h += '<div class="rz"><span>' + (rest < 0 ? 'Überschritten um' : 'Noch übrig') + '</span><b' + (rest < 0 ? ' class="warnung"' : '') + '>' + fmt(Math.abs(rest)) + '</b></div>';
 
@@ -2618,7 +2661,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       var tage = Math.max(1, tageZwischen(start, bisTag) + 1);
       var schnitt = tageskosten / tage;
       h += '<div class="rz"><span>Ø pro Tag (' + tage + (tage === 1 ? ' Tag' : ' Tage') + ')</span><b>' + fmt(schnitt) + '</b></div>';
-      if (pauschalK > 0.004) h += '<div class="rz sub"><span>ohne Gesamtreise-Kosten</span><span></span></div>';
+      if (pauschalK > 0.004) h += '<div class="rz sub"><span>ohne über mehrere Tage verteilte Kosten</span><span></span></div>';
       if (ende && start <= ende) {
         if (heuteStr <= ende) {
           var uebrig = tageZwischen(heuteStr, ende) + 1;
@@ -2668,7 +2711,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       return '<div class="kat-eintrag"><span class="kat-name">' + katIcon(k).replace('kat-ico', 'kat-ico mini') + '<span class="kat-text">' + esc(k) + '</span>' +
         '</span><span class="kat-aktion">' + (eigen ? '<span class="kat-knoepfe"><button type="button" class="ico-knopf" data-kat-ren="' + esc(k) + '" aria-label="Umbenennen"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg></button>' +
           '<button type="button" class="ico-knopf rot" data-kat-del="' + esc(k) + '" aria-label="Löschen"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></span>' : '') +
-        '<label class="check mini"><input type="checkbox" data-kat-pausch="' + esc(k) + '"' + (pausch ? ' checked' : '') + '> Gesamtreise</label></span></div>';
+        '</span></div>';
     }).join('');
   }
   $('katListe').addEventListener('change', function (e) {
@@ -2773,6 +2816,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
 
   // ---------- Anzeige ----------
   function zeichnen() {
+    if (reise && pauschalUmstellen()) { speichern(); speichernEinst(); }
     berechneFifo();
     if (reise) {
       var multiVorher = multi;
@@ -2894,10 +2938,10 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   });
   $('exportCsv').addEventListener('click', function () {
     if (!ausgaben.length) { toast('Noch nichts zu exportieren.'); return; }
-    var zeilen = [['Datum', 'Ort', 'Betrag', 'Währung', 'Kategorie', 'Zahlungsmittel', 'Kurs (je EUR)', 'Betrag (EUR)', 'Kurs eingetragen', 'Gesamtreise', 'Beschreibung']];
+    var zeilen = [['Datum', 'Ort', 'Betrag', 'Währung', 'Kategorie', 'Zahlungsmittel', 'Kurs (je EUR)', 'Betrag (EUR)', 'Kurs eingetragen', 'Bis (verteilt)', 'Beschreibung']];
     sortiert(ausgaben).forEach(function (a) {
       zeilen.push([a.datum, a.ort || '', String(a.betrag).replace('.', ','), waehrungVon(a), a.kategorie, a.zahlung || '',
-        kursEff(a) > 0 ? String(Math.round(kursEff(a) * 10000) / 10000).replace('.', ',') : '', String(runden(euroVon(a))).replace('.', ','), istGeprueft(a) ? 'ja' : 'nein', istPauschal(a) ? 'ja' : 'nein', a.beschreibung || '']);
+        kursEff(a) > 0 ? String(Math.round(kursEff(a) * 10000) / 10000).replace('.', ',') : '', String(runden(euroVon(a))).replace('.', ','), istGeprueft(a) ? 'ja' : 'nein', istPauschal(a) ? a.bis : '', a.beschreibung || '']);
     });
     var csv = '﻿' + zeilen.map(function (z) {
       return z.map(function (f) { return '"' + String(f).replace(/"/g, '""') + '"'; }).join(';');
@@ -2912,6 +2956,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     if (a.abgebucht > 0 && isFinite(a.abgebucht)) e.abgebucht = a.abgebucht;
     if (a.geprueft === true) e.geprueft = true;
     if (a.pauschal === true) e.pauschal = true;
+    if (typeof a.bis === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.bis) && a.bis > a.datum) e.bis = a.bis;
     if (gueltigerAnker(a.anker)) e.anker = a.anker.slice();
     if (typeof a.ort === 'string' && a.ort.trim()) e.ort = a.ort.trim().slice(0, 40);
     if (/^[A-Z]{3}$/.test(a.waehrung)) e.waehrung = a.waehrung;
@@ -3316,12 +3361,14 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     if (linieEnde > gesamtN) linieEnde = gesamtN;
 
     // kumulierte Ausgaben pro Tag (Ausgaben vor dem Start zählen als Anfangswert, z. B. vorab gebuchte Flüge)
-    var proTag = {}, anfang = 0;
-    ohneAbh.forEach(function (a) {
-      if (a.datum < start) anfang += wert(a); else proTag[a.datum] = (proTag[a.datum] || 0) + wert(a);
-    });
+    var proTag = {}, anfang = 0, verteilt = proTagVerteilt(ohneAbh, wert);
+    Object.keys(verteilt).forEach(function (d) { if (d < start) anfang += verteilt[d]; else proTag[d] = verteilt[d]; });
+    // Anteile nach dem Diagrammende zählen am letzten Tag mit
+    var spaet = Object.keys(proTag).filter(function (d) { return tageZwischen(start, d) > linieEnde; });
+    var spaetSumme = spaet.reduce(function (x, d) { return x + proTag[d]; }, 0);
     var punkte = [], cum = anfang;
     for (var i = 0; i <= linieEnde; i++) { cum += proTag[tagPlus(start, i)] || 0; punkte.push(cum); }
+    if (spaetSumme && heuteStr >= (ende || heuteStr)) { punkte[punkte.length - 1] += spaetSumme; }
     var heuteWert = punkte[punkte.length - 1];
 
     // Hochrechnung bis Reiseende (wie im Reisebudget: Gesamtreise-Kosten einmalig, Rest nach Tagesschnitt)
@@ -4246,10 +4293,10 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       var bEuro = b.waehrung === 'EUR', ausgB = bEuro ? st.euro : gesamtLok, fmtB = bEuro ? e0 : function (x) { return Math.round(x).toLocaleString('de-DE') + ' ' + lokSym; };
       bk = kachel('Budget', fmtB(b.betrag), '', '#C84B3C') + kachel(ausgB > b.betrag ? 'Überschritten' : 'Noch übrig', fmtB(Math.abs(b.betrag - ausgB)), Math.round(ausgB / b.betrag * 100) + ' % verbraucht', ausgB > b.betrag ? '#C84B3C' : '#2E9E5B');
     }
-    if (verlaufSvg.indexOf('<svg') >= 0) folie('Verlauf der Ausgaben', '<div class="p-verlauf">' + verlaufSvg + '</div><div class="pt-reihe klein">' + kachel('Ausgegeben', e0(st.euro), '') + bk + '</div>', 'kumuliert in Euro, inklusive Gesamtreise-Kosten');
+    if (verlaufSvg.indexOf('<svg') >= 0) folie('Verlauf der Ausgaben', '<div class="p-verlauf">' + verlaufSvg + '</div><div class="pt-reihe klein">' + kachel('Ausgegeben', e0(st.euro), '') + bk + '</div>', 'kumuliert in Euro, verteilte Kosten auf ihre Tage');
     // 4 Pro Tag als Säulen
-    var proTag = {}, tagListe = ohne.filter(function (a) { return !istPauschal(a); });
-    tagListe.forEach(function (a) { if (!reise.start || a.datum >= reise.start) proTag[a.datum] = (proTag[a.datum] || 0) + euroVon(a); });
+    var proTag = {}, pv = proTagVerteilt(ohne, euroVon);
+    Object.keys(pv).forEach(function (d) { if (!reise.start || (d >= reise.start && (!reise.ende || d <= reise.ende))) proTag[d] = pv[d]; });
     var tage = Object.keys(proTag).sort();
     if (tage.length) {
       var von = reise.start && reise.start < tage[0] ? reise.start : tage[0], bis = tage[tage.length - 1];
@@ -4266,8 +4313,8 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       var ySch = H - mb - schnittT / yM * (H - mb - mt);
       s += '<line x1="' + ml + '" x2="' + W + '" y1="' + ySch + '" y2="' + ySch + '" stroke="#C84B3C" stroke-dasharray="5 4"/><text x="' + W + '" y="' + (ySch - 5) + '" text-anchor="end" class="ps-t ps-rot">Ø ' + esc(e0(schnittT)) + '</text></svg>';
       var teuer = tage.reduce(function (a, d) { return proTag[d] > proTag[a] ? d : a; }, tage[0]);
-      var pausch = ohne.filter(istPauschal).reduce(function (x, a) { return x + euroVon(a); }, 0);
-      folie('Ausgaben pro Tag', s + '<div class="pt-reihe klein">' + kachel('Teuerster Tag', e0(proTag[teuer]), datumAnzeige(teuer), '#F5A524') + kachel('Tage mit Ausgaben', String(tage.length), 'von ' + n + ' Tagen') + (pausch > 0 ? kachel('Gesamtreise-Kosten', e0(pausch), 'nicht in den Säulen', '#3D6FB6') : '') + '</div>', 'ohne Gesamtreise-Kosten und Bargeldabhebungen');
+      var pausch = ohne.filter(istPauschal).reduce(function (x, a) { return x + euroVon(a); }, 0), pAnz = ohne.filter(istPauschal).length;
+      folie('Ausgaben pro Tag', s + '<div class="pt-reihe klein">' + kachel('Teuerster Tag', e0(proTag[teuer]), datumAnzeige(teuer), '#F5A524') + kachel('Tage mit Ausgaben', String(tage.length), 'von ' + n + ' Tagen') + (pausch > 0 ? kachel('Auf Tage verteilt', e0(pausch), pAnz + (pAnz === 1 ? ' Ausgabe' : ' Ausgaben'), '#3D6FB6') : '') + '</div>', 'über mehrere Tage gebuchte Kosten sind auf die Tage verteilt');
     }
     // 5 Orte und Zahlungsmittel
     var proOrt = {}, proZ = {};
