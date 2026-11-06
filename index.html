@@ -1001,6 +1001,25 @@ html:has(body.vb-offen) { overflow: hidden; }
 .wkp-summe { font-family: var(--display); font-weight: 800; font-size: 17px; margin-top: 4px; }
 .wkp-summe small { font-family: inherit; font-weight: 500; font-size: 13px; color: var(--grau); }
 .wkp-los { margin-top: 8px; height: 42px; background: var(--mango); color: var(--mango-text); }
+
+/* Popup auf der Karte (klein und Vollbild) */
+#wkBox .wk-popup { max-height: calc(100% - 16px); }
+#weltKarte #wkBox .wk-popup { width: calc(100% - 20px); padding: 10px 12px 10px; border-radius: 14px; }
+#weltKarte #wkBox .wk-popup h3 { font-size: 15px; margin-bottom: 4px; }
+.wkp-hinweis { font-size: 12.5px; color: var(--grau); margin: 0 0 4px; }
+.wkp-wahl { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin: 0; padding: 8px 2px; background: none; border: 0; border-top: 1px solid var(--linie); border-radius: 0; box-shadow: none; text-align: left; color: var(--text); min-height: 0; }
+.wkp-wahl > span:first-child { display: flex; flex-direction: column; min-width: 0; }
+.wkp-wahl b { font-family: var(--display); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wkp-wahl small { font-size: 12px; color: var(--grau); }
+.wkp-wahl .re-status { flex: none; font-size: 10.5px; padding: 2px 7px; }
+.wkp-zurueck { width: auto; margin: 0 0 4px; padding: 4px 8px 4px 0; background: none; border: 0; box-shadow: none; color: var(--blau-text); font-weight: 600; font-size: 13.5px; min-height: 0; }
+#wkAuswahl { display: none !important; }
+#weltKarte .wkp-hinweis { display: none; }
+#weltKarte .wkp-wahl { padding: 6px 2px; }
+/* Neue Ausgabe leicht orange */
+#kacheln .kachel.breit[data-seite-auf="neu"] { background: #FFF3DF !important; border-color: #F6DDAE !important; box-shadow: inset 6px 0 0 var(--mango), 0 8px 20px -12px rgba(180,110,10,.5) !important; }
+#kacheln .kachel.breit[data-seite-auf="neu"] .heute { border-left-color: #F0D6A4; }
+html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { background: #3A2F1A !important; border-color: #5A4622 !important; box-shadow: inset 6px 0 0 var(--mango), 0 8px 20px -12px rgba(0,0,0,.8) !important; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1064,7 +1083,7 @@ html:has(body.vb-offen) { overflow: hidden; }
   <section class="karte" id="weltKarte">
     <div class="wk-kopf"><h2 class="sr-nur">Weltkarte</h2>
       <div class="wk-zoom"><button type="button" class="voll-btn" id="wkVoll" aria-label="Weltkarte im Vollbild"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></button><button type="button" id="wkPlus" aria-label="Vergrößern">＋</button><button type="button" id="wkMinus" aria-label="Verkleinern">−</button><button type="button" id="wkReset" aria-label="Zurücksetzen">⤾</button></div></div>
-    <div class="weltkarte" id="wkBox"><svg id="wkSvg" viewBox="0 0 1000 520" aria-label="Weltkarte"></svg></div>
+    <div class="weltkarte" id="wkBox"><svg id="wkSvg" viewBox="0 0 1000 520" aria-label="Weltkarte"></svg><div class="wk-popup" id="wkPopup" hidden></div></div>
     <div class="wk-legende"><span><i class="wk-punkt" style="background:var(--blau)"></i>besucht</span><span><i class="wk-punkt" style="background:#f59e0b"></i>geplant</span><span id="wkZahl"></span></div>
     <div class="wk-chips" id="wkChips"></div>
     <div class="wk-auswahl" id="wkAuswahl" hidden></div>
@@ -1377,7 +1396,7 @@ html:has(body.vb-offen) { overflow: hidden; }
 
 <div id="berichtDruck" class="bericht"></div>
 <div class="sheet-dunkel" id="sheetDunkel"></div>
-<div class="vollbild" id="vollbild" hidden><div class="vb-innen" id="vbInnen"><div class="wk-popup" id="wkPopup" hidden></div></div><button type="button" class="vb-zu" id="vbZu" aria-label="Vollbild schließen">✕</button></div>
+<div class="vollbild" id="vollbild" hidden><div class="vb-innen" id="vbInnen"></div><button type="button" class="vb-zu" id="vbZu" aria-label="Vollbild schließen">✕</button></div>
 <div class="undo" id="undoBar" hidden><span id="undoText"></span><button type="button" id="undoBtn">Rückgängig</button></div>
 <div class="toast" id="toast"></div>
 
@@ -3780,31 +3799,53 @@ html:has(body.vb-offen) { overflow: hidden; }
         '<div class="re-zeit">' + (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) : 'ohne Zeitraum') + '</div></div>';
     }).join('');
   }
-  function wkPopupZeigen(e) {
+  var wkPopupLand = null;
+  function wkGross() { return !!(vbZurueck && vbZurueck.klasse === 'vb-karte'); }
+  function wkReiseDetail(m) {
+    var l = m.laender[0], k = kennzahlen(datenLaden(m.id), l ? l.waehrung : 'EUR');
+    var tage = (m.start && m.ende) ? tageZwischen(m.start, m.ende) + 1 : 0;
+    return '<div class="wkp-reise"><b>' + esc(m.name) + '</b>' +
+      '<div class="wkp-z">' + m.laender.map(function (x) { return flagge(x.code) + ' ' + esc(x.name); }).join(', ') + '</div>' +
+      '<div class="wkp-z">' + (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) : 'ohne Zeitraum') + (tage ? ' · ' + tage + (tage === 1 ? ' Tag' : ' Tage') : '') + '</div>' +
+      '<div class="wkp-summe">' + esc(euroFmt(k.euro)) + ' <small>· ' + k.anzahl + (k.anzahl === 1 ? ' Ausgabe' : ' Ausgaben') + '</small></div>' +
+      '<button type="button" class="wkp-los" data-zur-reise="' + esc(m.id) + '">Zur Reise</button></div>';
+  }
+  function wkPopupZeigen(e, reiseId) {
+    wkPopupLand = e;
     var liste = e.reisen.slice().sort(function (a, b) { return (b.start || '').localeCompare(a.start || ''); });
-    $('wkPopup').innerHTML = '<button type="button" class="wkp-x" aria-label="Schließen">✕</button><h3>' + flagge(e.code) + ' ' + esc(LAND[e.code] ? LAND[e.code].name : e.code) + '</h3>' + liste.map(function (m) {
-      var l = m.laender[0], k = kennzahlen(datenLaden(m.id), l ? l.waehrung : 'EUR');
-      var tage = (m.start && m.ende) ? tageZwischen(m.start, m.ende) + 1 : 0;
-      return '<div class="wkp-reise"><b>' + esc(m.name) + '</b>' +
-        '<div class="wkp-z">' + m.laender.map(function (x) { return flagge(x.code) + ' ' + esc(x.name); }).join(', ') + '</div>' +
-        '<div class="wkp-z">' + (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) : 'ohne Zeitraum') + (tage ? ' · ' + tage + (tage === 1 ? ' Tag' : ' Tage') : '') + '</div>' +
-        '<div class="wkp-summe">' + esc(euroFmt(k.euro)) + ' <small>· ' + k.anzahl + (k.anzahl === 1 ? ' Ausgabe' : ' Ausgaben') + '</small></div>' +
-        '<button type="button" class="wkp-los" data-zur-reise="' + esc(m.id) + '">Zur Reise</button></div>';
-    }).join('');
-    $('wkPopup').hidden = false;
+    var kopf = '<button type="button" class="wkp-x" aria-label="Schließen">✕</button>';
+    var titel = '<h3>' + flagge(e.code) + ' ' + esc(LAND[e.code] ? LAND[e.code].name : e.code) + '</h3>';
+    var inhalt;
+    var gewaehlt = reiseId ? liste.filter(function (m) { return m.id === reiseId; })[0] : (liste.length === 1 && wkGross() ? liste[0] : null);
+    if (gewaehlt) {
+      inhalt = (liste.length > 1 ? '<button type="button" class="wkp-zurueck">‹ Alle Reisen</button>' : '') + titel + wkReiseDetail(gewaehlt);
+    } else {
+      inhalt = titel + '<div class="wkp-hinweis">' + liste.length + ' Reisen – bitte wählen:</div>' + liste.map(function (m) {
+        var st = reiseStatus(m);
+        return '<button type="button" class="wkp-wahl" data-wahl="' + esc(m.id) + '"><span><b>' + esc(m.name) + '</b><small>' +
+          (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) : 'ohne Zeitraum') + '</small></span>' +
+          '<span class="re-status s-' + st + '">' + STATUS_TEXT[st] + '</span></button>';
+      }).join('');
+    }
+    $('wkPopup').innerHTML = kopf + inhalt; $('wkPopup').hidden = false; $('wkPopup').scrollTop = 0;
   }
   $('wkPopup').addEventListener('click', function (ev) {
+    ev.stopPropagation();
     if (ev.target.closest('.wkp-x')) { $('wkPopup').hidden = true; return; }
+    if (ev.target.closest('.wkp-zurueck')) { wkPopupZeigen(wkPopupLand); return; }
+    var w = ev.target.closest('[data-wahl]');
+    if (w) { var id = w.getAttribute('data-wahl'); if (wkGross()) wkPopupZeigen(wkPopupLand, id); else { $('wkPopup').hidden = true; reiseOeffnen(id); } return; }
     var b = ev.target.closest('[data-zur-reise]'); if (!b) return;
-    var id = b.getAttribute('data-zur-reise');
-    $('wkPopup').hidden = true; vollbildZu(true);
-    try { if (history.state && history.state.vollbild) history.replaceState({ start: true }, ''); } catch (e) {}
-    setTimeout(function () { reiseOeffnen(id); }, 60);
+    var rid = b.getAttribute('data-zur-reise');
+    $('wkPopup').hidden = true;
+    if (wkGross()) { vollbildZu(true); try { if (history.state && history.state.vollbild) history.replaceState({ start: true }, ''); } catch (e) {} }
+    setTimeout(function () { reiseOeffnen(rid); }, 60);
   });
+  ['pointerdown', 'touchstart', 'mousedown'].forEach(function (evn) { $('wkPopup').addEventListener(evn, function (ev) { ev.stopPropagation(); }, { passive: true }); });
   function wkWaehlen(code) {
     var info = wkLaender(), e = info[code];
     if (!e) return;
-    if (vbZurueck && vbZurueck.klasse === 'vb-karte') { wkPopupZeigen(e); return; }
+    if (wkGross() || e.reisen.length > 1) { wkPopupZeigen(e); return; }
     if (e.reisen.length === 1) { reiseOeffnen(e.reisen[0].id); return; }
     wkAktiv = (wkAktiv === code) ? '' : code;
     karteRendern();
@@ -3812,7 +3853,7 @@ html:has(body.vb-offen) { overflow: hidden; }
   $('wkSvg').addEventListener('click', function (ev) {
     if (wkZog) { wkZog = false; return; }
     var pa = ev.target.closest('path'), c = pa && pa.getAttribute('data-c');
-    if (vbZurueck && vbZurueck.klasse === 'vb-karte' && !(c && wkLaender()[c])) { $('wkPopup').hidden = true; return; }
+    if (!$('wkPopup').hidden && !(c && wkLaender()[c])) { $('wkPopup').hidden = true; return; }
     if (pa) wkWaehlen(c);
   });
   $('wkChips').addEventListener('click', function (ev) {
