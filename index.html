@@ -1026,6 +1026,73 @@ body.rs-haupt #zurueckBtn { display: none !important; }
 /* Reiseliste scrollt ohne sichtbaren Balken */
 #reisenListe { scrollbar-width: none; -ms-overflow-style: none; }
 #reisenListe::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* PDF-Präsentation */
+@media print {
+  @page { size: A4 landscape; margin: 0; }
+  html, body { background: #fff !important; overflow: visible !important; height: auto !important; }
+  body.druck #berichtDruck { padding: 0 !important; }
+  body.druck { margin: 0 !important; padding: 0 !important; min-height: 0 !important; }
+  body.druck #berichtDruck .pf:last-child { page-break-after: avoid !important; break-after: avoid !important; }
+  body.druck #berichtDruck, body.druck #berichtDruck * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+#berichtDruck .pf { width: 297mm; height: 207mm; box-sizing: border-box; padding: 14mm 16mm 10mm; position: relative; page-break-after: always; break-after: page; overflow: hidden; background: #fff; color: #10262B; font-family: 'Figtree', sans-serif; display: flex; flex-direction: column; }
+#berichtDruck .pf:last-child { page-break-after: auto; break-after: auto; }
+#berichtDruck .pf-kopf { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #E2EAE8; padding-bottom: 5mm; margin-bottom: 7mm; }
+#berichtDruck .pf-kopf h2 { font-family: var(--display); font-size: 26pt; margin: 0; letter-spacing: -.02em; color: #0E4A55; }
+#berichtDruck .pf-kopf p { margin: 1mm 0 0; color: #5E7377; font-size: 11pt; }
+#berichtDruck .pf-marke { font-size: 10pt; color: #5E7377; font-weight: 600; }
+#berichtDruck .pf-inhalt { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6mm; }
+#berichtDruck .pf-fuss { display: flex; justify-content: space-between; font-size: 9pt; color: #8A9A9D; border-top: 1px solid #E2EAE8; padding-top: 3mm; }
+#berichtDruck .pf-titel { padding: 0; }
+#berichtDruck .pt-band { position: absolute; inset: 0 0 auto 0; height: 78mm; background: linear-gradient(135deg, #0E4A55, #1C8A8F); }
+#berichtDruck .pt-innen { position: relative; padding: 18mm 20mm; color: #fff; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; }
+#berichtDruck .pt-flaggen { font-size: 30pt; }
+#berichtDruck .pf-titel h1 { font-family: var(--display); font-size: 40pt; margin: 2mm 0 1mm; letter-spacing: -.03em; color: #fff; }
+#berichtDruck .pt-zeit { font-size: 15pt; margin: 0; opacity: .95; }
+#berichtDruck .pt-land { font-size: 11pt; margin: 1mm 0 0; opacity: .85; }
+#berichtDruck .pt-summe { margin-top: 14mm; color: #10262B; }
+#berichtDruck .pt-summe span { display: block; font-size: 12pt; color: #5E7377; font-weight: 600; }
+#berichtDruck .pt-summe b { font-family: var(--display); font-size: 44pt; letter-spacing: -.03em; color: #0E4A55; }
+#berichtDruck .pt-summe small { display: block; font-size: 14pt; color: #1C8A8F; font-weight: 600; }
+#berichtDruck .pt-reihe { display: flex; gap: 5mm; margin-top: 6mm; }
+#berichtDruck .pt-reihe.klein { margin-top: 0; }
+#berichtDruck .pk { flex: 1; background: #F3F7F6; border-radius: 4mm; border-top: 2mm solid #1C8A8F; padding: 4mm 5mm; display: flex; flex-direction: column; color: #10262B; }
+#berichtDruck .pk span { font-size: 10pt; color: #5E7377; font-weight: 600; }
+#berichtDruck .pk b { font-family: var(--display); font-size: 20pt; letter-spacing: -.02em; margin-top: 1mm; }
+#berichtDruck .pk small { font-size: 9.5pt; color: #5E7377; }
+#berichtDruck .pt-stand { margin-top: auto; color: #5E7377; font-size: 10pt; }
+#berichtDruck .p-zwei { display: grid; grid-template-columns: 78mm 1fr; gap: 12mm; align-items: center; }
+#berichtDruck .p-zwei.gleich { grid-template-columns: 1fr 1fr; align-items: start; }
+#berichtDruck .p-zwei h3 { margin: 0 0 3mm; font-size: 13pt; color: #0E4A55; }
+#berichtDruck .p-donut { width: 78mm; height: 78mm; }
+#berichtDruck .pd-k { font-size: 11px; fill: #5E7377; font-family: 'Figtree', sans-serif; }
+#berichtDruck .pd-w { font-size: 17px; font-weight: 800; fill: #10262B; font-family: var(--display); }
+#berichtDruck .pb-z { display: grid; grid-template-columns: 42mm 1fr 30mm; gap: 4mm; align-items: center; padding: 1.6mm 0; border-bottom: 1px solid #EEF3F2; }
+#berichtDruck .p-zwei.gleich .pb-z { grid-template-columns: 30mm 1fr 26mm; }
+#berichtDruck .pb-n { font-size: 11pt; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#berichtDruck .pb-s { height: 4mm; background: #EEF3F2; border-radius: 2mm; overflow: hidden; }
+#berichtDruck .pb-s i { display: block; height: 100%; border-radius: 2mm; }
+#berichtDruck .pb-w { text-align: right; font-weight: 700; font-size: 11pt; white-space: nowrap; }
+#berichtDruck .pb-w small { display: block; font-weight: 500; color: #5E7377; font-size: 9pt; }
+#berichtDruck .p-verlauf svg, #berichtDruck .p-saeulen { width: 100%; height: 105mm; }
+#berichtDruck .p-verlauf .v-text, #berichtDruck .ps-t { font-size: 10px; fill: #5E7377; font-family: 'Figtree', sans-serif; }
+#berichtDruck .p-verlauf .v-achse { stroke: #E2EAE8; }
+#berichtDruck .p-verlauf .v-linie { stroke: #0E4A55; }
+#berichtDruck .p-verlauf .v-flaeche { fill: rgba(28,138,143,.15); }
+#berichtDruck .p-verlauf .v-wert { fill: #10262B; font-weight: 700; }
+#berichtDruck .ps-rot, #berichtDruck .p-verlauf .v-rot { fill: #C84B3C; font-weight: 700; }
+#berichtDruck .p-tab { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+#berichtDruck .p-tab th { text-align: left; color: #5E7377; font-weight: 600; font-size: 9.5pt; border-bottom: 2px solid #E2EAE8; padding: 2mm 2mm; }
+#berichtDruck .p-tab td { padding: 2.2mm 2mm; border-bottom: 1px solid #EEF3F2; }
+#berichtDruck .p-tab .r { text-align: right; white-space: nowrap; }
+#berichtDruck .p-punkt { display: inline-block; width: 2.5mm; height: 2.5mm; border-radius: 50%; margin-right: 1.5mm; }
+#berichtDruck .p-ergebnis { background: #0E4A55; color: #fff; border-radius: 5mm; padding: 6mm 8mm; display: flex; flex-direction: column; }
+#berichtDruck .p-ergebnis span { font-size: 11pt; opacity: .8; }
+#berichtDruck .p-ergebnis b { font-family: var(--display); font-size: 24pt; margin: 1mm 0; }
+#berichtDruck .p-ergebnis small { font-size: 10.5pt; opacity: .85; }
+#berichtDruck .p-notiz { background: #FFF3DF; border-radius: 4mm; padding: 4mm 6mm; font-size: 11pt; }
+#berichtDruck .p-notiz p { margin: 1mm 0 0; white-space: pre-wrap; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1379,7 +1446,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       <div><button type="button" class="hell" id="berichtTeilen" style="margin-top:0">Teilen</button></div>
       <div><button type="button" class="hell" id="berichtKopieren" style="margin-top:0">Kopieren</button></div>
     </div>
-    <button type="button" class="hell" id="berichtDrucken" style="margin-top:8px">Drucken / als PDF</button>
+    <button type="button" class="hell" id="berichtDrucken" style="margin-top:8px">Als PDF speichern (Präsentation)</button>
     <button type="button" class="hell" id="berichtZu" style="margin-top:8px">Schließen</button>
   </section>
 
@@ -4110,13 +4177,119 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   });
   $('berichtDrucken').addEventListener('click', function () {
     if (!berichtAktuell) return;
-    $('berichtDruck').innerHTML = berichtAktuell.html;
+    try { $('berichtDruck').innerHTML = praesentationBauen(); } catch (err) { $('berichtDruck').innerHTML = berichtAktuell.html; }
     document.body.classList.add('druck');
+    var titelAlt = document.title; document.title = 'Reisebericht ' + reise.name;
+    window.addEventListener('afterprint', function zurueck() { document.title = titelAlt; window.removeEventListener('afterprint', zurueck); });
     var weg = function () { document.body.classList.remove('druck'); window.removeEventListener('afterprint', weg); };
     window.addEventListener('afterprint', weg);
     try { window.print(); } catch (e) { weg(); }
     setTimeout(function () { if (!window.matchMedia('print').matches) weg(); }, 1500);
   });
+
+  // ---------- PDF-Bericht als Präsentation (A4 quer, eine Folie pro Seite) ----------
+  function praesentationBauen() {
+    var st = statistik({ ausgaben: ausgaben, einst: einst }, reise);
+    var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
+    var lokSym = lokal.symbol, zeigLokal = !(multi || euroTrip);
+    var gesamtLok = ohne.reduce(function (x, a) { return x + lokalWert(a); }, 0);
+    var sp = schnittProTag();
+    var laender = reise.laender.map(function (l) { return flagge(l.code) + ' ' + esc(l.name); }).join(' · ');
+    var zeitraum = reise.start ? datumAnzeige(reise.start) + ' – ' + datumAnzeige(reise.ende || reise.start) : 'ohne Zeitraum';
+    var stand = gesperrt() ? 'Abgeschlossen am ' + zeitStempel(reise.abgeschlossenAm || Date.now()) : 'Zwischenstand vom ' + zeitStempel(Date.now());
+    var e0 = function (x) { return euroFmt(x).replace(',00 €', ' €'); };
+    var seiten = [], nr = 0;
+    function folie(titel, inhalt, untertitel) {
+      nr++;
+      seiten.push('<section class="pf"><div class="pf-kopf"><div><h2>' + esc(titel) + '</h2>' + (untertitel ? '<p>' + untertitel + '</p>' : '') + '</div><span class="pf-marke">' + esc(reise.name) + '</span></div><div class="pf-inhalt">' + inhalt + '</div><div class="pf-fuss"><span>' + esc(stand) + '</span><span>' + nr + '</span></div></section>');
+    }
+    function kachel(l, w, s, farbe) { return '<div class="pk"' + (farbe ? ' style="border-top-color:' + farbe + '"' : '') + '><span>' + esc(l) + '</span><b>' + esc(w) + '</b>' + (s ? '<small>' + esc(s) + '</small>' : '') + '</div>'; }
+    function balkenListe(eintraege, max, fmt) {
+      return '<div class="pb">' + eintraege.map(function (e) {
+        return '<div class="pb-z"><span class="pb-n">' + (e.ico || '') + esc(e.n) + '</span><span class="pb-s"><i style="width:' + Math.max(1.5, e.w / (max || 1) * 100).toFixed(1) + '%;background:' + (e.c || '#1C8A8F') + '"></i></span><span class="pb-w">' + esc(fmt(e.w)) + (e.p ? '<small>' + esc(e.p) + '</small>' : '') + '</span></div>';
+      }).join('') + '</div>';
+    }
+    // 1 Titel
+    seiten.push('<section class="pf pf-titel"><div class="pt-band"></div><div class="pt-innen"><div class="pt-flaggen">' + reise.laender.map(function (l) { return flagge(l.code); }).join(' ') + '</div>' +
+      '<h1>' + esc(reise.name) + '</h1><p class="pt-zeit">' + esc(zeitraum) + (st.tage ? ' · ' + st.tage + ' Tage' : '') + '</p><p class="pt-land">' + laender + '</p>' +
+      '<div class="pt-summe"><span>Gesamtausgaben</span><b>' + esc(euroFmt(st.euro)) + '</b>' + (zeigLokal ? '<small>' + esc(geld(gesamtLok)) + '</small>' : '') + '</div>' +
+      '<div class="pt-reihe">' + kachel('Pro Tag', e0(sp.euro), sp.tage + ' Reisetage') + kachel('Pro Person & Tag', e0(sp.euro / 2), 'bei 2 Personen') + kachel('Ausgaben', String(st.anzahl), st.orte ? st.orte + ' Orte' : '') + '</div>' +
+      '<p class="pt-stand">' + esc(stand) + ' · Reisebericht</p></div></section>');
+    nr = 1;
+    // 2 Kategorien mit Ringdiagramm
+    var kats = Object.keys(st.proKat).filter(function (k) { return st.proKat[k] > 0; }).sort(function (a, b) { return st.proKat[b] - st.proKat[a]; });
+    if (kats.length) {
+      var R = 80, r = 50, cx = 100, cy = 100, wnk = -Math.PI / 2, ring = '';
+      kats.forEach(function (k) {
+        var anteil = st.proKat[k] / st.euro, w2 = wnk + anteil * Math.PI * 2, gross = anteil > 0.5 ? 1 : 0;
+        if (anteil >= 0.9999) { ring += '<circle cx="100" cy="100" r="65" fill="none" stroke="' + katStil(k).c + '" stroke-width="30"/>'; }
+        else ring += '<path d="M' + (cx + R * Math.cos(wnk)).toFixed(2) + ' ' + (cy + R * Math.sin(wnk)).toFixed(2) + ' A' + R + ' ' + R + ' 0 ' + gross + ' 1 ' + (cx + R * Math.cos(w2)).toFixed(2) + ' ' + (cy + R * Math.sin(w2)).toFixed(2) +
+          ' L' + (cx + r * Math.cos(w2)).toFixed(2) + ' ' + (cy + r * Math.sin(w2)).toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + gross + ' 0 ' + (cx + r * Math.cos(wnk)).toFixed(2) + ' ' + (cy + r * Math.sin(wnk)).toFixed(2) + 'Z" fill="' + katStil(k).c + '" stroke="#fff" stroke-width="1.5"/>';
+        wnk = w2;
+      });
+      var donut = '<svg viewBox="0 0 200 200" class="p-donut">' + ring + '<text x="100" y="96" text-anchor="middle" class="pd-k">Gesamt</text><text x="100" y="116" text-anchor="middle" class="pd-w">' + esc(e0(st.euro)) + '</text></svg>';
+      folie('Wofür das Geld ausgegeben wurde', '<div class="p-zwei">' + donut + balkenListe(kats.map(function (k) { return { n: k, w: st.proKat[k], c: katStil(k).c, p: prozent(st.proKat[k], st.euro) }; }), st.proKat[kats[0]], e0) + '</div>', kats.length + ' Kategorien · ohne Bargeldabhebungen');
+    }
+    // 3 Verlauf und Budget
+    var verlaufAlt = verlaufW; verlaufW = 'EUR';
+    var tmp = document.createElement('div'); tmp.id = 'verlaufChart';
+    var echt = $('verlaufChart'), echtInfo = $('verlaufInfo');
+    echt.id = 'verlaufChart_x'; document.body.appendChild(tmp);
+    var infoTmp = document.createElement('p'); infoTmp.id = 'verlaufInfo'; echtInfo.id = 'verlaufInfo_x'; document.body.appendChild(infoTmp);
+    var grossAlt = vbZurueck; vbZurueck = { klasse: 'vb-verlauf' };
+    try { renderVerlauf(); } catch (err) {}
+    vbZurueck = grossAlt;
+    var verlaufSvg = tmp.innerHTML, verlaufText = infoTmp.innerHTML;
+    tmp.remove(); infoTmp.remove(); echt.id = 'verlaufChart'; echtInfo.id = 'verlaufInfo'; verlaufW = verlaufAlt;
+    var b = einst.budget, bk = '';
+    if (b && b.betrag > 0) {
+      var bEuro = b.waehrung === 'EUR', ausgB = bEuro ? st.euro : gesamtLok, fmtB = bEuro ? e0 : function (x) { return Math.round(x).toLocaleString('de-DE') + ' ' + lokSym; };
+      bk = kachel('Budget', fmtB(b.betrag), '', '#C84B3C') + kachel(ausgB > b.betrag ? 'Überschritten' : 'Noch übrig', fmtB(Math.abs(b.betrag - ausgB)), Math.round(ausgB / b.betrag * 100) + ' % verbraucht', ausgB > b.betrag ? '#C84B3C' : '#2E9E5B');
+    }
+    if (verlaufSvg.indexOf('<svg') >= 0) folie('Verlauf der Ausgaben', '<div class="p-verlauf">' + verlaufSvg + '</div><div class="pt-reihe klein">' + kachel('Ausgegeben', e0(st.euro), '') + bk + '</div>', 'kumuliert in Euro, inklusive Gesamtreise-Kosten');
+    // 4 Pro Tag als Säulen
+    var proTag = {}, tagListe = ohne.filter(function (a) { return !istPauschal(a); });
+    tagListe.forEach(function (a) { if (!reise.start || a.datum >= reise.start) proTag[a.datum] = (proTag[a.datum] || 0) + euroVon(a); });
+    var tage = Object.keys(proTag).sort();
+    if (tage.length) {
+      var von = reise.start && reise.start < tage[0] ? reise.start : tage[0], bis = tage[tage.length - 1];
+      var n = tageZwischen(von, bis) + 1, maxT = Math.max.apply(null, tage.map(function (d) { return proTag[d]; })), yM = niceMax(maxT * 1.08);
+      var W = 760, H = 300, ml = 56, mb = 28, mt = 10, bw = (W - ml - 10) / n;
+      var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="p-saeulen">';
+      [0, .25, .5, .75, 1].forEach(function (f) { var y = H - mb - f * (H - mb - mt); s += '<line x1="' + ml + '" x2="' + W + '" y1="' + y + '" y2="' + y + '" stroke="#E2EAE8"/><text x="' + (ml - 6) + '" y="' + (y + 4) + '" text-anchor="end" class="ps-t">' + Math.round(yM * f).toLocaleString('de-DE') + ' €</text>'; });
+      var schnittT = tage.reduce(function (x, d) { return x + proTag[d]; }, 0) / n;
+      for (var i = 0; i < n; i++) {
+        var d = tagPlus(von, i), v = proTag[d] || 0, hgt = v / yM * (H - mb - mt);
+        s += '<rect x="' + (ml + i * bw + bw * 0.15).toFixed(1) + '" y="' + (H - mb - hgt).toFixed(1) + '" width="' + (bw * 0.7).toFixed(1) + '" height="' + hgt.toFixed(1) + '" rx="2" fill="' + (v === maxT ? '#F5A524' : '#1C8A8F') + '"/>';
+        if (n <= 31 && (i % Math.ceil(n / 12) === 0 || i === n - 1)) s += '<text x="' + (ml + i * bw + bw / 2).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" class="ps-t">' + datumAnzeige(d).slice(0, 5) + '</text>';
+      }
+      var ySch = H - mb - schnittT / yM * (H - mb - mt);
+      s += '<line x1="' + ml + '" x2="' + W + '" y1="' + ySch + '" y2="' + ySch + '" stroke="#C84B3C" stroke-dasharray="5 4"/><text x="' + W + '" y="' + (ySch - 5) + '" text-anchor="end" class="ps-t ps-rot">Ø ' + esc(e0(schnittT)) + '</text></svg>';
+      var teuer = tage.reduce(function (a, d) { return proTag[d] > proTag[a] ? d : a; }, tage[0]);
+      var pausch = ohne.filter(istPauschal).reduce(function (x, a) { return x + euroVon(a); }, 0);
+      folie('Ausgaben pro Tag', s + '<div class="pt-reihe klein">' + kachel('Teuerster Tag', e0(proTag[teuer]), datumAnzeige(teuer), '#F5A524') + kachel('Tage mit Ausgaben', String(tage.length), 'von ' + n + ' Tagen') + (pausch > 0 ? kachel('Gesamtreise-Kosten', e0(pausch), 'nicht in den Säulen', '#3D6FB6') : '') + '</div>', 'ohne Gesamtreise-Kosten und Bargeldabhebungen');
+    }
+    // 5 Orte und Zahlungsmittel
+    var proOrt = {}, proZ = {};
+    ohne.forEach(function (a) { var o = a.ort || 'ohne Ort'; proOrt[o] = (proOrt[o] || 0) + euroVon(a); if (a.zahlung) proZ[a.zahlung] = (proZ[a.zahlung] || 0) + euroVon(a); });
+    var orte = Object.keys(proOrt).sort(function (x, y) { return proOrt[y] - proOrt[x]; }).slice(0, 8), zm = Object.keys(proZ).sort(function (x, y) { return proZ[y] - proZ[x]; });
+    if (orte.length || zm.length) {
+      var zf = { 'Bar': '#2E9E5B', 'KK Sabine': '#C0508A', 'KK Tobi': '#3D6FB6', 'ING': '#E0782F' };
+      folie('Orte und Zahlungsmittel', '<div class="p-zwei gleich"><div><h3>Nach Ort</h3>' + balkenListe(orte.map(function (o) { return { n: o, w: proOrt[o], c: '#1C8A8F', p: prozent(proOrt[o], st.euro) }; }), proOrt[orte[0]], e0) + '</div>' +
+        '<div><h3>Nach Zahlungsmittel</h3>' + balkenListe(zm.map(function (z) { return { n: z, w: proZ[z], c: zf[z] || '#8A6FC0', p: prozent(proZ[z], st.euro) }; }), proZ[zm[0]], e0) + '</div></div>', 'ohne Bargeldabhebungen');
+    }
+    // 6 Größte Ausgaben
+    var top = ohne.slice().sort(function (x, y) { return euroVon(y) - euroVon(x); }).slice(0, 10);
+    if (top.length) folie('Die größten Ausgaben', '<table class="p-tab"><thead><tr><th>#</th><th>Datum</th><th>Beschreibung</th><th>Kategorie</th><th>Ort</th>' + (zeigLokal ? '<th class="r">' + esc(lokSym) + '</th>' : '') + '<th class="r">€</th></tr></thead><tbody>' +
+      top.map(function (a, i) { return '<tr><td>' + (i + 1) + '</td><td>' + esc(datumAnzeige(a.datum)) + '</td><td>' + esc(a.beschreibung || a.kategorie) + '</td><td><i class="p-punkt" style="background:' + katStil(a.kategorie).c + '"></i>' + esc(a.kategorie) + '</td><td>' + esc(a.ort || '') + '</td>' + (zeigLokal ? '<td class="r">' + esc(Math.round(lokalWert(a)).toLocaleString('de-DE')) + '</td>' : '') + '<td class="r"><b>' + esc(euroFmt(euroVon(a))) + '</b></td></tr>'; }).join('') + '</tbody></table>', 'Top ' + top.length + ' nach Euro-Betrag');
+    // 7 Verrechnung
+    var bg = bargeldProWaehrung().filter(function (x) { return x.rest !== 0; });
+    folie('Verrechnung', '<div class="pt-reihe">' + kachel('Sabine hat bezahlt', e0(st.vorS), 'Karte + Abhebungen', '#C0508A') + kachel('Tobi hat bezahlt', e0(st.vorT), 'Karte + Abhebungen', '#3D6FB6') + kachel('Über ING abgehoben', e0(st.wI), 'gemeinsames Konto', '#E0782F') + '</div>' +
+      '<div class="p-ergebnis"><span>Ergebnis</span><b>' + esc(saldoText(st)) + '</b><small>' + (reise.verrechnet ? '✓ Verrechnung erledigt' : 'Verrechnung noch offen') + '</small></div>' +
+      '<div class="pt-reihe klein">' + kachel('Restbargeld', e0(st.rest), 'bei: ' + (einst.restbei === 'beide' ? 'beiden je zur Hälfte' : einst.restbei)) + bg.map(function (x) { return kachel('Restbargeld ' + x.code, zahl(x.rest) + ' ' + x.symbol, ''); }).join('') + '</div>' +
+      (reise.notiz && reise.notiz.trim() ? '<div class="p-notiz"><b>Notiz</b><p>' + esc(reise.notiz.trim()) + '</p></div>' : ''), '');
+    return seiten.join('');
+  }
 
   // Reisen vergleichen
   var vglAuswahl = null;
