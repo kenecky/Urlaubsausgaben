@@ -946,6 +946,25 @@ html[data-thema="dunkel"] .rs-lupe { color: #CFE6E4; }
 .rs-suche button { width: 42px; height: 42px; margin: 0; padding: 0; flex: none; border-radius: 12px; background: var(--feld-bg); color: var(--text); border: 1px solid var(--feld-rand); box-shadow: none; }
 #reisenListe { margin-top: 4px; }
 #reisenListe .reise-eintrag[hidden], #rsSucheLeer[hidden] { display: none !important; }
+
+/* Suche: Feld im Kopf, Lupe wird zum X */
+#reisenKarte .rs-kopf { min-height: 42px; }
+#reisenKarte .rs-kopf h2[hidden] { display: none; }
+#reisenKarte .rs-suche { flex: 1; min-width: 0; margin: 0; }
+#reisenKarte .rs-suche input { height: 42px; width: 100%; }
+#reisenKarte .rs-lupe { width: 42px; height: 42px; flex: none; }
+.rs-lupe .ic-x { display: none; }
+#rsSucheFeld::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
+#reisenKarte.sucht #reisenListe > .reise-eintrag { border-top: 0; }
+#reisenKarte.sucht #reisenListe > .reise-eintrag:not([hidden]) ~ .reise-eintrag:not([hidden]) { border-top: 1px solid var(--linie); }
+#reisenKarte.sucht .rs-lupe .ic-lupe { display: none; }
+#reisenKarte.sucht .rs-lupe .ic-x { display: block; }
+/* Einheitliche Ecken für alle Karten und Kacheln */
+:root { --rund: 22px; }
+.karte:not(.sheet):not(.unten-blatt), .ticket, .kachel, .start-leiste { border-radius: var(--rund) !important; }
+/* Streifen links als Innenschatten, damit die äußere Rundung gleich bleibt */
+#kacheln .kachel.breit { border-left: 1px solid var(--linie) !important; box-shadow: inset 6px 0 0 var(--petrol), 0 8px 20px -12px rgba(4,30,36,.45) !important; padding-left: 26px !important; }
+html[data-thema="dunkel"] #kacheln .kachel.breit { box-shadow: inset 6px 0 0 #1C8A8F, 0 8px 20px -12px rgba(0,0,0,.8) !important; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1002,8 +1021,7 @@ html[data-thema="dunkel"] .rs-lupe { color: #CFE6E4; }
   </section>
 
   <section class="karte" id="reisenKarte">
-    <div class="rs-kopf"><h2>Meine Reisen</h2><button type="button" class="rs-lupe" id="rsSucheBtn" aria-label="Reisen durchsuchen" aria-expanded="false"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button></div>
-    <div class="rs-suche" id="rsSuche" hidden><input type="search" id="rsSucheFeld" placeholder="Name oder Land …" autocomplete="off" aria-label="Reisen nach Name oder Land suchen"><button type="button" id="rsSucheX" aria-label="Suche schließen">✕</button></div>
+    <div class="rs-kopf"><h2 id="rsTitel">Meine Reisen</h2><div class="rs-suche" id="rsSuche" hidden><input type="search" id="rsSucheFeld" placeholder="Name oder Land …" autocomplete="off" aria-label="Reisen nach Name oder Land suchen"></div><button type="button" class="rs-lupe" id="rsSucheBtn" aria-label="Reisen durchsuchen" aria-expanded="false"><svg class="ic-lupe" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><svg class="ic-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="reisenListe"></div>
   </section>
 
@@ -3591,9 +3609,9 @@ html[data-thema="dunkel"] .rs-lupe { color: #CFE6E4; }
     if (!leer) { leer = document.createElement('div'); leer.id = 'rsSucheLeer'; leer.className = 'leer'; $('reisenListe').appendChild(leer); }
     leer.textContent = 'Keine Reise gefunden.'; leer.hidden = !(q && !n);
   }
-  function rsSucheZu() { $('rsSucheFeld').value = ''; $('rsSuche').hidden = true; $('rsSucheBtn').hidden = false; $('rsSucheBtn').setAttribute('aria-expanded', 'false'); reisenFiltern(); }
-  $('rsSucheBtn').addEventListener('click', function () { $('rsSuche').hidden = false; $('rsSucheBtn').hidden = true; $('rsSucheBtn').setAttribute('aria-expanded', 'true'); $('rsSucheFeld').focus(); });
-  $('rsSucheX').addEventListener('click', rsSucheZu);
+  function rsSucheZu() { $('rsSucheFeld').value = ''; $('rsSuche').hidden = true; $('rsTitel').hidden = false; $('reisenKarte').classList.remove('sucht'); $('rsSucheBtn').setAttribute('aria-expanded', 'false'); $('rsSucheBtn').setAttribute('aria-label', 'Reisen durchsuchen'); reisenFiltern(); }
+  function rsSucheAuf() { $('rsSuche').hidden = false; $('rsTitel').hidden = true; $('reisenKarte').classList.add('sucht'); $('rsSucheBtn').setAttribute('aria-expanded', 'true'); $('rsSucheBtn').setAttribute('aria-label', 'Suche schließen'); $('rsSucheFeld').focus(); }
+  $('rsSucheBtn').addEventListener('click', function () { if ($('reisenKarte').classList.contains('sucht')) rsSucheZu(); else rsSucheAuf(); });
   ['input', 'keyup', 'compositionupdate', 'compositionend', 'change'].forEach(function (ev) { $('rsSucheFeld').addEventListener(ev, function () { setTimeout(reisenFiltern, 0); }); });
   $('rsSucheFeld').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); reisenFiltern(); $('rsSucheFeld').blur(); } });
   $('rsSucheFeld').addEventListener('keydown', function (e) { if (e.key === 'Escape') rsSucheZu(); });
