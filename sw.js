@@ -1,6 +1,6 @@
 // Service Worker: speichert die App beim ersten Öffnen, danach läuft sie offline.
 // Bei Änderungen an der App die Versionsnummer erhöhen, damit Handys die neue Fassung laden.
-var CACHE = 'reiseausgaben-v67';
+var CACHE = 'reiseausgaben-v68';
 var DATEIEN = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {

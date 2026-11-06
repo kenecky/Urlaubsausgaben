@@ -1667,7 +1667,7 @@ body.form-eng2 #formKarte form input:not([type="checkbox"]), body.form-eng2 #for
       if (barAktiv) {
         cb.checked = geprueftMerken;
         // von Bar auf eine andere Zahlungsart gewechselt: Kursfelder zurücksetzen
-        $('kurs').value = startKurs(); $('abgebucht').value = ''; anker = ['kurs'];
+        $('kurs').value = startKurs(); $('abgebucht').value = ''; anker = feldZahl('betrag') > 0 ? ['kurs', 'php'] : ['kurs'];
       }
       cb.disabled = false;
     }
@@ -1692,13 +1692,15 @@ body.form-eng2 #formKarte form input:not([type="checkbox"]), body.form-eng2 #for
     kursBereichUmschalten();
   }
   $('waehrung').addEventListener('change', waehrungGeaendert);
+  // Betrag in Landeswährung ist die Basis:
+  // - Betrag geändert: Euro wird über den Kurs berechnet (war der Euro-Betrag von Hand eingetragen, ergibt sich der Kurs neu)
+  // - Euro geändert: der Kurs ergibt sich aus Betrag ÷ Euro
+  // - Kurs geändert: der Euro-Betrag ergibt sich aus Betrag ÷ Kurs
   function beruehrt(f) {
-    var rest = anker.filter(function (x) { return x !== f; });
-    if (rest.length > 1) {
-      if (f === 'kurs') rest = [rest[1]];
-      else rest = rest.filter(function (x) { return x !== 'kurs'; });
-    }
-    anker = rest.concat([f]);
+    var b = feldZahl('betrag') > 0, e = feldZahl('abgebucht') > 0;
+    if (f === 'php') anker = (anker.indexOf('eur') >= 0 && e) ? ['eur', 'php'] : ['kurs', 'php'];
+    else if (f === 'eur') anker = b ? ['php', 'eur'] : ['kurs', 'eur'];
+    else anker = b ? ['php', 'kurs'] : (e ? ['eur', 'kurs'] : ['kurs']);
     berechne();
   }
   function formZuruecksetzen() {
