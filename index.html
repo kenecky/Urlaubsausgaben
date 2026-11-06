@@ -1108,6 +1108,41 @@ body.rs-haupt #zurueckBtn { display: none !important; }
 #reisenKarte.sucht .rs-suche { transform: translateY(-50%); clip-path: inset(-6px -6px -6px -6px round 14px); opacity: 1; pointer-events: auto; }
 #reisenKarte .rs-lupe { margin-left: auto; position: relative; z-index: 1; }
 .rs-lupe svg { transition: transform .5s ease, opacity .4s ease; }
+
+/* Gebühr bei Abhebung, GPS-Knopf, Bargeld-Prognose */
+#gebuehrZeile[hidden] { display: none !important; }
+.ort-feld { position: relative; }
+.ort-feld input { padding-right: 50px !important; }
+.ort-gps { position: absolute; right: 6px; bottom: 6px; width: 36px; height: 34px; margin: 0; padding: 0; border-radius: 10px; background: var(--blau-hell); color: var(--petrol); border: 0; box-shadow: none; display: flex; align-items: center; justify-content: center; }
+.ort-gps svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ort-gps.laedt svg { animation: ptrDreh 1s linear infinite; }
+html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
+.t-prog { color: var(--lagune) !important; font-weight: 600 !important; }
+
+.zm-geb { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-top: 4px; font-size: 13px; color: var(--grau); }
+.zm-geb > span:last-child { text-align: right; display: flex; flex-direction: column; }
+.zm-geb b { color: #C84B3C; font-weight: 700; }
+.zm-geb small { font-size: 11.5px; }
+.geb-summe .zm-wert { color: #C84B3C; }
+
+/* Jahresübersicht */
+.start-leiste { grid-template-columns: repeat(5, 1fr) !important; padding: 10px 4px !important; }
+.start-leiste .sl-knopf { font-size: 11.5px !important; }
+.start-leiste .sl-knopf span { width: 42px !important; }
+.jr-gesamt { background: var(--petrol); color: #fff; border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; }
+.jr-gesamt .jr-zahlen span { color: rgba(255,255,255,.75); }
+.jr-jahr { border: 1px solid var(--linie); border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; }
+.jr-kopf { display: flex; justify-content: space-between; align-items: baseline; }
+.jr-kopf span { font-family: var(--display); font-size: 20px; font-weight: 800; }
+.jr-kopf b { font-family: var(--display); font-size: 19px; font-weight: 800; }
+.jr-balken { height: 7px; border-radius: 4px; background: var(--feld-bg); margin: 8px 0 10px; overflow: hidden; }
+.jr-balken i { display: block; height: 100%; background: var(--lagune); border-radius: 4px; }
+.jr-zahlen { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
+.jr-zahlen div { display: flex; flex-direction: column; }
+.jr-zahlen b { font-family: var(--display); font-size: 16px; font-weight: 800; white-space: nowrap; }
+.jr-zahlen span { font-size: 11.5px; color: var(--grau); }
+.jr-reisen { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.jr-reisen span { font-size: 12.5px; background: var(--feld-bg); border-radius: 8px; padding: 3px 8px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1177,6 +1212,11 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     <div class="wk-auswahl" id="wkAuswahl" hidden></div>
   </section>
 
+  <section class="karte unten-blatt" id="jahreKarte" role="dialog" aria-modal="true" aria-labelledby="jahreTitel">
+    <button type="button" class="sheet-x blatt-x" aria-label="Jahresübersicht schließen">✕</button>
+    <h2 id="jahreTitel">Jahresübersicht</h2>
+    <div id="jahreInhalt"></div>
+  </section>
   <section class="karte unten-blatt" id="papierkorbKarte" role="dialog" aria-modal="true" aria-labelledby="pkTitel">
     <button type="button" class="sheet-x blatt-x" aria-label="Papierkorb schließen">✕</button>
     <h2 id="pkTitel">Papierkorb</h2>
@@ -1196,6 +1236,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   <nav class="start-leiste" id="startLeiste" aria-label="Aktionen">
     <button type="button" class="sl-knopf neu" id="reiseNeuBtn"><span><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Neue Reise</button>
     <button type="button" class="sl-knopf" id="vergleichBtn"><span><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>Vergleichen</button>
+    <button type="button" class="sl-knopf" id="jahreBtn"><span><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M8 14h2M14 14h2M8 17h2"/></svg></span>Jahre</button>
     <button type="button" class="sl-knopf" id="bkFab"><span><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></span>Backup</button>
     <button type="button" class="sl-knopf" id="pkFab"><span><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2l1-12M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/></svg><i class="fab-zahl" id="pkZahl" hidden></i></span>Papierkorb</button>
   </nav>
@@ -1233,8 +1274,12 @@ body.rs-haupt #zurueckBtn { display: none !important; }
           <input type="number" id="betrag" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
         </div>
       </div>
+      <div class="zeile" id="gebuehrZeile" hidden>
+        <div><label for="gebuehr" id="gebuehrLabel">Automatengebühr (₱)</label><input type="number" id="gebuehr" inputmode="decimal" step="0.01" min="0" placeholder="0"></div>
+        <div class="verteil-info" id="gebuehrInfo"></div>
+      </div>
       <label for="ort">Ort</label>
-      <input type="text" id="ort" list="orteListe" maxlength="40" placeholder="z. B. Coron" autocomplete="off">
+      <div class="ort-feld"><input type="text" id="ort" list="orteListe" maxlength="40" placeholder="z. B. Coron" autocomplete="off"><button type="button" class="ort-gps" id="ortGps" aria-label="Aktuellen Ort per GPS übernehmen"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg></button></div>
       <datalist id="orteListe"></datalist>
       <div id="waehrungBlock" hidden>
         <label for="waehrung">Währung</label>
@@ -1560,6 +1605,11 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     e.pauschal = Array.isArray(d.pauschal) ? d.pauschal.filter(function (k) { return typeof k === 'string'; }) : [];
     e.geloescht = sauberGeloescht(d.geloescht);
     e.letzterOrt = typeof d.letzterOrt === 'string' ? d.letzterOrt.slice(0, 40) : '';
+    e.refKurse = {};
+    if (d.refKurse && typeof d.refKurse === 'object') Object.keys(d.refKurse).forEach(function (c) {
+      if (!/^[A-Z]{3}$/.test(c) || !d.refKurse[c] || typeof d.refKurse[c] !== 'object') return;
+      e.refKurse[c] = {}; Object.keys(d.refKurse[c]).forEach(function (t) { var v = d.refKurse[c][t]; if (/^\d{4}-\d{2}-\d{2}$/.test(t) && v > 0 && isFinite(v)) e.refKurse[c][t] = v; });
+    });
     return e;
   }
   var reisen = [];          // alle Reisen (Kopfdaten), auch die im Papierkorb
@@ -1699,7 +1749,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   }
   function kursVon(a) { return a.kurs > 0 ? a.kurs : stdKursFuer(waehrungVon(a)); }
   function lokalWert(a) { return multi ? euroVon(a) : a.betrag; }
-  function eigenEuro(a) { return a.abgebucht > 0 ? a.abgebucht : a.betrag / kursVon(a); }
+  function eigenEuro(a) { return a.abgebucht > 0 ? a.abgebucht : (a.betrag + (a.gebuehr > 0 ? a.gebuehr : 0)) / kursVon(a); }
   // Bar-Ausgaben: Der Euro-Wert ergibt sich aus den Bargeldabhebungen nach dem FIFO-Prinzip.
   // Die älteste Abhebung wird zuerst aufgebraucht, danach die nächste (jeweils mit ihrem eigenen Kurs).
   var fifoEuro = {}, fifoUeberhang = {};
@@ -1799,7 +1849,11 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     return $('waehrung').querySelector('option[value="' + c + '"]') ? c : (hauptCode());
   }
   function waehrungLabels() {
-    $('betragLabel').textContent = 'Betrag (' + waehrungSymbol(formW()) + ')';
+    var abh = $('kategorie') && $('kategorie').value === ABHEBUNG;
+    $('betragLabel').textContent = (abh ? 'Auszahlung (' : 'Betrag (') + waehrungSymbol(formW()) + ')';
+    $('gebuehrLabel').textContent = 'Automatengebühr (' + waehrungSymbol(formW()) + ')';
+    $('gebuehrZeile').hidden = !abh || formEuro();
+    gebuehrInfo();
     $('kursLabel').textContent = 'Kurs (' + waehrungSymbol(formW()) + ' für 1 €)';
   }
 
@@ -1814,21 +1868,28 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     return Array.isArray(a) && a.length === 2 && a[0] !== a[1] &&
       a.every(function (x) { return x === 'php' || x === 'eur' || x === 'kurs'; });
   }
+  function istAbhForm() { return $('kategorie').value === ABHEBUNG; }
+  function formGebuehr() { var g = feldZahl('gebuehr'); return istAbhForm() && g > 0 ? g : 0; }
+  function gebuehrInfo() {
+    var g = formGebuehr(), b = feldZahl('betrag');
+    $('gebuehrInfo').textContent = g > 0 && b > 0 ? 'Belastet: ' + (b + g).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + ' ' + waehrungSymbol(formW()) : '';
+  }
   function berechne() {
+    gebuehrInfo();
     if (formEuro()) { $('kurs').value = 1; $('abgebucht').value = ''; $('rechenHinweis').hidden = true; return; }
     if (istBarModus()) { barVorschau(); return; }
     var dritter = null;
     if (anker.length === 2) {
       dritter = ['php', 'eur', 'kurs'].filter(function (x) { return anker.indexOf(x) < 0; })[0];
     }
-    var b = feldZahl('betrag'), e = feldZahl('abgebucht'), k = feldZahl('kurs');
+    var b0 = feldZahl('betrag'), g = formGebuehr(), b = b0 > 0 ? b0 + g : b0, e = feldZahl('abgebucht'), k = feldZahl('kurs');
     var wn = waehrungName(formW());
     var hinweis = 'Gib den Betrag in ' + wn + ' oder in Euro ein. Der andere Wert wird über den Kurs berechnet.';
     if (dritter === 'eur') {
       $('abgebucht').value = (b > 0 && k > 0) ? (b / k).toFixed(2) : '';
       hinweis = 'Der Euro-Betrag wird aus ' + wn + ' ÷ Kurs berechnet. Trage hier den echten Abbuchungsbetrag ein, dann ergibt sich der Kurs.';
     } else if (dritter === 'php') {
-      $('betrag').value = (e > 0 && k > 0) ? (e * k).toFixed(2) : '';
+      $('betrag').value = (e > 0 && k > 0) ? (e * k - g).toFixed(2) : '';
       hinweis = 'Der Betrag in ' + wn + ' wird aus Euro × Kurs berechnet.';
     } else if (dritter === 'kurs') {
       if (b > 0 && e > 0) $('kurs').value = kursRunden(b / e);
@@ -1885,7 +1946,8 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     berechne();
   }
   $('zahlung').addEventListener('change', kursBereichUmschalten);
-  $('kategorie').addEventListener('change', kursBereichUmschalten);
+  $('kategorie').addEventListener('change', function () { waehrungLabels(); kursBereichUmschalten(); });
+  $('gebuehr').addEventListener('input', function () { beruehrt('php'); if (typeof formEinpassen === 'function') setTimeout(formEinpassen, 0); });
   $('datum').addEventListener('input', function () {
     if (multi && !bearbeiteId) {
       var c = abschnittWaehrung($('datum').value);
@@ -1921,7 +1983,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     $('kurs').value = startKurs();
     $('ort').value = einst.letzterOrt || '';
     anker = ['kurs'];
-    $('verteilen').checked = false; $('datumBis').value = ''; verteilUmschalten();
+    $('verteilen').checked = false; $('datumBis').value = ''; verteilUmschalten(); $('gebuehr').value = '';
     letzteKategorie = $('kategorie').value;
     barAktiv = false;
     kursBereichUmschalten();
@@ -1998,6 +2060,25 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   var summenZeit = 0;
   function summen() { var n = Date.now(); if (n - summenZeit < 500) return; summenZeit = n; try { if (navigator.vibrate) navigator.vibrate(80); } catch (err) {} }
   $('speichern').addEventListener('pointerup', function () { if ($('form').checkValidity()) summen(); });
+  // Ort per GPS (nur auf Tipp; Ortsname über OpenStreetMap)
+  $('ortGps').addEventListener('click', function () {
+    if (!navigator.geolocation) { toast('Standort wird auf diesem Gerät nicht unterstützt.'); return; }
+    var btn = $('ortGps'); btn.classList.add('laedt');
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var u = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=12&accept-language=de&lat=' + pos.coords.latitude.toFixed(5) + '&lon=' + pos.coords.longitude.toFixed(5);
+      fetch(u).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
+        var ad = (d && d.address) || {};
+        var name = ad.city || ad.town || ad.village || ad.municipality || ad.suburb || ad.county || ad.state || '';
+        btn.classList.remove('laedt');
+        if (!name) { toast('Kein Ortsname gefunden.'); return; }
+        $('ort').value = name.slice(0, 40); toast('Ort: ' + name);
+      }).catch(function () { btn.classList.remove('laedt'); toast('Ortsname nicht abrufbar (Internet?).'); });
+    }, function (err) {
+      btn.classList.remove('laedt');
+      toast(err && err.code === 1 ? 'Standort-Zugriff wurde nicht erlaubt.' : 'Standort nicht ermittelbar.');
+    }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 120000 });
+  });
+
   // Über mehrere Tage verteilen: Von/Bis
   function verteilInfo() {
     var v = $('datum').value, bi = $('datumBis').value, b = feldZahl('betrag');
@@ -2029,7 +2110,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       if (anker.indexOf('kurs') < 0) {
         // Pesos und Euro wurden eingegeben: der Kurs ergibt sich daraus
         if (!(euro > 0)) { toast('Bitte den Euro-Betrag eingeben.'); return; }
-        kurs = betrag / euro;
+        kurs = (betrag + formGebuehr()) / euro;
       }
       if (!isFinite(kurs) || kurs <= 0) { toast('Bitte einen gültigen Kurs eingeben.'); return; }
     }
@@ -2047,6 +2128,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     };
     var ort = $('ort').value.trim().slice(0, 40);
     if (ort) eintrag.ort = ort;
+    if (formGebuehr() > 0) eintrag.gebuehr = Math.round(formGebuehr() * 100) / 100;
     if (!barModus) {
       eintrag.kurs = kurs;
       if (euroManuell) eintrag.abgebucht = Math.round(euro * 100) / 100;
@@ -2054,6 +2136,10 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     }
     if ($('geprueft').checked) eintrag.geprueft = true;
     if ($('verteilen').checked && $('datumBis').value && $('datumBis').value > eintrag.datum) eintrag.bis = $('datumBis').value;
+    if (!bearbeiteId) {
+      var dop = ausgaben.filter(function (a) { return a.datum === eintrag.datum && a.kategorie === eintrag.kategorie && waehrungVon(a) === eintrag.waehrung && Math.abs(a.betrag - eintrag.betrag) < 0.005; })[0];
+      if (dop && !confirm('Es gibt am ' + datumAnzeige(dop.datum) + ' schon eine Ausgabe „' + (dop.beschreibung || dop.kategorie) + '“ über ' + dop.betrag.toLocaleString('de-DE') + ' ' + waehrungSymbol(eintrag.waehrung) + (dop.zahlung ? ' (' + dop.zahlung + ')' : '') + '.\n\nTrotzdem speichern?')) return;
+    }
     if (bearbeiteId) {
       ausgaben = ausgaben.map(function (a) { return a.id === bearbeiteId ? eintrag : a; });
       toast('Änderung gespeichert');
@@ -2199,6 +2285,19 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   }
   window.addEventListener('resize', knoepfeMitteln);
   if (window.ResizeObserver) new ResizeObserver(knoepfeMitteln).observe($('ticket'));
+  // Wie lange reicht das Bargeld? Schnitt der Bar-Ausgaben der letzten (bis zu) 5 Reisetage
+  function bargeldPrognose(bg) {
+    if (!bg || bg.length !== 1 || !(bg[0].rest > 0) || !reise.start) return '';
+    var h = heute(); if (h < reise.start || (reise.ende && h > reise.ende)) return '';
+    var code = bg[0].code, von = tagPlus(h, -4); if (von < reise.start) von = reise.start;
+    var n = tageZwischen(von, h) + 1;
+    var bar = ausgaben.filter(function (a) { return istBarAusgabe(a) && waehrungVon(a) === code; });
+    var pt = proTagVerteilt(bar, function (a) { return a.betrag; }), summe = 0;
+    for (var i = 0; i < n; i++) summe += pt[tagPlus(von, i)] || 0;
+    if (!(summe > 0)) return '';
+    var tage = bg[0].rest / (summe / n);
+    return tage < 1 ? 'reicht < 1 Tag' : 'reicht ca. ' + Math.round(tage) + (Math.round(tage) === 1 ? ' Tag' : ' Tage');
+  }
   function kopfStubRendern() {
     ticketBudgetRendern(); setTimeout(knoepfeMitteln, 0);
     var box = document.getElementById('kopfStub');
@@ -2216,8 +2315,9 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     if (!bg.length) barTxt = '0 ' + lokal.symbol;
     else if (bg.length === 1) { barTxt = Math.round(bg[0].rest).toLocaleString('de-DE') + ' ' + bg[0].symbol; if (bg[0].symbol !== '€') barSub = '≈ ' + euroFmt(bg[0].restEuro || 0); }
     else barTxt = euroFmt(bg.reduce(function (x, b) { return x + b.restEuro; }, 0));
-    function zelle(l, w, sub) { return '<div class="t-zelle"><div class="t-label">' + l + '</div><div class="t-wert">' + esc(w) + '</div>' + (sub ? '<div class="t-sub">' + esc(sub) + '</div>' : '') + '</div>'; }
-    box.innerHTML = zelle('Reisetag', tagTxt) + zelle('Pro Tag', euroFmt(schnitt).replace(',00 €', ' €')) + zelle('Bargeld', barTxt, barSub);
+    var barSub2 = bargeldPrognose(bg);
+    function zelle(l, w, sub, sub2) { return '<div class="t-zelle"><div class="t-label">' + l + '</div><div class="t-wert">' + esc(w) + '</div>' + (sub ? '<div class="t-sub">' + esc(sub) + '</div>' : '') + (sub2 ? '<div class="t-sub t-prog">' + esc(sub2) + '</div>' : '') + '</div>'; }
+    box.innerHTML = zelle('Reisetag', tagTxt) + zelle('Pro Tag', euroFmt(schnitt).replace(',00 €', ' €')) + zelle('Bargeld', barTxt, barSub, barSub2);
     var fort = document.getElementById('reiseFort');
     if (fort) {
       if (s && e && e >= s) {
@@ -2337,6 +2437,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       $('ort').value = a.ort || '';
       $('geprueft').checked = istGeprueft(a);
       $('verteilen').checked = !!a.bis; $('datumBis').value = a.bis || ''; verteilUmschalten();
+      $('gebuehr').value = a.gebuehr > 0 ? a.gebuehr : ''; waehrungLabels();
       $('formTitel').textContent = 'Ausgabe ändern';
       $('speichern').textContent = 'Änderung speichern';
       $('formKarte').classList.add('bearbeiten');
@@ -2377,7 +2478,46 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   function aufklapp(liste) {
     return '<div class="aufgeklappt liste">' + sortNeu(liste).map(eintragHtml).join('') + '</div>';
   }
+  // ---------- Karten- und Automatengebühren (Vergleich mit EZB-Referenzkurs des Tages) ----------
+  var refLaedt = false, refFehlerZeit = 0;
+  function refKurs(code, d) {
+    var m = (einst.refKurse || {})[code]; if (!m) return 0;
+    for (var i = 0; i < 8; i++) { var t = tagPlus(d, -i); if (m[t] > 0) return m[t]; }
+    return 0;
+  }
+  function gebuehrRelevant(a) { return a.zahlung && a.zahlung !== 'Bar' && waehrungVon(a) !== 'EUR' && istGeprueft(a) && (a.abgebucht > 0 || a.kurs > 0); }
+  function refKurseLaden() {
+    if (refLaedt || !navigator.onLine || Date.now() - refFehlerZeit < 60000) return;
+    var fehlt = {};
+    ausgaben.forEach(function (a) { if (gebuehrRelevant(a) && !refKurs(waehrungVon(a), a.datum)) { var c = waehrungVon(a); (fehlt[c] = fehlt[c] || []).push(a.datum); } });
+    var codes = Object.keys(fehlt); if (!codes.length) return;
+    refLaedt = true;
+    var alleD = [].concat.apply([], codes.map(function (c) { return fehlt[c]; })).sort();
+    var von = tagPlus(alleD[0], -7), bis = alleD[alleD.length - 1];
+    fetch('https://api.frankfurter.dev/v1/' + von + '..' + bis + '?base=EUR&symbols=' + codes.join(','))
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) {
+        einst.refKurse = einst.refKurse || {};
+        Object.keys(d.rates || {}).forEach(function (t) { codes.forEach(function (c) { var v = d.rates[t][c]; if (v > 0) { (einst.refKurse[c] = einst.refKurse[c] || {})[t] = v; } }); });
+        refLaedt = false; speichernEinst(); renderZahlungsmittel();
+      }).catch(function () { refLaedt = false; refFehlerZeit = Date.now(); });
+  }
+  function gebuehrenAnalyse() {
+    var erg = {}, fehlt = 0;
+    ausgaben.forEach(function (a) {
+      if (!gebuehrRelevant(a)) return;
+      var ref = refKurs(waehrungVon(a), a.datum); if (!ref) { fehlt++; return; }
+      var eur = eigenEuro(a), geb = a.gebuehr > 0 && istAbh(a) ? a.gebuehr : 0, ges = a.betrag + geb;
+      var fair = a.betrag / ref, extra = eur - fair, atm = ges > 0 ? geb * eur / ges : 0;
+      var z = erg[a.zahlung] = erg[a.zahlung] || { extra: 0, atm: 0, fair: 0, n: 0 };
+      z.extra += extra; z.atm += atm; z.fair += fair; z.n++;
+    });
+    Object.keys(erg).forEach(function (k) { var z = erg[k]; z.aufschlag = z.fair > 0 ? (z.extra - z.atm) / z.fair * 100 : 0; });
+    return { proZ: erg, fehlt: fehlt };
+  }
   function renderZahlungsmittel() {
+    refKurseLaden();
+    var geb = gebuehrenAnalyse();
     var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
     function zeile(key, name, ausg, abh, sub) {
       var offen = !!offenZahlung[key];
@@ -2386,6 +2526,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
         '<div class="zm-kopf"><span class="zm-name">' + pfeil(offen) + esc(name) + '</span>' +
         '<span class="zm-wert">' + wertEuro(summePeso(ausg), summeEuro(ausg)) + '</span></div>' +
         (key !== 'Bar' && key !== '__ohne__' ? '<div class="zm-mit"><span>mit Bargeldabhebungen</span><span>' + wertEuro(summePeso(inhalt), summeEuro(inhalt)) + '</span></div>' : '') +
+        (geb.proZ[key] ? '<div class="zm-geb"><span>Gebühren & Kursaufschlag</span><span><b>' + esc(euroFmt(geb.proZ[key].extra)) + '</b><small>' + esc((geb.proZ[key].aufschlag >= 0 ? '+' : '') + geb.proZ[key].aufschlag.toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' % Kurs' + (geb.proZ[key].atm > 0.004 ? ' · Automat ' + euroFmt(geb.proZ[key].atm) : '')) + '</small></span></div>' : '') +
         '<div class="zm-sub">' + sub + '</div></div>' +
         (offen ? (inhalt.length ? aufklapp(inhalt) : '<div class="leer">Keine Einträge.</div>') : '') + '</div>';
     }
@@ -2407,6 +2548,12 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       '<span class="zm-wert">' + wertEuro(summePeso(ohneAbh), summeEuro(ohneAbh)) + '</span></div>' +
       '<div class="zm-mit"><span>mit Bargeldabhebungen</span><span>' + wertEuro(summePeso(ausgaben), summeEuro(ausgaben)) + '</span></div>' +
       '<div class="zm-sub">ohne Bargeldabhebungen (oben) · mit Abhebungen (darunter)</div></div>';
+    var gs = Object.keys(geb.proZ).reduce(function (x, k) { x.e += geb.proZ[k].extra; x.a += geb.proZ[k].atm; return x; }, { e: 0, a: 0 });
+    if (Object.keys(geb.proZ).length || geb.fehlt) {
+      html += '<div class="zm geb-summe"><div class="zm-kopf"><span class="zm-name"><span class="pfeil"></span>Gebühren gesamt</span><span class="zm-wert">' + (Object.keys(geb.proZ).length ? euroFmt(gs.e) : '–') + '</span></div>' +
+        '<div class="zm-sub">' + (Object.keys(geb.proZ).length ? 'Kartenzahlungen und Abhebungen verglichen mit dem EZB-Referenzkurs des Tages' + (gs.a > 0.004 ? ' · davon Automatengebühren ' + euroFmt(gs.a) : '') : '') +
+        (geb.fehlt ? (Object.keys(geb.proZ).length ? '<br>' : '') + geb.fehlt + (geb.fehlt === 1 ? ' Eintrag wartet' : ' Einträge warten') + ' auf den Referenzkurs (braucht Internet).' : '') + '</div></div>';
+    }
     $('tab-zahlung').innerHTML = html;
   }
   $('tab-zahlung').addEventListener('click', function (e) {
@@ -2986,6 +3133,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     if (a.abgebucht > 0 && isFinite(a.abgebucht)) e.abgebucht = a.abgebucht;
     if (a.geprueft === true) e.geprueft = true;
     if (a.pauschal === true) e.pauschal = true;
+    if (a.gebuehr > 0 && isFinite(a.gebuehr)) e.gebuehr = a.gebuehr;
     if (typeof a.bis === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.bis) && a.bis > a.datum) e.bis = a.bis;
     if (gueltigerAnker(a.anker)) e.anker = a.anker.slice();
     if (typeof a.ort === 'string' && a.ort.trim()) e.ort = a.ort.trim().slice(0, 40);
@@ -3031,6 +3179,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     if (!ziel.budget) ziel.budget = neu.budget;
     if (!ziel.startkurs) ziel.startkurs = neu.startkurs;
     Object.keys(neu.kurse).forEach(function (c) { if (!ziel.kurse[c]) ziel.kurse[c] = neu.kurse[c]; });
+    Object.keys(neu.refKurse || {}).forEach(function (c) { ziel.refKurse = ziel.refKurse || {}; ziel.refKurse[c] = Object.assign({}, neu.refKurse[c], ziel.refKurse[c] || {}); });
   }
   var importModus = 'merge';
   $('mergeBtn').addEventListener('click', function () { importModus = 'merge'; $('importDatei').click(); });
@@ -4946,6 +5095,31 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   $('sheetDunkel').addEventListener('click', blattZu);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') blattZu(); });
   $('pkFab').addEventListener('click', function () { papierkorbRendern(); blattAuf('papierkorbKarte'); });
+  // Jahresübersicht über alle Reisen
+  function jahreRendern() {
+    var jahre = {}, gesamt = { r: 0, t: 0, e: 0, l: {} };
+    aktive().forEach(function (m) {
+      if (!m.start) return;
+      var j = m.start.slice(0, 4), z = jahre[j] = jahre[j] || { r: 0, t: 0, e: 0, l: {}, liste: [] };
+      var w = m.laender[0] ? m.laender[0].waehrung : 'EUR', k = kennzahlen(datenLaden(m.id), w);
+      var t = m.ende ? tageZwischen(m.start, m.ende) + 1 : 0;
+      z.r++; z.t += t; z.e += k.euro; z.liste.push(m); gesamt.r++; gesamt.t += t; gesamt.e += k.euro;
+      m.laender.forEach(function (l) { z.l[l.code] = 1; gesamt.l[l.code] = 1; });
+    });
+    var js = Object.keys(jahre).sort().reverse(), maxE = Math.max.apply(null, js.map(function (j) { return jahre[j].e; }).concat([1]));
+    function zahlen(z) {
+      return '<div class="jr-zahlen"><div><b>' + z.r + '</b><span>' + (z.r === 1 ? 'Reise' : 'Reisen') + '</span></div><div><b>' + z.t + '</b><span>Reisetage</span></div><div><b>' + Object.keys(z.l).length + '</b><span>' + (Object.keys(z.l).length === 1 ? 'Land' : 'Länder') + '</span></div><div><b>' + esc(euroFmt(z.t ? z.e / z.t : 0).replace(',00 €', ' €')) + '</b><span>pro Tag</span></div></div>';
+    }
+    $('jahreInhalt').innerHTML = !js.length ? '<p class="leer">Noch keine Reise mit Datum.</p>' :
+      '<div class="jr-gesamt"><div class="jr-kopf"><span>Alle Jahre</span><b>' + esc(euroFmt(gesamt.e)) + '</b></div>' + zahlen(gesamt) + '</div>' +
+      js.map(function (j) {
+        var z = jahre[j];
+        return '<div class="jr-jahr"><div class="jr-kopf"><span>' + j + '</span><b>' + esc(euroFmt(z.e)) + '</b></div>' +
+          '<div class="jr-balken"><i style="width:' + (z.e / maxE * 100).toFixed(1) + '%"></i></div>' + zahlen(z) +
+          '<div class="jr-reisen">' + z.liste.sort(function (a, b) { return a.start.localeCompare(b.start); }).map(function (m) { return '<span>' + m.laender.map(function (l) { return flagge(l.code); }).join('') + ' ' + esc(m.name) + '</span>'; }).join('') + '</div></div>';
+      }).join('');
+  }
+  $('jahreBtn').addEventListener('click', function () { jahreRendern(); blattAuf('jahreKarte'); });
   $('bkFab').addEventListener('click', function () { blattAuf('startBackupKarte'); });
   $('papierkorbListe').addEventListener('click', function (e) {
     var r = e.target.closest('[data-pk-rest]'), w = e.target.closest('[data-pk-weg]');
