@@ -945,6 +945,7 @@ html[data-thema="dunkel"] .rs-lupe { color: #CFE6E4; }
 .rs-suche input { flex: 1; min-width: 0; height: 42px; margin: 0; }
 .rs-suche button { width: 42px; height: 42px; margin: 0; padding: 0; flex: none; border-radius: 12px; background: var(--feld-bg); color: var(--text); border: 1px solid var(--feld-rand); box-shadow: none; }
 #reisenListe { margin-top: 4px; }
+#reisenListe .reise-eintrag[hidden], #rsSucheLeer[hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -3593,7 +3594,8 @@ html[data-thema="dunkel"] .rs-lupe { color: #CFE6E4; }
   function rsSucheZu() { $('rsSucheFeld').value = ''; $('rsSuche').hidden = true; $('rsSucheBtn').hidden = false; $('rsSucheBtn').setAttribute('aria-expanded', 'false'); reisenFiltern(); }
   $('rsSucheBtn').addEventListener('click', function () { $('rsSuche').hidden = false; $('rsSucheBtn').hidden = true; $('rsSucheBtn').setAttribute('aria-expanded', 'true'); $('rsSucheFeld').focus(); });
   $('rsSucheX').addEventListener('click', rsSucheZu);
-  $('rsSucheFeld').addEventListener('input', reisenFiltern);
+  ['input', 'keyup', 'compositionupdate', 'compositionend', 'change'].forEach(function (ev) { $('rsSucheFeld').addEventListener(ev, function () { setTimeout(reisenFiltern, 0); }); });
+  $('rsSucheFeld').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); reisenFiltern(); $('rsSucheFeld').blur(); } });
   $('rsSucheFeld').addEventListener('keydown', function (e) { if (e.key === 'Escape') rsSucheZu(); });
   function startRendern() {
     var liste = aktive().sort(function (a, b) { return (b.start || '').localeCompare(a.start || ''); });
