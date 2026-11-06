@@ -3980,6 +3980,18 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     }
     $('wkPopup').innerHTML = kopf + inhalt; $('wkPopup').hidden = false; $('wkPopup').scrollTop = 0;
   }
+  // Zurück-Taste schließt das Länder-Fenster (kleine und große Karte, auch über die Chips)
+  var wkPopPush = false, wkPopIgnore = 0, wkZielReise = null;
+  new MutationObserver(function () {
+    var offen = !$('wkPopup').hidden;
+    if (offen && !wkPopPush) { try { history.pushState(Object.assign({}, history.state || {}, { popup: true }), ''); wkPopPush = true; } catch (e) {} }
+    else if (!offen && wkPopPush) { wkPopPush = false; wkPopIgnore++; try { history.back(); } catch (e) { wkPopIgnore--; } }
+  }).observe($('wkPopup'), { attributes: true, attributeFilter: ['hidden'] });
+  window.addEventListener('popstate', function (e) {
+    if (wkZielReise) { var id = wkZielReise; wkZielReise = null; e.stopImmediatePropagation(); setTimeout(function () { reiseOeffnen(id); }, 0); return; }
+    if (wkPopIgnore > 0) { wkPopIgnore--; e.stopImmediatePropagation(); return; }
+    if (wkPopPush && !$('wkPopup').hidden) { wkPopPush = false; $('wkPopup').hidden = true; e.stopImmediatePropagation(); }
+  }, true);
   $('wkPopup').addEventListener('click', function (ev) {
     ev.stopPropagation();
     if (ev.target.closest('.wkp-x')) { $('wkPopup').hidden = true; return; }
@@ -3987,10 +3999,12 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     var w = ev.target.closest('[data-wahl]');
     if (w) { wkPopupZeigen(wkPopupLand, w.getAttribute('data-wahl')); return; }
     var b = ev.target.closest('[data-zur-reise]'); if (!b) return;
-    var rid = b.getAttribute('data-zur-reise');
+    var rid = b.getAttribute('data-zur-reise'), n = 0;
+    if (wkPopPush) { wkPopPush = false; n++; }
     $('wkPopup').hidden = true;
-    if (wkGross()) { vollbildZu(true); try { if (history.state && history.state.vollbild) history.replaceState({ start: true }, ''); } catch (e) {} }
-    setTimeout(function () { reiseOeffnen(rid); }, 60);
+    if (wkGross()) { vollbildZu(true); n++; }
+    if (n) { wkZielReise = rid; try { history.go(-n); } catch (e) { wkZielReise = null; reiseOeffnen(rid); } }
+    else setTimeout(function () { reiseOeffnen(rid); }, 60);
   });
   ['pointerdown', 'touchstart', 'mousedown'].forEach(function (evn) { $('wkPopup').addEventListener(evn, function (ev) { ev.stopPropagation(); }, { passive: true }); });
   function wkWaehlen(code) {
