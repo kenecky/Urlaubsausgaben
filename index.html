@@ -1023,6 +1023,9 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
 #reiseKarte .rk-haus svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
 #reiseKarte > h2 { padding-right: 104px !important; }
 body.rs-haupt #zurueckBtn { display: none !important; }
+/* Reiseliste scrollt ohne sichtbaren Balken */
+#reisenListe { scrollbar-width: none; -ms-overflow-style: none; }
+#reisenListe::-webkit-scrollbar { display: none; width: 0; height: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
