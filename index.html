@@ -932,6 +932,19 @@ body.form-fest { overflow: hidden; }
 body.form-eng #formKarte form label:not(.check) { margin-top: 7px; }
 body.form-eng #formKarte .check { margin-top: 6px !important; }
 body.form-eng2 #formKarte form input:not([type="checkbox"]), body.form-eng2 #formKarte form select, body.form-eng2 #formKarte form textarea { height: 42px; min-height: 42px; padding-top: 15px !important; }
+
+/* Suche in Meine Reisen */
+#reisenKarte .rs-kopf { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: none; }
+#reisenKarte .rs-kopf h2 { margin: 0; }
+.rs-lupe { width: 34px; height: 34px; margin: 0; padding: 0; border-radius: 12px; background: var(--feld-bg); color: var(--petrol); border: 1px solid var(--linie); box-shadow: none; display: flex; align-items: center; justify-content: center; }
+html[data-thema="dunkel"] .rs-lupe { color: #CFE6E4; }
+.rs-lupe svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.rs-lupe[hidden] { display: none; }
+.rs-suche { display: flex; gap: 8px; margin: 10px 0 4px; flex: none; }
+.rs-suche[hidden] { display: none; }
+.rs-suche input { flex: 1; min-width: 0; height: 42px; margin: 0; }
+.rs-suche button { width: 42px; height: 42px; margin: 0; padding: 0; flex: none; border-radius: 12px; background: var(--feld-bg); color: var(--text); border: 1px solid var(--feld-rand); box-shadow: none; }
+#reisenListe { margin-top: 4px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -988,7 +1001,8 @@ body.form-eng2 #formKarte form input:not([type="checkbox"]), body.form-eng2 #for
   </section>
 
   <section class="karte" id="reisenKarte">
-    <h2>Meine Reisen</h2>
+    <div class="rs-kopf"><h2>Meine Reisen</h2><button type="button" class="rs-lupe" id="rsSucheBtn" aria-label="Reisen durchsuchen" aria-expanded="false"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button></div>
+    <div class="rs-suche" id="rsSuche" hidden><input type="search" id="rsSucheFeld" placeholder="Name oder Land …" autocomplete="off" aria-label="Reisen nach Name oder Land suchen"><button type="button" id="rsSucheX" aria-label="Suche schließen">✕</button></div>
     <div id="reisenListe"></div>
   </section>
 
@@ -3564,6 +3578,23 @@ body.form-eng2 #formKarte form input:not([type="checkbox"]), body.form-eng2 #for
       return { euro: euro, anzahl: ohne.length };
     } finally { kontext = null; }
   }
+  // Suche in „Meine Reisen“: Name und Länder
+  function reisenFiltern() {
+    var q = normT($('rsSucheFeld').value.trim()), n = 0;
+    Array.prototype.forEach.call(document.querySelectorAll('#reisenListe .reise-eintrag'), function (el) {
+      var m = reisen.filter(function (r) { return r.id === el.getAttribute('data-reise'); })[0];
+      var txt = m ? normT(m.name + ' ' + m.laender.map(function (x) { return x.name; }).join(' ')) : '';
+      var pass = !q || txt.indexOf(q) >= 0; el.hidden = !pass; if (pass) n++;
+    });
+    var leer = $('rsSucheLeer');
+    if (!leer) { leer = document.createElement('div'); leer.id = 'rsSucheLeer'; leer.className = 'leer'; $('reisenListe').appendChild(leer); }
+    leer.textContent = 'Keine Reise gefunden.'; leer.hidden = !(q && !n);
+  }
+  function rsSucheZu() { $('rsSucheFeld').value = ''; $('rsSuche').hidden = true; $('rsSucheBtn').hidden = false; $('rsSucheBtn').setAttribute('aria-expanded', 'false'); reisenFiltern(); }
+  $('rsSucheBtn').addEventListener('click', function () { $('rsSuche').hidden = false; $('rsSucheBtn').hidden = true; $('rsSucheBtn').setAttribute('aria-expanded', 'true'); $('rsSucheFeld').focus(); });
+  $('rsSucheX').addEventListener('click', rsSucheZu);
+  $('rsSucheFeld').addEventListener('input', reisenFiltern);
+  $('rsSucheFeld').addEventListener('keydown', function (e) { if (e.key === 'Escape') rsSucheZu(); });
   function startRendern() {
     var liste = aktive().sort(function (a, b) { return (b.start || '').localeCompare(a.start || ''); });
     $('reisenListe').innerHTML = liste.length ? liste.map(function (m) {
@@ -3579,6 +3610,7 @@ body.form-eng2 #formKarte form input:not([type="checkbox"]), body.form-eng2 #for
     }).join('') : '<div class="leer">Noch keine Reise. Lege deine erste Reise an.</div>';
     var laufend = liste.filter(function (m) { return reiseStatus(m) === 'laeuft'; }).length;
     $('startSub').textContent = liste.length + (liste.length === 1 ? ' Reise' : ' Reisen') + (laufend ? ' · ' + laufend + ' läuft' : '');
+    if ($('rsSucheFeld').value) reisenFiltern();
     karteRendern();
     papierkorbRendern();
     $('altUebernehmenBtn').hidden = !(altLesen() && aktive().some(function (r) { return r.id === MIGRATIONS_ID; }));
