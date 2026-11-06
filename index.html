@@ -982,6 +982,25 @@ html[data-thema="dunkel"] #kacheln .kachel.breit { box-shadow: inset 6px 0 0 #1C
 .vb-zu { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); z-index: 3; width: 42px; height: 42px; margin: 0; padding: 0; border-radius: 12px; background: var(--karte); color: var(--text); border: 1px solid var(--linie); font-size: 18px; box-shadow: 0 6px 16px -8px rgba(4,30,36,.5); }
 .vollbild.gedreht .vb-zu { top: auto; bottom: calc(10px + env(safe-area-inset-bottom)); }
 html:has(body.vb-offen) { overflow: hidden; }
+
+/* Zahlung: zweite Summe mit Abhebungen */
+.zm-mit { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-top: 4px; font-size: 13px; color: var(--grau); }
+.zm-mit > span:last-child { text-align: right; font-weight: 600; color: var(--text); }
+/* Verlauf im Vollbild */
+.vollbild .v-text { font-size: 11px; }
+.v-wert { font-weight: 700; fill: var(--text); }
+.v-rot { fill: var(--rot); }
+/* Popup auf der Vollbild-Karte */
+.wk-popup { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5; width: min(360px, 86%); max-height: 86%; overflow-y: auto; background: var(--karte); border-radius: 18px; padding: 14px 16px 16px; box-shadow: 0 20px 50px -18px rgba(4,30,36,.6); }
+.wk-popup[hidden] { display: none; }
+.wk-popup h3 { margin: 0 34px 8px 0; font-size: 18px; }
+.wkp-x { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; margin: 0; padding: 0; border-radius: 10px; background: var(--feld-bg); color: var(--text); border: 1px solid var(--feld-rand); box-shadow: none; }
+.wkp-reise { padding: 10px 0; border-top: 1px solid var(--linie); }
+.wkp-reise b { font-family: var(--display); font-size: 16px; }
+.wkp-z { font-size: 13px; color: var(--grau); margin-top: 2px; }
+.wkp-summe { font-family: var(--display); font-weight: 800; font-size: 17px; margin-top: 4px; }
+.wkp-summe small { font-family: inherit; font-weight: 500; font-size: 13px; color: var(--grau); }
+.wkp-los { margin-top: 8px; height: 42px; background: var(--mango); color: var(--mango-text); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1358,7 +1377,7 @@ html:has(body.vb-offen) { overflow: hidden; }
 
 <div id="berichtDruck" class="bericht"></div>
 <div class="sheet-dunkel" id="sheetDunkel"></div>
-<div class="vollbild" id="vollbild" hidden><div class="vb-innen" id="vbInnen"></div><button type="button" class="vb-zu" id="vbZu" aria-label="Vollbild schließen">✕</button></div>
+<div class="vollbild" id="vollbild" hidden><div class="vb-innen" id="vbInnen"><div class="wk-popup" id="wkPopup" hidden></div></div><button type="button" class="vb-zu" id="vbZu" aria-label="Vollbild schließen">✕</button></div>
 <div class="undo" id="undoBar" hidden><span id="undoText"></span><button type="button" id="undoBtn">Rückgängig</button></div>
 <div class="toast" id="toast"></div>
 
@@ -2206,6 +2225,7 @@ html:has(body.vb-offen) { overflow: hidden; }
       return '<div class="zm"><div class="zm-klick" data-zm="' + esc(key) + '" role="button" aria-expanded="' + offen + '">' +
         '<div class="zm-kopf"><span class="zm-name">' + pfeil(offen) + esc(name) + '</span>' +
         '<span class="zm-wert">' + wertEuro(summePeso(ausg), summeEuro(ausg)) + '</span></div>' +
+        (key !== 'Bar' && key !== '__ohne__' ? '<div class="zm-mit"><span>mit Bargeldabhebungen</span><span>' + wertEuro(summePeso(inhalt), summeEuro(inhalt)) + '</span></div>' : '') +
         '<div class="zm-sub">' + sub + '</div></div>' +
         (offen ? (inhalt.length ? aufklapp(inhalt) : '<div class="leer">Keine Einträge.</div>') : '') + '</div>';
     }
@@ -2214,7 +2234,7 @@ html:has(body.vb-offen) { overflow: hidden; }
       var ausg = ohneAbh.filter(function (a) { return a.zahlung === m; });
       var abh = ausgaben.filter(function (a) { return istAbh(a) && a.zahlung === m; });
       var sub = ausg.length + (ausg.length === 1 ? ' Ausgabe' : ' Ausgaben');
-      if (m !== 'Bar' && abh.length) sub += ' · Abhebungen: ' + geld(summePeso(abh)) + ((euroTrip || multi) ? '' : ' (≈ ' + euroFmt(summeEuro(abh)) + ')');
+      sub += ' ohne Abhebungen' + (m !== 'Bar' && abh.length ? ' · ' + abh.length + (abh.length === 1 ? ' Abhebung' : ' Abhebungen') : '');
       sub += '<div style="margin-top:6px">' + balkenSpur(zmMax > 0 ? summePeso(ausg) / zmMax * 100 : 0, pct2(summePeso(ausg), zmGesamt)) + '</div>';
       return zeile(m, m, ausg, abh, sub);
     }).join('');
@@ -2225,7 +2245,8 @@ html:has(body.vb-offen) { overflow: hidden; }
     }
     html += '<div class="zm"><div class="zm-kopf"><span class="zm-name"><span class="pfeil"></span>Gesamt</span>' +
       '<span class="zm-wert">' + wertEuro(summePeso(ohneAbh), summeEuro(ohneAbh)) + '</span></div>' +
-      '<div class="zm-sub">ohne Bargeldabhebungen</div></div>';
+      '<div class="zm-mit"><span>mit Bargeldabhebungen</span><span>' + wertEuro(summePeso(ausgaben), summeEuro(ausgaben)) + '</span></div>' +
+      '<div class="zm-sub">ohne Bargeldabhebungen (oben) · mit Abhebungen (darunter)</div></div>';
     $('tab-zahlung').innerHTML = html;
   }
   $('tab-zahlung').addEventListener('click', function (e) {
@@ -3222,17 +3243,20 @@ html:has(body.vb-offen) { overflow: hidden; }
     var hoechst = Math.max(heuteWert, prog || 0, budgetLinie || 0);
     var yMax = niceMax(hoechst * 1.05);
 
-    var W = 340, H = 200, ml = 50, mr = 10, mt = 10, mb = 26;
+    var gross = !!(vbZurueck && vbZurueck.klasse === 'vb-verlauf');
+    var W = gross ? 680 : 340, H = gross ? 320 : 200, ml = gross ? 70 : 50, mr = 14, mt = 14, mb = gross ? 30 : 26;
+    var yStufen = gross ? [0, .2, .4, .6, .8, 1] : [0, 0.5, 1];
+    var xStufen = gross ? [0, .25, .5, .75, 1] : [0, .5, 1];
     function px(x) { return ml + (x / gesamtN) * (W - ml - mr); }
     function py(y) { return H - mb - (y / yMax) * (H - mt - mb); }
     var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Verlauf der Ausgaben">';
-    [0, 0.5, 1].forEach(function (f) {
+    yStufen.forEach(function (f) {
       var y = py(yMax * f);
       svg += '<line class="v-achse" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + y + '" y2="' + y + '"></line>' +
         '<text class="v-text" x="' + (ml - 5) + '" y="' + (y + 3.5) + '" text-anchor="end">' +
         (yMax * f).toLocaleString('de-DE', { maximumFractionDigits: 0 }) + '</text>';
     });
-    [[0, 'start'], [gesamtN / 2, 'middle'], [gesamtN, 'end']].forEach(function (t) {
+    xStufen.map(function (f) { return [gesamtN * f, f === 0 ? 'start' : (f === 1 ? 'end' : 'middle')]; }).forEach(function (t) {
       var d = tagPlus(start, Math.round(t[0]));
       svg += '<text class="v-text" x="' + px(t[0]) + '" y="' + (H - 8) + '" text-anchor="' + t[1] + '">' + datumAnzeige(d).slice(0, 5) + '</text>';
     });
@@ -3243,6 +3267,11 @@ html:has(body.vb-offen) { overflow: hidden; }
     svg += '<path class="v-flaeche" d="' + pfad + ' L' + px(linieEnde).toFixed(1) + ' ' + py(0) + ' L' + px(0).toFixed(1) + ' ' + py(0) + ' Z"></path>';
     if (prog !== null) {
       svg += '<path class="v-prog" d="M' + px(linieEnde).toFixed(1) + ' ' + py(heuteWert).toFixed(1) + ' L' + px(gesamtN).toFixed(1) + ' ' + py(prog).toFixed(1) + '"></path>';
+    }
+    if (gross) { // Werte direkt an Linie, Budget und Hochrechnung
+      svg += '<text class="v-text v-wert" x="' + Math.min(px(linieEnde) + 6, W - mr - 60) + '" y="' + (py(heuteWert) - 8).toFixed(1) + '">' + esc(fmt(heuteWert)) + '</text>';
+      if (budgetLinie !== null) svg += '<text class="v-text v-wert v-rot" x="' + (W - mr) + '" y="' + (py(budgetLinie) - 6).toFixed(1) + '" text-anchor="end">Budget ' + esc(fmt(budgetLinie)) + '</text>';
+      if (prog !== null) svg += '<text class="v-text v-wert" x="' + (W - mr) + '" y="' + (py(prog) + 16).toFixed(1) + '" text-anchor="end">Hochrechnung ' + esc(fmt(prog)) + '</text>';
     }
     svg += '<path class="v-linie" d="' + pfad + '"></path>' +
       '<circle class="v-punkt" cx="' + px(linieEnde).toFixed(1) + '" cy="' + py(heuteWert).toFixed(1) + '" r="3.5"></circle></svg>';
@@ -3751,9 +3780,31 @@ html:has(body.vb-offen) { overflow: hidden; }
         '<div class="re-zeit">' + (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) : 'ohne Zeitraum') + '</div></div>';
     }).join('');
   }
+  function wkPopupZeigen(e) {
+    var liste = e.reisen.slice().sort(function (a, b) { return (b.start || '').localeCompare(a.start || ''); });
+    $('wkPopup').innerHTML = '<button type="button" class="wkp-x" aria-label="Schließen">✕</button><h3>' + flagge(e.code) + ' ' + esc(LAND[e.code] ? LAND[e.code].name : e.code) + '</h3>' + liste.map(function (m) {
+      var l = m.laender[0], k = kennzahlen(datenLaden(m.id), l ? l.waehrung : 'EUR');
+      var tage = (m.start && m.ende) ? tageZwischen(m.start, m.ende) + 1 : 0;
+      return '<div class="wkp-reise"><b>' + esc(m.name) + '</b>' +
+        '<div class="wkp-z">' + m.laender.map(function (x) { return flagge(x.code) + ' ' + esc(x.name); }).join(', ') + '</div>' +
+        '<div class="wkp-z">' + (m.start ? esc(datumAnzeige(m.start)) + ' – ' + esc(datumAnzeige(m.ende || m.start)) : 'ohne Zeitraum') + (tage ? ' · ' + tage + (tage === 1 ? ' Tag' : ' Tage') : '') + '</div>' +
+        '<div class="wkp-summe">' + esc(euroFmt(k.euro)) + ' <small>· ' + k.anzahl + (k.anzahl === 1 ? ' Ausgabe' : ' Ausgaben') + '</small></div>' +
+        '<button type="button" class="wkp-los" data-zur-reise="' + esc(m.id) + '">Zur Reise</button></div>';
+    }).join('');
+    $('wkPopup').hidden = false;
+  }
+  $('wkPopup').addEventListener('click', function (ev) {
+    if (ev.target.closest('.wkp-x')) { $('wkPopup').hidden = true; return; }
+    var b = ev.target.closest('[data-zur-reise]'); if (!b) return;
+    var id = b.getAttribute('data-zur-reise');
+    $('wkPopup').hidden = true; vollbildZu(true);
+    try { if (history.state && history.state.vollbild) history.replaceState({ start: true }, ''); } catch (e) {}
+    setTimeout(function () { reiseOeffnen(id); }, 60);
+  });
   function wkWaehlen(code) {
     var info = wkLaender(), e = info[code];
     if (!e) return;
+    if (vbZurueck && vbZurueck.klasse === 'vb-karte') { wkPopupZeigen(e); return; }
     if (e.reisen.length === 1) { reiseOeffnen(e.reisen[0].id); return; }
     wkAktiv = (wkAktiv === code) ? '' : code;
     karteRendern();
@@ -4150,7 +4201,7 @@ html:has(body.vb-offen) { overflow: hidden; }
     try {
       var r = document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen({ navigationUI: 'hide' }) : null;
       Promise.resolve(r).then(function () {
-        return screen.orientation && screen.orientation.lock ? screen.orientation.lock('landscape') : Promise.reject();
+        return screen.orientation && screen.orientation.lock ? screen.orientation.lock('landscape-secondary') : Promise.reject();
       }).catch(drehenFallback).then(function () { setTimeout(function () { if (window.innerHeight > window.innerWidth) drehenFallback(); vbAnpassen(); }, 350); });
     } catch (e) { drehenFallback(); }
     vbAnpassen();
@@ -4165,13 +4216,15 @@ html:has(body.vb-offen) { overflow: hidden; }
     try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
     if (!ausHistory && history.state && history.state.vollbild) { try { history.back(); } catch (e) {} }
+    $('wkPopup').hidden = true;
+    if (z.klasse === 'vb-verlauf') renderVerlauf();
     vbAnpassen();
   }
   window.addEventListener('popstate', function () { if (vbZurueck) vollbildZu(true); });
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && vbZurueck && !$('vollbild').classList.contains('gedreht')) vollbildZu(); });
   $('vbZu').addEventListener('click', function () { vollbildZu(); });
   $('wkVoll').addEventListener('click', function () { vollbildAuf($('wkBox'), 'vb-karte'); });
-  $('vlVoll').addEventListener('click', function () { vollbildAuf($('verlaufChart'), 'vb-verlauf'); });
+  $('vlVoll').addEventListener('click', function () { vollbildAuf($('verlaufChart'), 'vb-verlauf'); renderVerlauf(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && vbZurueck) vollbildZu(); });
   function kachelnRendern() {
     if (!reise) return;
