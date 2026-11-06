@@ -1670,6 +1670,10 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     liste.forEach(function (a) { var n = verteilTage(a), w = wert(a) / n; for (var i = 0; i < n; i++) { var d = tagPlus(a.datum, i); m[d] = (m[d] || 0) + w; } });
     return m;
   }
+  // Ausgaben über die ganze Reise (z. B. Flüge hin/zurück, eSIM) zählen als Ort „Gesamte Reise“
+  var ORT_GESAMT = 'Gesamte Reise';
+  function ganzeReise(a, m) { m = m || reise; return !!(m && m.start && m.ende && !istAbh(a) && istPauschal(a) && a.datum <= m.start && a.bis >= m.ende); }
+  function ortVon(a, m) { return ganzeReise(a, m) ? ORT_GESAMT : (a.ort || ''); }
   function liegtAufTag(a, d) { return a.datum === d || (istPauschal(a) && a.datum <= d && a.bis >= d); }
   // Alte „Gesamtreise“-Kennzeichen einmalig umstellen: über die ganze Reise verteilen
   function pauschalUmstellen() {
@@ -2230,7 +2234,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   function eintragHtml(a) {
     var zeile1 = istPauschal(a) ? esc(datumAnzeige(a.datum).slice(0, 6) + ' – ' + datumAnzeige(a.bis)) + ' · ' + verteilTage(a) + ' Tage' : esc(datumAnzeige(a.datum));
     var status = istGeprueft(a) ? '' : '<span class="e-status"><span class="offen-tag">Kurs offen</span></span>';
-    var teile2 = [esc(istAbh(a) ? 'Bargeld' : a.kategorie), a.ort ? esc(a.ort) : '', a.zahlung ? esc(a.zahlung) : ''].filter(Boolean);
+    var teile2 = [esc(istAbh(a) ? 'Bargeld' : a.kategorie), ortVon(a) ? esc(ortVon(a)) : '', a.zahlung ? esc(a.zahlung) : ''].filter(Boolean);
     var meta = '<span class="m-zeile">' + zeile1 + '</span><span class="m-zeile">' + (teile2.length ? teile2.join(' · ') : '–') + '</span>';
     return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' + katIcon(a.kategorie) +
       '<div class="e-mitte"><div class="beschr">' + esc(a.beschreibung || a.kategorie) + '</div><div class="meta">' + meta + '</div></div>' +
@@ -2474,16 +2478,17 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
     if (!ohneAbh.length) { $('tab-orte').innerHTML = '<div class="leer">Noch keine Ausgaben erfasst.</div>'; return; }
     var gruppen = {};
-    ohneAbh.forEach(function (a) { var k = a.ort || '__ohne__'; (gruppen[k] = gruppen[k] || []).push(a); });
-    var keys = Object.keys(gruppen).filter(function (k) { return k !== '__ohne__'; })
+    ohneAbh.forEach(function (a) { var k = ortVon(a) || '__ohne__'; (gruppen[k] = gruppen[k] || []).push(a); });
+    var keys = Object.keys(gruppen).filter(function (k) { return k !== '__ohne__' && k !== ORT_GESAMT; })
       .sort(function (x, y) { return summePeso(gruppen[y]) - summePeso(gruppen[x]); });
+    if (gruppen[ORT_GESAMT]) keys.push(ORT_GESAMT);
     if (gruppen.__ohne__) keys.push('__ohne__');
     var gesamt = summePeso(ohneAbh);
     var maxSumme = Math.max.apply(null, keys.map(function (k) { return summePeso(gruppen[k]); }));
     var html = keys.map(function (k) {
       var liste = gruppen[k], offen = !!offenOrt[k];
       var name = k === '__ohne__' ? 'Ohne Ort' : k;
-      var sub = liste.length + (liste.length === 1 ? ' Ausgabe' : ' Ausgaben') + (k === '__ohne__' ? ' · hier fehlt noch der Ort' : '') +
+      var sub = liste.length + (liste.length === 1 ? ' Ausgabe' : ' Ausgaben') + (k === '__ohne__' ? ' · hier fehlt noch der Ort' : (k === ORT_GESAMT ? ' · über die ganze Reise verteilt' : '')) +
         '<div style="margin-top:6px">' + balkenSpur(maxSumme > 0 ? summePeso(liste) / maxSumme * 100 : 0, pct2(summePeso(liste), gesamt)) + '</div>';
       return '<div class="zm"><div class="zm-klick" data-ort="' + esc(k) + '" role="button" aria-expanded="' + offen + '">' +
         '<div class="zm-kopf"><span class="zm-name">' + pfeil(offen) + esc(name) + '</span>' +
@@ -4086,7 +4091,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
       var ohne = liste.filter(function (a) { return !istAbh(a); });
       var st = { euro: 0, anzahl: ohne.length, proKat: {}, orte: 0, tage: 0, abgehoben: 0 };
       var orte = {};
-      ohne.forEach(function (a) { var e = ew(a); st.euro += e; st.proKat[a.kategorie] = (st.proKat[a.kategorie] || 0) + e; if (a.ort) orte[a.ort] = 1; });
+      ohne.forEach(function (a) { var e = ew(a); st.euro += e; st.proKat[a.kategorie] = (st.proKat[a.kategorie] || 0) + e; var o = ortVon(a, m); if (o && o !== ORT_GESAMT) orte[o] = 1; });
       st.orte = Object.keys(orte).length;
       if (m.start && m.ende) st.tage = tageZwischen(m.start, m.ende) + 1;
       var kS = 0, kT = 0, kI = 0, bar = 0, wS = 0, wT = 0, wI = 0;
@@ -4249,7 +4254,7 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   });
   $('berichtDrucken').addEventListener('click', function () {
     if (!berichtAktuell) return;
-    try { $('berichtDruck').innerHTML = praesentationBauen(); } catch (err) { $('berichtDruck').innerHTML = berichtAktuell.html; }
+    try { $('berichtDruck').innerHTML = praesentationBauen(); } catch (err) { console.error('PDF', err); $('berichtDruck').innerHTML = berichtAktuell.html; }
     document.body.classList.add('druck');
     var titelAlt = document.title; document.title = 'Reisebericht ' + reise.name;
     window.addEventListener('afterprint', function zurueck() { document.title = titelAlt; window.removeEventListener('afterprint', zurueck); });
@@ -4343,17 +4348,18 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     }
     // 5 Orte und Zahlungsmittel
     var proOrt = {}, proZ = {};
-    ohne.forEach(function (a) { var o = a.ort || 'ohne Ort'; proOrt[o] = (proOrt[o] || 0) + euroVon(a); if (a.zahlung) proZ[a.zahlung] = (proZ[a.zahlung] || 0) + euroVon(a); });
-    var orte = Object.keys(proOrt).sort(function (x, y) { return proOrt[y] - proOrt[x]; }).slice(0, 8), zm = Object.keys(proZ).sort(function (x, y) { return proZ[y] - proZ[x]; });
+    ohne.forEach(function (a) { var o = ortVon(a) || 'ohne Ort'; proOrt[o] = (proOrt[o] || 0) + euroVon(a); if (a.zahlung) proZ[a.zahlung] = (proZ[a.zahlung] || 0) + euroVon(a); });
+    var orte = Object.keys(proOrt).filter(function (o) { return o !== ORT_GESAMT; }).sort(function (x, y) { return proOrt[y] - proOrt[x]; }).slice(0, 7); if (proOrt[ORT_GESAMT]) orte.push(ORT_GESAMT); var orteMax = Math.max.apply(null, orte.map(function (o) { return proOrt[o]; }));
+    var zm = Object.keys(proZ).sort(function (x, y) { return proZ[y] - proZ[x]; });
     if (orte.length || zm.length) {
       var zf = { 'Bar': '#2E9E5B', 'KK Sabine': '#C0508A', 'KK Tobi': '#3D6FB6', 'ING': '#E0782F' };
-      folie('Orte und Zahlungsmittel', '<div class="p-zwei gleich"><div><h3>Nach Ort</h3>' + balkenListe(orte.map(function (o) { return { n: o, w: proOrt[o], c: '#1C8A8F', p: prozent(proOrt[o], st.euro) }; }), proOrt[orte[0]], e0) + '</div>' +
+      folie('Orte und Zahlungsmittel', '<div class="p-zwei gleich"><div><h3>Nach Ort</h3>' + balkenListe(orte.map(function (o) { return { n: o, w: proOrt[o], c: o === ORT_GESAMT ? '#8A9A9D' : '#1C8A8F', p: prozent(proOrt[o], st.euro) }; }), orteMax, e0) + '</div>' +
         '<div><h3>Nach Zahlungsmittel</h3>' + balkenListe(zm.map(function (z) { return { n: z, w: proZ[z], c: zf[z] || '#8A6FC0', p: prozent(proZ[z], st.euro) }; }), proZ[zm[0]], e0) + '</div></div>', 'ohne Bargeldabhebungen');
     }
     // 6 Größte Ausgaben
     var top = ohne.slice().sort(function (x, y) { return euroVon(y) - euroVon(x); }).slice(0, 10);
     if (top.length) folie('Die größten Ausgaben', '<table class="p-tab"><thead><tr><th>#</th><th>Datum</th><th>Beschreibung</th><th>Kategorie</th><th>Ort</th>' + (zeigLokal ? '<th class="r">' + esc(lokSym) + '</th>' : '') + '<th class="r">€</th></tr></thead><tbody>' +
-      top.map(function (a, i) { return '<tr><td>' + (i + 1) + '</td><td>' + esc(datumAnzeige(a.datum)) + '</td><td>' + esc(a.beschreibung || a.kategorie) + '</td><td><i class="p-punkt" style="background:' + katStil(a.kategorie).c + '"></i>' + esc(a.kategorie) + '</td><td>' + esc(a.ort || '') + '</td>' + (zeigLokal ? '<td class="r">' + esc(Math.round(lokalWert(a)).toLocaleString('de-DE')) + '</td>' : '') + '<td class="r"><b>' + esc(euroFmt(euroVon(a))) + '</b></td></tr>'; }).join('') + '</tbody></table>', 'Top ' + top.length + ' nach Euro-Betrag');
+      top.map(function (a, i) { return '<tr><td>' + (i + 1) + '</td><td>' + esc(datumAnzeige(a.datum)) + '</td><td>' + esc(a.beschreibung || a.kategorie) + '</td><td><i class="p-punkt" style="background:' + katStil(a.kategorie).c + '"></i>' + esc(a.kategorie) + '</td><td>' + esc(ortVon(a)) + '</td>' + (zeigLokal ? '<td class="r">' + esc(Math.round(lokalWert(a)).toLocaleString('de-DE')) + '</td>' : '') + '<td class="r"><b>' + esc(euroFmt(euroVon(a))) + '</b></td></tr>'; }).join('') + '</tbody></table>', 'Top ' + top.length + ' nach Euro-Betrag');
     // 7 Verrechnung
     var bg = bargeldProWaehrung().filter(function (x) { return x.rest !== 0; });
     folie('Verrechnung', '<div class="pt-reihe">' + kachel('Sabine hat bezahlt', e0(st.vorS), 'Karte + Abhebungen', '#C0508A') + kachel('Tobi hat bezahlt', e0(st.vorT), 'Karte + Abhebungen', '#3D6FB6') + kachel('Über ING abgehoben', e0(st.wI), 'gemeinsames Konto', '#E0782F') + '</div>' +
