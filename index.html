@@ -1017,6 +1017,12 @@ html:has(body.vb-offen) { overflow: hidden; }
 #kacheln .kachel.breit[data-seite-auf="neu"] { background: #FFF3DF !important; border-color: #F6DDAE !important; box-shadow: inset 6px 0 0 var(--mango), 0 8px 20px -12px rgba(180,110,10,.5) !important; }
 #kacheln .kachel.breit[data-seite-auf="neu"] .heute { border-left-color: #F0D6A4; }
 html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { background: #3A2F1A !important; border-color: #5A4622 !important; box-shadow: inset 6px 0 0 var(--mango), 0 8px 20px -12px rgba(0,0,0,.8) !important; }
+
+/* Startseiten-Knopf in den Reise-Einstellungen, Pfeil oben links nur auf Unterseiten */
+#reiseKarte .rk-haus { right: 62px; display: flex; align-items: center; justify-content: center; }
+#reiseKarte .rk-haus svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+#reiseKarte > h2 { padding-right: 104px !important; }
+body.rs-haupt #zurueckBtn { display: none !important; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1263,6 +1269,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
   </section>
 
   <section class="karte sheet" id="reiseKarte" role="dialog" aria-modal="true" aria-label="Reise-Einstellungen">
+    <button type="button" class="sheet-x rk-haus" id="rkStart" aria-label="Zur Startseite (alle Reisen)" title="Zur Startseite"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></button>
     <button type="button" class="sheet-x" id="rkZu" aria-label="Schließen">✕</button>
     <h2>Reise-Einstellungen</h2>
     <div class="rk-tabs" role="tablist"><button type="button" class="rk-tab aktiv" data-rk="reise" role="tab">Diese Reise</button><button type="button" class="rk-tab" data-rk="kat" role="tab">Kategorien</button><button type="button" class="rk-tab" data-rk="budget" role="tab">Reisebudget</button><button type="button" class="rk-tab" data-rk="backup" role="tab">Backup</button></div>
@@ -4209,6 +4216,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
     var b = e.target.closest('[data-seite-auf]'); if (!b || b.disabled) return;
     var n = b.getAttribute('data-seite-auf');
     if (n === 'neu' && bearbeiteId) formZuruecksetzen();
+    else if (n === 'neu' && $('datum').value !== heute()) { $('datum').value = heute(); $('datum').dispatchEvent(new Event('input', { bubbles: true })); }
     seiteOeffnen(n);
   });
   // Hauptseite einpassen: so kompakt wie nötig, damit „Ausgaben“ ganz sichtbar ist
@@ -4494,6 +4502,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
     if (aktSeite) { seiteSchliessen(); return; }
     zurStartseite();
   });
+  $('rkStart').addEventListener('click', function () { reiseBlattZu(); zurStartseite(); });
   function zurStartseite() { try { history.replaceState({ start: true }, ''); } catch (e) {} zeigeStart(); }
   function reisewaehrungen() {
     var codes = [];
