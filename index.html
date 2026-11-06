@@ -1004,8 +1004,7 @@ html:has(body.vb-offen) { overflow: hidden; }
 
 /* Popup auf der Karte (klein und Vollbild) */
 #wkBox .wk-popup { max-height: calc(100% - 16px); }
-#weltKarte #wkBox .wk-popup { width: calc(100% - 20px); padding: 10px 12px 10px; border-radius: 14px; }
-#weltKarte #wkBox .wk-popup h3 { font-size: 15px; margin-bottom: 4px; }
+#weltKarte #wkBox .wk-popup { position: fixed; left: 50%; top: auto; bottom: calc(110px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(360px, calc(100vw - 40px)); max-height: 70vh; z-index: 60; }
 .wkp-hinweis { font-size: 12.5px; color: var(--grau); margin: 0 0 4px; }
 .wkp-wahl { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin: 0; padding: 8px 2px; background: none; border: 0; border-top: 1px solid var(--linie); border-radius: 0; box-shadow: none; text-align: left; color: var(--text); min-height: 0; }
 .wkp-wahl > span:first-child { display: flex; flex-direction: column; min-width: 0; }
@@ -1014,8 +1013,6 @@ html:has(body.vb-offen) { overflow: hidden; }
 .wkp-wahl .re-status { flex: none; font-size: 10.5px; padding: 2px 7px; }
 .wkp-zurueck { width: auto; margin: 0 0 4px; padding: 4px 8px 4px 0; background: none; border: 0; box-shadow: none; color: var(--blau-text); font-weight: 600; font-size: 13.5px; min-height: 0; }
 #wkAuswahl { display: none !important; }
-#weltKarte .wkp-hinweis { display: none; }
-#weltKarte .wkp-wahl { padding: 6px 2px; }
 /* Neue Ausgabe leicht orange */
 #kacheln .kachel.breit[data-seite-auf="neu"] { background: #FFF3DF !important; border-color: #F6DDAE !important; box-shadow: inset 6px 0 0 var(--mango), 0 8px 20px -12px rgba(180,110,10,.5) !important; }
 #kacheln .kachel.breit[data-seite-auf="neu"] .heute { border-left-color: #F0D6A4; }
@@ -3816,7 +3813,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
     var kopf = '<button type="button" class="wkp-x" aria-label="Schließen">✕</button>';
     var titel = '<h3>' + flagge(e.code) + ' ' + esc(LAND[e.code] ? LAND[e.code].name : e.code) + '</h3>';
     var inhalt;
-    var gewaehlt = reiseId ? liste.filter(function (m) { return m.id === reiseId; })[0] : (liste.length === 1 && wkGross() ? liste[0] : null);
+    var gewaehlt = reiseId ? liste.filter(function (m) { return m.id === reiseId; })[0] : (liste.length === 1 ? liste[0] : null);
     if (gewaehlt) {
       inhalt = (liste.length > 1 ? '<button type="button" class="wkp-zurueck">‹ Alle Reisen</button>' : '') + titel + wkReiseDetail(gewaehlt);
     } else {
@@ -3834,7 +3831,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
     if (ev.target.closest('.wkp-x')) { $('wkPopup').hidden = true; return; }
     if (ev.target.closest('.wkp-zurueck')) { wkPopupZeigen(wkPopupLand); return; }
     var w = ev.target.closest('[data-wahl]');
-    if (w) { var id = w.getAttribute('data-wahl'); if (wkGross()) wkPopupZeigen(wkPopupLand, id); else { $('wkPopup').hidden = true; reiseOeffnen(id); } return; }
+    if (w) { wkPopupZeigen(wkPopupLand, w.getAttribute('data-wahl')); return; }
     var b = ev.target.closest('[data-zur-reise]'); if (!b) return;
     var rid = b.getAttribute('data-zur-reise');
     $('wkPopup').hidden = true;
@@ -3845,7 +3842,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
   function wkWaehlen(code) {
     var info = wkLaender(), e = info[code];
     if (!e) return;
-    if (wkGross() || e.reisen.length > 1) { wkPopupZeigen(e); return; }
+    wkPopupZeigen(e); return;
     if (e.reisen.length === 1) { reiseOeffnen(e.reisen[0].id); return; }
     wkAktiv = (wkAktiv === code) ? '' : code;
     karteRendern();
@@ -4267,9 +4264,24 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && vbZurueck && !$('vollbild').classList.contains('gedreht')) vollbildZu(); });
   $('vbZu').addEventListener('click', function () { vollbildZu(); });
   $('vollbild').addEventListener('click', function (ev) { if (!$('wkPopup').hidden && !ev.target.closest('#wkPopup, #wkSvg')) $('wkPopup').hidden = true; });
-  $('wkVoll').addEventListener('click', function () { vollbildAuf($('wkBox'), 'vb-karte'); });
+  $('wkVoll').addEventListener('click', function () { $('wkPopup').hidden = true; vollbildAuf($('wkBox'), 'vb-karte'); });
+  document.addEventListener('click', function (ev) { if (!vbZurueck && !$('wkPopup').hidden && !ev.target.closest('#wkPopup, #wkSvg, #wkChips')) $('wkPopup').hidden = true; });
   $('vlVoll').addEventListener('click', function () { vollbildAuf($('verlaufChart'), 'vb-verlauf'); renderVerlauf(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && vbZurueck) vollbildZu(); });
+  function ortMerken() {
+    try {
+      var inReise = !$('reiseAnsicht').hidden && reise;
+      var rk = document.querySelector('.rk-tab.aktiv');
+      sessionStorage.setItem('reisen.ort', JSON.stringify(inReise ? {
+        reise: reise.id, seite: aktSeite || null, tab: aktiverTab || null, filter: filterKat || '',
+        edit: (aktSeite === 'neu' && bearbeiteId) ? bearbeiteId : null, y: window.scrollY || 0,
+        blatt: document.body.classList.contains('reise-offen') ? 'reise' : null, rk: rk ? rk.getAttribute('data-rk') : null
+      } : { reise: null }));
+    } catch (e) {}
+  }
+  window.addEventListener('pagehide', ortMerken);
+  window.addEventListener('beforeunload', ortMerken);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') ortMerken(); });
   function kachelnRendern() {
     if (!reise) return;
     var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
@@ -4314,8 +4326,8 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
         return !b.contains('blatt-offen') && !t.closest('#wkBox, .wk-chips, input, select, textarea, button') &&
           (!t.closest('#reisenListe') || $('reisenListe').scrollTop <= 0);
       }
-      return b.contains('rs-haupt') && !b.contains('reise-offen') && !b.contains('umrechner-offen') && !b.contains('ab-offen') &&
-        !$('reiseAnsicht').hidden && !t.closest('.sheet, input, select, textarea, #suche');
+      return (b.contains('rs-haupt') || (b.contains('rs-unter') && window.scrollY <= 0)) && !b.contains('reise-offen') && !b.contains('umrechner-offen') && !b.contains('ab-offen') &&
+        !b.contains('vb-offen') && !$('reiseAnsicht').hidden && !t.closest('.sheet, input, select, textarea, #suche, .tabs, #tabsKarte .tab-inhalt input');
     }
     document.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 1 || !aktivHier(e.target)) { y0 = null; return; }
@@ -4335,7 +4347,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
       if (y0 === null) return; y0 = null;
       if (modus === 'r' && dy * 0.5 >= GRENZE) {
         ind.classList.add('laedt'); ind.style.transition = 'transform .2s'; ind.style.transform = 'translate(-50%,' + GRENZE + 'px)';
-        try { sessionStorage.setItem('reisen.neuladen', JSON.stringify({ reise: (!$('reiseAnsicht').hidden && reise) ? reise.id : null, seite: aktSeite || null })); } catch (err) {}
+        ortMerken();
         setTimeout(function () { location.reload(); }, 250);
       } else { ind.style.transition = 'transform .2s, opacity .2s'; ind.style.transform = 'translate(-50%,0)'; ind.style.opacity = '0'; ind.classList.remove('bereit'); }
       modus = null; dy = 0;
@@ -4480,8 +4492,9 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
   }
   $('zurueckBtn').addEventListener('click', function () {
     if (aktSeite) { seiteSchliessen(); return; }
-    if (history.state && history.state.reise) history.back(); else zeigeStart();
+    zurStartseite();
   });
+  function zurStartseite() { try { history.replaceState({ start: true }, ''); } catch (e) {} zeigeStart(); }
   function reisewaehrungen() {
     var codes = [];
     reise.laender.forEach(function (l) { if (codes.indexOf(l.waehrung) < 0) codes.push(l.waehrung); });
@@ -4606,7 +4619,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
     ansichtSetzen(false);
     sperreSetzen();
     zeichnen();
-    if (!ohneHistory) { try { history.pushState({ reise: id }, ''); } catch (e) {} }
+    if (!ohneHistory) { try { history.replaceState({ reise: id }, ''); } catch (e) {} } // Zurück-Taste führt nicht zur Startseite
     window.scrollTo(0, 0);
   }
 
@@ -4850,10 +4863,22 @@ html[data-thema="dunkel"] #kacheln .kachel.breit[data-seite-auf="neu"] { backgro
   try { history.replaceState({ start: true }, ''); } catch (e) {}
   zeigeStart();
   (function () {
-    // Nach „Ziehen zum Aktualisieren“: genau dort weitermachen, wo man war
-    var nl = null; try { nl = JSON.parse(sessionStorage.getItem('reisen.neuladen')); sessionStorage.removeItem('reisen.neuladen'); } catch (e) {}
+    // Nach dem Aktualisieren: genau dort weitermachen, wo man war (Seite, Reiter, Filter, bearbeiteter Eintrag, Scrollposition)
+    var nl = null; try { nl = JSON.parse(sessionStorage.getItem('reisen.ort')); } catch (e) {}
     if (nl) {
-      if (nl.reise && aktive().some(function (m) { return m.id === nl.reise; })) { reiseOeffnen(nl.reise); if (nl.seite && nl.seite !== 'neu') seiteOeffnen(nl.seite); }
+      if (nl.reise && aktive().some(function (m) { return m.id === nl.reise; })) {
+        reiseOeffnen(nl.reise);
+        if (nl.filter !== undefined) { filterKat = nl.filter || ''; $('filter').value = filterKat; }
+        if (nl.tab) tabWechseln(nl.tab);
+        zeichnen();
+        if (nl.seite === 'neu' && nl.edit) {
+          seiteOeffnen('ueb');
+          var eb = document.querySelector('#liste .eintrag[data-id="' + String(nl.edit).replace(/"/g, '') + '"] button[data-aktion="edit"]');
+          if (eb) listeKlick({ target: eb }); else if (nl.seite) seiteOeffnen('neu');
+        } else if (nl.seite) seiteOeffnen(nl.seite);
+        if (nl.y) setTimeout(function () { window.scrollTo(0, nl.y); }, 80);
+        if (nl.blatt === 'reise') setTimeout(function () { $('reiseBtn').click(); if (nl.rk) setTimeout(function () { var t = document.querySelector('.rk-tab[data-rk="' + nl.rk + '"]'); if (t) t.click(); }, 60); }, 120);
+      }
       return;
     }
     // Läuft genau eine Reise (oder war zuletzt eine laufende offen), geht die App direkt hinein
