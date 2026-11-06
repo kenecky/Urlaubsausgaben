@@ -2228,9 +2228,9 @@ body.rs-haupt #zurueckBtn { display: none !important; }
     }
   }
   function eintragHtml(a) {
-    var zeile1 = esc(istAbh(a) ? 'Bargeld' : a.kategorie) + ' · ' + (istPauschal(a) ? esc(datumAnzeige(a.datum).slice(0, 6) + '–' + datumAnzeige(a.bis).slice(0, 6)) + ' · ' + verteilTage(a) + ' Tage' : esc(datumAnzeige(a.datum)));
-    var status = istGeprueft(a) ? '<span class="e-status ok">✓</span>' : '<span class="e-status"><span class="offen-tag">Kurs offen</span></span>';
-    var teile2 = [a.ort ? esc(a.ort) : '', a.zahlung ? esc(a.zahlung) : ''].filter(Boolean);
+    var zeile1 = istPauschal(a) ? esc(datumAnzeige(a.datum).slice(0, 6) + ' – ' + datumAnzeige(a.bis)) + ' · ' + verteilTage(a) + ' Tage' : esc(datumAnzeige(a.datum));
+    var status = istGeprueft(a) ? '' : '<span class="e-status"><span class="offen-tag">Kurs offen</span></span>';
+    var teile2 = [esc(istAbh(a) ? 'Bargeld' : a.kategorie), a.ort ? esc(a.ort) : '', a.zahlung ? esc(a.zahlung) : ''].filter(Boolean);
     var meta = '<span class="m-zeile">' + zeile1 + '</span><span class="m-zeile">' + (teile2.length ? teile2.join(' · ') : '–') + '</span>';
     return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' + katIcon(a.kategorie) +
       '<div class="e-mitte"><div class="beschr">' + esc(a.beschreibung || a.kategorie) + '</div><div class="meta">' + meta + '</div></div>' +
