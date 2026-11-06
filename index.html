@@ -2803,7 +2803,23 @@ body.rs-haupt #zurueckBtn { display: none !important; }
   }
   $('sucheBtn').addEventListener('click', oeffneSuche);
   $('sucheZu').addEventListener('click', function () { schliesseSuche(false); });
+  // Blätter von unten (Einstellungen, Rechner, Abschluss, Backup, Papierkorb, Neue Reise, Vergleich): Zurück-Taste schließt sie
+  var blattWarOffen = false, blattPopIgnorieren = false;
+  function blattIstOffen() { return /\b(reise-offen|umrechner-offen|ab-offen|blatt-offen)\b/.test(document.body.className); }
+  function alleBlaetterZu() {
+    try { reiseBlattZu(); } catch (e) {} try { umrechnerZu(); } catch (e) {}
+    try { abBlattZu(); } catch (e) {} try { blattZu(); } catch (e) {}
+  }
+  new MutationObserver(function () {
+    var offen = blattIstOffen();
+    if (offen && !blattWarOffen) { try { history.pushState(Object.assign({}, history.state || {}, { blatt: true }), ''); } catch (e) {} }
+    else if (!offen && blattWarOffen && history.state && history.state.blatt) { blattPopIgnorieren = true; try { history.back(); } catch (e) { blattPopIgnorieren = false; } }
+    blattWarOffen = offen;
+  }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('popstate', function () {
+    if (blattPopIgnorieren) { blattPopIgnorieren = false; return; }
+    if (typeof vbZurueck !== 'undefined' && vbZurueck) return; // Vollbild schließt sich zuerst
+    if (blattIstOffen()) { alleBlaetterZu(); return; }
     if (!$('suche').hidden) { schliesseSuche(true); return; }
     var st = history.state || {};
     if (reise && st.reise === reise.id) { if (st.seite) seiteZeigen(st.seite); else hauptZeigen(); return; }
