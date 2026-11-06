@@ -965,6 +965,23 @@ html[data-thema="dunkel"] .rs-lupe { color: #CFE6E4; }
 /* Streifen links als Innenschatten, damit die äußere Rundung gleich bleibt */
 #kacheln .kachel.breit { border-left: 1px solid var(--linie) !important; box-shadow: inset 6px 0 0 var(--petrol), 0 8px 20px -12px rgba(4,30,36,.45) !important; padding-left: 26px !important; }
 html[data-thema="dunkel"] #kacheln .kachel.breit { box-shadow: inset 6px 0 0 #1C8A8F, 0 8px 20px -12px rgba(0,0,0,.8) !important; }
+
+/* Vollbild-Button */
+.voll-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#wkVoll { display: flex; align-items: center; justify-content: center; }
+.voll-rahmen { position: relative; }
+#vlVoll { position: absolute; top: 4px; right: 4px; z-index: 2; width: 34px; height: 34px; margin: 0; padding: 0; border-radius: 10px; background: var(--feld-bg); color: var(--text); border: 1px solid var(--feld-rand); box-shadow: none; display: flex; align-items: center; justify-content: center; }
+/* Vollbild-Ansicht */
+.vollbild { position: fixed; inset: 0; z-index: 200; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+.vollbild[hidden] { display: none; }
+.vollbild .vb-innen { width: 100%; height: 100%; padding: 12px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+.vollbild.gedreht .vb-innen { position: absolute; top: 50%; left: 50%; width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(90deg); }
+.vollbild #wkBox { width: 100% !important; height: 100% !important; border-radius: 16px; }
+.vollbild #verlaufChart { width: 100%; height: 100%; display: flex; align-items: center; background: var(--karte); border-radius: 16px; padding: 10px; box-sizing: border-box; }
+.vollbild #verlaufChart svg { width: 100%; height: 100%; }
+.vb-zu { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); z-index: 3; width: 42px; height: 42px; margin: 0; padding: 0; border-radius: 12px; background: var(--karte); color: var(--text); border: 1px solid var(--linie); font-size: 18px; box-shadow: 0 6px 16px -8px rgba(4,30,36,.5); }
+.vollbild.gedreht .vb-zu { top: auto; bottom: calc(10px + env(safe-area-inset-bottom)); }
+html:has(body.vb-offen) { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1027,7 +1044,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit { box-shadow: inset 6px 0 0 #1C
 
   <section class="karte" id="weltKarte">
     <div class="wk-kopf"><h2 class="sr-nur">Weltkarte</h2>
-      <div class="wk-zoom"><button type="button" id="wkPlus" aria-label="Vergrößern">＋</button><button type="button" id="wkMinus" aria-label="Verkleinern">−</button><button type="button" id="wkReset" aria-label="Zurücksetzen">⤾</button></div></div>
+      <div class="wk-zoom"><button type="button" class="voll-btn" id="wkVoll" aria-label="Weltkarte im Vollbild"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></button><button type="button" id="wkPlus" aria-label="Vergrößern">＋</button><button type="button" id="wkMinus" aria-label="Verkleinern">−</button><button type="button" id="wkReset" aria-label="Zurücksetzen">⤾</button></div></div>
     <div class="weltkarte" id="wkBox"><svg id="wkSvg" viewBox="0 0 1000 520" aria-label="Weltkarte"></svg></div>
     <div class="wk-legende"><span><i class="wk-punkt" style="background:var(--blau)"></i>besucht</span><span><i class="wk-punkt" style="background:#f59e0b"></i>geplant</span><span id="wkZahl"></span></div>
     <div class="wk-chips" id="wkChips"></div>
@@ -1256,7 +1273,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit { box-shadow: inset 6px 0 0 #1C
       <button type="button" class="klein hell" data-vw="LOKAL" id="vwLokal">₱ Pesos</button>
       <button type="button" class="klein hell" data-vw="EUR">€ Euro</button>
     </div>
-    <div id="verlaufChart"></div>
+    <div class="voll-rahmen"><button type="button" class="voll-btn" id="vlVoll" aria-label="Verlauf im Vollbild"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></button><div id="verlaufChart"></div></div>
     <p class="hinweis" id="verlaufInfo"></p>
     </div>
     <details id="budgetDetails">
@@ -1341,6 +1358,7 @@ html[data-thema="dunkel"] #kacheln .kachel.breit { box-shadow: inset 6px 0 0 #1C
 
 <div id="berichtDruck" class="bericht"></div>
 <div class="sheet-dunkel" id="sheetDunkel"></div>
+<div class="vollbild" id="vollbild" hidden><div class="vb-innen" id="vbInnen"></div><button type="button" class="vb-zu" id="vbZu" aria-label="Vollbild schließen">✕</button></div>
 <div class="undo" id="undoBar" hidden><span id="undoText"></span><button type="button" id="undoBtn">Rückgängig</button></div>
 <div class="toast" id="toast"></div>
 
@@ -4120,6 +4138,41 @@ html[data-thema="dunkel"] #kacheln .kachel.breit { box-shadow: inset 6px 0 0 #1C
     ['form-eng', 'form-eng2'].forEach(function (c) { if (k.getBoundingClientRect().bottom > window.innerHeight - 4) b.add(c); });
   }
   window.addEventListener('resize', function () { setTimeout(formEinpassen, 50); });
+  // Vollbild im Querformat (Weltkarte, Verlauf): Element wird ins Vollbild verschoben und danach zurückgelegt
+  var vbZurueck = null;
+  function vollbildAuf(el, klasse) {
+    if (vbZurueck) return;
+    var platz = document.createComment('vollbild'); el.parentNode.insertBefore(platz, el);
+    vbZurueck = { el: el, platz: platz, klasse: klasse };
+    $('vbInnen').appendChild(el); $('vollbild').className = 'vollbild ' + klasse; $('vollbild').hidden = false; document.body.classList.add('vb-offen');
+    var gedreht = false;
+    function drehenFallback() { if (!gedreht && window.innerHeight > window.innerWidth) { $('vollbild').classList.add('gedreht'); } gedreht = true; }
+    try {
+      var r = document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen({ navigationUI: 'hide' }) : null;
+      Promise.resolve(r).then(function () {
+        return screen.orientation && screen.orientation.lock ? screen.orientation.lock('landscape') : Promise.reject();
+      }).catch(drehenFallback).then(function () { setTimeout(function () { if (window.innerHeight > window.innerWidth) drehenFallback(); vbAnpassen(); }, 350); });
+    } catch (e) { drehenFallback(); }
+    vbAnpassen();
+    try { history.pushState(Object.assign({}, history.state || {}, { vollbild: true }), ''); } catch (e) {}
+  }
+  function vbAnpassen() { if (vbZurueck && vbZurueck.klasse === 'vb-karte' && typeof wkViewBox === 'function') wkViewBox(); }
+  function vollbildZu(ausHistory) {
+    if (!vbZurueck) return;
+    var z = vbZurueck; vbZurueck = null;
+    z.platz.parentNode.insertBefore(z.el, z.platz); z.platz.remove();
+    $('vollbild').hidden = true; $('vollbild').className = 'vollbild'; document.body.classList.remove('vb-offen');
+    try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+    if (!ausHistory && history.state && history.state.vollbild) { try { history.back(); } catch (e) {} }
+    vbAnpassen();
+  }
+  window.addEventListener('popstate', function () { if (vbZurueck) vollbildZu(true); });
+  document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && vbZurueck && !$('vollbild').classList.contains('gedreht')) vollbildZu(); });
+  $('vbZu').addEventListener('click', function () { vollbildZu(); });
+  $('wkVoll').addEventListener('click', function () { vollbildAuf($('wkBox'), 'vb-karte'); });
+  $('vlVoll').addEventListener('click', function () { vollbildAuf($('verlaufChart'), 'vb-verlauf'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && vbZurueck) vollbildZu(); });
   function kachelnRendern() {
     if (!reise) return;
     var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
