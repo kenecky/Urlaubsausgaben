@@ -975,12 +975,12 @@ html[data-thema="dunkel"] #kacheln .kachel.breit { box-shadow: inset 6px 0 0 #1C
 .vollbild { position: fixed; inset: 0; z-index: 200; background: var(--bg); display: flex; align-items: center; justify-content: center; }
 .vollbild[hidden] { display: none; }
 .vollbild .vb-innen { width: 100%; height: 100%; padding: 12px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
-.vollbild.gedreht .vb-innen { position: absolute; top: 50%; left: 50%; width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(90deg); }
+.vollbild.gedreht .vb-innen { position: absolute; top: 50%; left: 50%; width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(-90deg); }
 .vollbild #wkBox { width: 100% !important; height: 100% !important; border-radius: 16px; }
 .vollbild #verlaufChart { width: 100%; height: 100%; display: flex; align-items: center; background: var(--karte); border-radius: 16px; padding: 10px; box-sizing: border-box; }
 .vollbild #verlaufChart svg { width: 100%; height: 100%; }
 .vb-zu { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); z-index: 3; width: 42px; height: 42px; margin: 0; padding: 0; border-radius: 12px; background: var(--karte); color: var(--text); border: 1px solid var(--linie); font-size: 18px; box-shadow: 0 6px 16px -8px rgba(4,30,36,.5); }
-.vollbild.gedreht .vb-zu { top: auto; bottom: calc(10px + env(safe-area-inset-bottom)); }
+.vollbild.gedreht .vb-zu { top: calc(10px + env(safe-area-inset-top)); left: 10px; right: auto; bottom: auto; }
 html:has(body.vb-offen) { overflow: hidden; }
 
 /* Zahlung: zweite Summe mit Abhebungen */
@@ -3811,7 +3811,9 @@ html:has(body.vb-offen) { overflow: hidden; }
   }
   $('wkSvg').addEventListener('click', function (ev) {
     if (wkZog) { wkZog = false; return; }
-    var pa = ev.target.closest('path'); if (pa) wkWaehlen(pa.getAttribute('data-c'));
+    var pa = ev.target.closest('path'), c = pa && pa.getAttribute('data-c');
+    if (vbZurueck && vbZurueck.klasse === 'vb-karte' && !(c && wkLaender()[c])) { $('wkPopup').hidden = true; return; }
+    if (pa) wkWaehlen(c);
   });
   $('wkChips').addEventListener('click', function (ev) {
     var b = ev.target.closest('[data-land]'); if (b) wkWaehlen(b.getAttribute('data-land'));
@@ -4201,7 +4203,7 @@ html:has(body.vb-offen) { overflow: hidden; }
     try {
       var r = document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen({ navigationUI: 'hide' }) : null;
       Promise.resolve(r).then(function () {
-        return screen.orientation && screen.orientation.lock ? screen.orientation.lock('landscape-secondary') : Promise.reject();
+        return screen.orientation && screen.orientation.lock ? screen.orientation.lock('landscape-primary') : Promise.reject();
       }).catch(drehenFallback).then(function () { setTimeout(function () { if (window.innerHeight > window.innerWidth) drehenFallback(); vbAnpassen(); }, 350); });
     } catch (e) { drehenFallback(); }
     vbAnpassen();
@@ -4223,6 +4225,7 @@ html:has(body.vb-offen) { overflow: hidden; }
   window.addEventListener('popstate', function () { if (vbZurueck) vollbildZu(true); });
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && vbZurueck && !$('vollbild').classList.contains('gedreht')) vollbildZu(); });
   $('vbZu').addEventListener('click', function () { vollbildZu(); });
+  $('vollbild').addEventListener('click', function (ev) { if (!$('wkPopup').hidden && !ev.target.closest('#wkPopup, #wkSvg')) $('wkPopup').hidden = true; });
   $('wkVoll').addEventListener('click', function () { vollbildAuf($('wkBox'), 'vb-karte'); });
   $('vlVoll').addEventListener('click', function () { vollbildAuf($('verlaufChart'), 'vb-verlauf'); renderVerlauf(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && vbZurueck) vollbildZu(); });
