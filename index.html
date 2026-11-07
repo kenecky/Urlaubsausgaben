@@ -1170,8 +1170,28 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
+<style>
+#ladeschirm { position: fixed; inset: 0; z-index: 1000; background: #0E4A55; color: #fff; display: flex; align-items: center; justify-content: center; transition: opacity .35s ease; font-family: 'Figtree', system-ui, sans-serif; }
+#ladeschirm.weg { opacity: 0; pointer-events: none; }
+#ladeschirm .ls-innen { display: flex; flex-direction: column; align-items: center; width: min(260px, 70vw); }
+#ladeschirm .ls-logo { width: 96px; height: 96px; border-radius: 24px; box-shadow: 0 14px 34px -14px rgba(0,0,0,.6); animation: lsPuls 1.6s ease-in-out infinite; }
+#ladeschirm .ls-name { margin-top: 18px; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+#ladeschirm .ls-balken { width: 100%; height: 6px; margin-top: 26px; border-radius: 3px; background: rgba(255,255,255,.18); overflow: hidden; }
+#ladeschirm .ls-balken i { display: block; height: 100%; width: 8%; border-radius: 3px; background: #F5A524; transition: width .22s ease-out; }
+#ladeschirm .ls-text { margin-top: 12px; font-size: 13.5px; opacity: .85; min-height: 18px; }
+@keyframes lsPuls { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { #ladeschirm .ls-logo { animation: none; } }
+</style>
 </head>
 <body>
+<div id="ladeschirm" aria-live="polite" aria-label="App wird geladen">
+  <div class="ls-innen">
+    <img src="icon-192.png" alt="" class="ls-logo" width="96" height="96">
+    <div class="ls-name">Reise-Ausgaben</div>
+    <div class="ls-balken"><i id="lsBalken"></i></div>
+    <div class="ls-text" id="lsText">App wird gestartet …</div>
+  </div>
+</div>
 
 <header>
   <div class="kopf-zeile">
@@ -5420,11 +5440,28 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   kartenZuklappbarMachen();
   var gk = globalLaden().onlineKurse;
   if (gk && gk.raten && typeof gk.raten === 'object') onlineKurse = { datum: String(gk.datum || ''), raten: sauberKurse(gk.raten) };
+  // Ladebildschirm: echte Schritte, kurz sichtbar, dann weich ausblenden
+  var ladeSchritte = [];
+  function ladeSchritt(pct, text) { ladeSchritte.push([pct, text]); }
+  function ladeFertig() {
+    var el = $('ladeschirm'); if (!el) return;
+    var start = (window.performance && performance.now) ? performance.now() : 0, i = 0;
+    var proSchritt = Math.max(50, Math.min(80, (450 - start) / Math.max(1, ladeSchritte.length)));
+    (function weiter() {
+      if (i < ladeSchritte.length) { $('lsBalken').style.width = ladeSchritte[i][0] + '%'; $('lsText').textContent = ladeSchritte[i][1]; i++; setTimeout(weiter, proSchritt); return; }
+      $('lsBalken').style.width = '100%'; $('lsText').textContent = 'Fertig';
+      setTimeout(function () { el.classList.add('weg'); setTimeout(function () { el.remove(); }, 400); }, 80);
+    })();
+  }
+  ladeSchritt(20, 'Einstellungen werden geladen …');
   migrationPruefen();
+  ladeSchritt(40, 'Reisen werden geladen …');
   reisen = indexLaden();
   parserEinrichten();
+  ladeSchritt(60, 'Kurse werden vorbereitet …');
   try { history.replaceState({ start: true }, ''); } catch (e) {}
   zeigeStart();
+  ladeSchritt(80, 'Grafiken werden gezeichnet …');
   (function () {
     // Nach dem Aktualisieren: genau dort weitermachen, wo man war (Seite, Reiter, Filter, bearbeiteter Eintrag, Scrollposition)
     var nl = null; try { nl = JSON.parse(sessionStorage.getItem('reisen.ort')); } catch (e) {}
@@ -5450,6 +5487,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var ziel = laufend.filter(function (m) { return m.id === g.aktiv; })[0] || (laufend.length === 1 ? laufend[0] : null);
     if (ziel) reiseOeffnen(ziel.id);
   })();
+  ladeSchritt(95, 'Ansicht wird vorbereitet …');
+  ladeFertig();
 
   // Browser bitten, die Daten nicht automatisch zu löschen
   if (navigator.storage && navigator.storage.persist) {
