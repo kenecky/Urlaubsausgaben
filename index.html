@@ -5074,6 +5074,19 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var leg = $('geoLeg').querySelectorAll('[data-rt]'); Array.prototype.forEach.call(leg, function (x) { var an = x.getAttribute('data-rt') === a.datum; if (an && !x.classList.contains('an')) { x.classList.add('an'); var L2 = $('geoLeg'); L2.scrollLeft = Math.max(0, x.offsetLeft - L2.clientWidth / 2 + x.offsetWidth / 2); } else if (!an) x.classList.remove('an'); });
     ap.ziel = apZiel(k, t, p); if (sofort !== 'lauf') apKameraSetzen(true);
   }
+  // Am Ende: ganze Route über der Kachel zeigen (danach prüfen und notfalls nachjustieren)
+  function apGesamtansicht() {
+    var L = window.L, pts = ap.d.liste.map(function (a) { return [a.geo.lat, a.geo.lon]; }), b = L.latLngBounds(pts);
+    var unten = $('geoMap').clientHeight - ($('geoInfo').offsetTop - 14);
+    var opt = { paddingTopLeft: [36, 44], paddingBottomRight: [90, Math.max(60, unten)], maxZoom: 15 };
+    geoMapObj.stop(); apBewegungEnde();
+    geoMapObj.once('moveend', function () {
+      if (!ap || apRaf) return;
+      var kTop = $('geoInfo').offsetTop - 8, w = $('geoMap').clientHeight && $('geoMap').clientWidth, alleDrin = pts.every(function (q) { var p = geoMapObj.latLngToContainerPoint(q); return p.y > 10 && p.y < kTop && p.x > 10 && p.x < w - 10; });
+      if (!alleDrin) geoMapObj.fitBounds(b, Object.assign({ animate: true }, opt, { paddingBottomRight: [100, Math.max(70, unten + 20)] }));
+    });
+    geoMapObj.flyToBounds(b, Object.assign({ duration: 1.4 }, opt));
+  }
   // Am Ende: Kachel zeigt die ganze Reise
   function apZusammenfassung() {
     var ohne = ausgaben.filter(function (a) { return !istAbh(a); });
@@ -5104,7 +5117,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       var neu = ap.pos + dt * apTempo / apDauer(k);
       if (neu >= ap.d.liste.length - 1) {
         apStand(ap.d.liste.length - 1, 'lauf'); apKameraSetzen(false, dt); apStop();
-        setTimeout(function () { if (ap && !apRaf) { apZusammenfassung(); geoMapObj.flyToBounds(ap.d.liste.map(function (a) { return [a.geo.lat, a.geo.lon]; }), { paddingTopLeft: [40, 40], paddingBottomRight: [40, $('geoInfo').offsetHeight + 50], maxZoom: 15, duration: 1.4 }); } }, 1000);
+        setTimeout(function () { if (ap && !apRaf) { apZusammenfassung(); apGesamtansicht(); } }, 1000);
         return;
       }
       apStand(neu, 'lauf'); apKameraSetzen(false, dt); apRaf = requestAnimationFrame(schritt);
