@@ -1163,6 +1163,11 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .geo-pin span { display: block; width: 26px; height: 26px; margin: 2px; border-radius: 50% 50% 50% 0; background: var(--mango); border: 3px solid #fff; transform: rotate(-45deg); box-shadow: 0 3px 8px rgba(0,0,0,.35); }
 .geo-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 12px; }
 .geo-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+/* Karten-Etikett in der Kachel Ausgabenliste */
+.ausg .ak-kopf b { display: inline-flex; align-items: center; gap: 10px; }
+.ak-karte { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px 0 7px; border-radius: 14px; background: var(--blau-hell); color: var(--petrol); font-family: 'Figtree', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0; }
+.ak-karte svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -1274,7 +1279,7 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
     <div class="t-budget" id="ticketBudget" hidden></div>
   </section>
   <section class="karte sperr-banner" id="gesperrtBanner" hidden></section>
-  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue<br>Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="heute gestern"><span>Gestern</span><strong id="kGesternSumme">–</strong><span id="kGesternAnzahl"></span></span></button><button type="button" class="kachel breit ausg" data-seite-auf="kat"><span class="ak-kopf"><b>Ausgabenliste</b><strong id="kAusgEuro"></strong></span><span class="ak-sub"><small id="kInfo_ueb"></small><small id="kAusgLokal"></small></span><span class="ak-balken" id="kAusgBalken"></span><span class="ak-leg" id="kAusgLeg"></span></button></section>
+  <section class="kacheln" id="kacheln"><button type="button" class="kachel breit" data-seite-auf="neu"><span class="tx"><b>Neue<br>Ausgabe</b><small id="kInfo_neu"></small></span><span class="heute"><span>Heute</span><strong id="kHeuteSumme">–</strong><span id="kHeuteAnzahl"></span></span><span class="heute gestern"><span>Gestern</span><strong id="kGesternSumme">–</strong><span id="kGesternAnzahl"></span></span></button><button type="button" class="kachel breit ausg" data-seite-auf="kat"><span class="ak-kopf"><b>Ausgabenliste<span class="ak-karte" id="akKarte" role="button" tabindex="0" aria-label="Karte der Ausgaben öffnen"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg>Karte</span></b><strong id="kAusgEuro"></strong></span><span class="ak-sub"><small id="kInfo_ueb"></small><small id="kAusgLokal"></small></span><span class="ak-balken" id="kAusgBalken"></span><span class="ak-leg" id="kAusgLeg"></span></button></section>
   <section class="karte" id="formKarte">
     <h2 id="formTitel">Neue Ausgabe</h2>
     <div id="schnell">
@@ -4675,6 +4680,7 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') abBlattZu(); });
   $('themaBtn2').addEventListener('click', function () { $('themaBtn').click(); });
   $('kacheln').addEventListener('click', function (e) {
+    if (e.target.closest('#akKarte')) { e.stopPropagation(); geoKarteAuf('alle'); return; }
     var b = e.target.closest('[data-seite-auf]'); if (!b || b.disabled) return;
     var n = b.getAttribute('data-seite-auf');
     if (n === 'neu' && bearbeiteId) formZuruecksetzen();
