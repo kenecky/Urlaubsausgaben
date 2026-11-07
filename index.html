@@ -1176,6 +1176,23 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .route-nr em { position: absolute; left: 34px; top: 6px; white-space: nowrap; font: 800 13.5px 'Figtree', sans-serif; font-style: normal; color: #0f172a; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; }
 .route-sprung { display: flex; align-items: center; justify-content: center; }
 .route-sprung span { white-space: nowrap; background: #fff; border: 1.5px solid; border-radius: 12px; padding: 3px 9px; font: 700 12px 'Figtree', sans-serif; color: #0f172a; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.geo-wrap { flex: 1; position: relative; display: flex; min-height: 200px; }
+.geo-wrap .geo-map { flex: 1; }
+.geo-info { position: absolute; left: 10px; right: 10px; bottom: 26px; z-index: 900; background: rgba(255,255,255,.96); color: #0f172a; border-radius: 14px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; box-shadow: 0 6px 18px -8px rgba(0,0,0,.4); pointer-events: none; }
+.geo-info[hidden] { display: none; }
+.geo-info b { display: block; font: 700 15.5px 'Bricolage', 'Figtree', sans-serif; }
+.geo-info span { display: block; font-size: 12px; color: #5E7377; }
+.geo-info .gi-r { text-align: right; } .geo-info .gi-r b { color: #0E4A55; }
+.geo-player { display: flex; align-items: center; gap: 10px; padding: 10px 0 0; }
+.geo-player[hidden] { display: none; }
+#gpPlay { flex: none; width: 48px; height: 48px; margin: 0; padding: 0; border-radius: 50%; background: #0E4A55; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 14px -6px rgba(14,74,85,.7); }
+#gpPlay svg { width: 22px; height: 22px; fill: #fff; }
+.gp-mitte { flex: 1; min-width: 0; }
+#gpRegler { width: 100%; margin: 0; padding: 0; border: 0; background: transparent; accent-color: #F5A524; height: 26px; }
+.gp-ticks { display: flex; justify-content: space-between; font-size: 11px; color: var(--grau); margin-top: -2px; }
+#gpTempo { flex: none; width: 52px; height: 38px; margin: 0; padding: 0; font-size: 14px; font-weight: 700; }
+.route-jetzt { display: flex; align-items: center; justify-content: center; }
+.route-jetzt span { display: block; margin: 2px; flex: none; box-sizing: border-box; width: 24px; height: 24px; border-radius: 50%; background: #F5A524; border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(245,165,36,.3), 0 3px 8px rgba(0,0,0,.35); }
 .geo-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; }
 .geo-btns .geo-btn { margin: 0; padding: 0 8px; font-size: 14px; }
 .geo-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 12px; }
@@ -1601,7 +1618,13 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   <h2 id="geoTitel">Karte</h2>
   <div class="geo-umschalt" id="geoUmschalt" hidden><button type="button" data-gm="alle">Ausgaben</button><button type="button" data-gm="route">Reiseroute</button></div>
   <p class="geo-hinweis" id="geoHinweis"></p>
-  <div class="geo-map" id="geoMap"></div>
+  <div class="geo-wrap"><div class="geo-map" id="geoMap"></div>
+    <div class="geo-info" id="geoInfo" hidden><div><b id="giTag"></b><span id="giOrt"></span></div><div class="gi-r"><b id="giSum"></b><span id="giBisher"></span></div></div></div>
+  <div class="geo-player" id="geoPlayer" hidden>
+    <button type="button" id="gpPlay" aria-label="Abspielen"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></button>
+    <div class="gp-mitte"><input type="range" id="gpRegler" min="0" max="1" step="0.001" value="0" aria-label="Zeitpunkt der Reise"><div class="gp-ticks"><span id="gpVon"></span><span id="gpBis"></span></div></div>
+    <button type="button" id="gpTempo" class="hell" aria-label="Geschwindigkeit">1×</button>
+  </div>
   <div class="geo-leg" id="geoLeg" hidden></div>
   <div class="geo-knoepfe" id="geoKnoepfe"><button type="button" class="hell" id="geoHier">Mein Standort</button><button type="button" class="hell" id="geoWeg">Entfernen</button><button type="button" id="geoOk">Übernehmen</button></div>
 </section>
@@ -4815,7 +4838,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     geoModus = modus; geoWahl = start ? { lat: start.lat, lon: start.lon } : null;
     $('geoTitel').textContent = modus === 'wahl' ? 'Standort der Ausgabe' : 'Karte';
     $('geoKnoepfe').hidden = modus !== 'wahl';
-    $('geoUmschalt').hidden = modus === 'wahl'; $('geoLeg').hidden = true; routeTag = null;
+    $('geoUmschalt').hidden = modus === 'wahl'; $('geoLeg').hidden = true; routeTag = null; apBeenden(); $('geoPlayer').hidden = true; $('geoInfo').hidden = true;
     Array.prototype.forEach.call(document.querySelectorAll('#geoUmschalt button'), function (b) { b.classList.toggle('an', b.getAttribute('data-gm') === modus); });
     $('geoHinweis').textContent = modus === 'wahl' ? 'Tippe auf die Karte oder ziehe die Markierung, um den Standort zu ändern.' : 'Lade Karte …';
     var istStart = !$('startseite').hidden;
@@ -4837,7 +4860,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       else { var mit = ausgaben.filter(function (a) { return a.geo; }); if (mit.length) geoMapObj.setView([mit[mit.length - 1].geo.lat, mit[mit.length - 1].geo.lon], 13); else geoMapObj.setView([20, 100], 3); }
       return;
     }
-    $('geoLeg').hidden = geoModus !== 'route';
+    $('geoLeg').hidden = geoModus !== 'route'; if (geoModus !== 'route') { $('geoPlayer').hidden = true; $('geoInfo').hidden = true; }
     if (geoModus === 'route') { routeZeichnen(); return; }
     var liste = ausgaben.filter(function (a) { return a.geo && !istAbh(a); }), punkte = [];
     geoSchicht = L.layerGroup().addTo(geoMapObj);
@@ -4881,7 +4904,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var L = window.L, d = routeDaten();
     geoSchicht = L.layerGroup().addTo(geoMapObj);
     var farbe = function (datum) { return ROUTE_FARBEN[d.tagIdx[datum] % ROUTE_FARBEN.length]; };
-    var aktiv = function (datum) { return routeTag === null || routeTag === datum; };
+    var aktiv = function (datum) { return !routeAbspiel && (routeTag === null || routeTag === datum); };
     var punkte = [];
     for (var i = 1; i < d.liste.length; i++) {
       var a = d.liste[i - 1], b = d.liste[i], km = kmZwischen(a.geo, b.geo), f = farbe(b.datum), op = aktiv(b.datum) ? 0.9 : 0.15;
@@ -4895,9 +4918,9 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     d.liste.forEach(function (a) {
       var an = aktiv(a.datum);
       L.circleMarker([a.geo.lat, a.geo.lon], { radius: 5, weight: 2.5, color: farbe(a.datum), opacity: an ? 1 : 0.2, fillColor: '#fff', fillOpacity: an ? 1 : 0.3 }).bindPopup(geoPopup(a)).addTo(geoSchicht);
-      if (an) punkte.push([a.geo.lat, a.geo.lon]);
+      if (an || routeAbspiel) punkte.push([a.geo.lat, a.geo.lon]);
     });
-    d.stationen.forEach(function (s, i) {
+    if (!routeAbspiel) d.stationen.forEach(function (s, i) {
       var ziel = i === d.stationen.length - 1 && d.stationen.length > 1;
       L.marker([s.mitte.lat, s.mitte.lon], { zIndexOffset: 1000, icon: L.divIcon({ className: 'route-nr' + (ziel ? ' ziel' : ''), html: '<span>' + (i + 1) + '</span><em>' + esc(s.name) + '</em>', iconSize: [36, 36], iconAnchor: [18, 18] }) })
         .bindPopup('<div class="geo-pop"><b>' + (i + 1) + '. ' + esc(s.name) + '</b><span>' + esc(datumAnzeige(s.punkte[0].datum)) + (s.punkte[s.punkte.length - 1].datum !== s.punkte[0].datum ? ' – ' + esc(datumAnzeige(s.punkte[s.punkte.length - 1].datum)) : '') + ' · ' + s.punkte.length + (s.punkte.length === 1 ? ' Ausgabe' : ' Ausgaben') + '</span></div>').addTo(geoSchicht);
@@ -4909,16 +4932,109 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       var x = t.split('-'); return '<button type="button" data-rt="' + t + '"' + (routeTag === t ? ' class="an"' : '') + '><i style="background:' + farbe(t) + '"></i>' + x[2] + '.' + x[1] + '.</button>';
     }).join('') : '';
     $('geoLeg').hidden = d.tage.length < 2;
+    $('geoPlayer').hidden = d.liste.length < 2;
+    if (!routeAbspiel) { $('geoInfo').hidden = true; gpSymbol(); var x0 = d.tage[0] ? d.tage[0].split('-') : null, x1 = d.tage.length ? d.tage[d.tage.length - 1].split('-') : null; $('gpVon').textContent = x0 ? x0[2] + '.' + x0[1] + '.' : ''; $('gpBis').textContent = x1 ? x1[2] + '.' + x1[1] + '.' : ''; $('gpRegler').max = Math.max(1, d.liste.length - 1); $('gpRegler').value = 0; }
+    if (routeAbspiel) return;
     if (punkte.length) geoMapObj.fitBounds(punkte, { padding: [40, 40], maxZoom: 15 }); else geoMapObj.setView([20, 100], 3);
   }
+  // ---------- Reise abspielen ----------
+  var routeAbspiel = false, ap = null, apRaf = 0, apTempo = 1;
+  function segGeo(a, b) {
+    var km = kmZwischen(a.geo, b.geo);
+    if (km <= 50) return { km: km, sprung: false, pos: function (t) { return [a.geo.lat + (b.geo.lat - a.geo.lat) * t, a.geo.lon + (b.geo.lon - a.geo.lon) * t]; } };
+    var dLa = b.geo.lat - a.geo.lat, dLo = b.geo.lon - a.geo.lon, mLa = (a.geo.lat + b.geo.lat) / 2 + dLo * 0.18, mLo = (a.geo.lon + b.geo.lon) / 2 - dLa * 0.18;
+    return { km: km, sprung: true, pos: function (t) { return [(1 - t) * (1 - t) * a.geo.lat + 2 * (1 - t) * t * mLa + t * t * b.geo.lat, (1 - t) * (1 - t) * a.geo.lon + 2 * (1 - t) * t * mLo + t * t * b.geo.lon]; } };
+  }
+  function gpSymbol() { var spielt = !!apRaf; $('gpPlay').innerHTML = spielt ? '<svg viewBox="0 0 24 24"><rect x="6.5" y="5.5" width="4" height="13" rx="1"/><rect x="13.5" y="5.5" width="4" height="13" rx="1"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg>'; $('gpPlay').setAttribute('aria-label', spielt ? 'Pause' : 'Abspielen'); }
+  function apStop() { if (apRaf) cancelAnimationFrame(apRaf); apRaf = 0; gpSymbol(); }
+  function apBeenden() { apStop(); routeAbspiel = false; ap = null; }
+  function apStarten() {
+    var L = window.L, d = routeDaten(); if (d.liste.length < 2) return;
+    routeAbspiel = true; routeTag = null; geoMapObj.closePopup();
+    if (geoSchicht) { geoSchicht.remove(); geoSchicht = null; }
+    routeZeichnen();
+    var farbe = function (datum) { return ROUTE_FARBEN[d.tagIdx[datum] % ROUTE_FARBEN.length]; };
+    var ptSt = [], ersterPunkt = {}; d.stationen.forEach(function (s, si) { s.punkte.forEach(function (a) { ptSt.push(si); }); ersterPunkt[d.liste.indexOf(s.punkte[0])] = si; });
+    var tagSum = {}, ohne = ausgaben.filter(function (a) { return !istAbh(a); });
+    d.tage.forEach(function (t) { tagSum[t] = ohne.filter(function (a) { return a.datum === t; }).reduce(function (x, a) { return x + lokalWert(a); }, 0); });
+    var bisher = {}, lauf = 0; ohne.slice().sort(function (a, b) { return a.datum < b.datum ? -1 : 1; }).forEach(function (a) { lauf += lokalWert(a); bisher[a.datum] = lauf; });
+    var segs = []; for (var i = 1; i < d.liste.length; i++) segs.push(segGeo(d.liste[i - 1], d.liste[i]));
+    ap = { d: d, farbe: farbe, ptSt: ptSt, ersterPunkt: ersterPunkt, tagSum: tagSum, bisher: bisher, segs: segs, pos: 0, gezeichnet: 0, schicht: L.layerGroup().addTo(geoSchicht), jetzt: null, kamera: -1 };
+    $('geoInfo').hidden = false;
+    apStand(0, true);
+  }
+  function apKamera(k, sofort) {
+    if (!ap || ap.kamera === k) return; ap.kamera = k;
+    var o = sofort ? { animate: false } : { duration: 0.9 };
+    var seg = ap.segs[k];
+    if (seg && seg.sprung) { var a = ap.d.liste[k].geo, b = ap.d.liste[k + 1].geo; geoMapObj.flyToBounds([[a.lat, a.lon], [b.lat, b.lon]], Object.assign({ padding: [70, 70], maxZoom: 12 }, o)); return; }
+    var st = ap.d.stationen[ap.ptSt[k]]; if (!st) return;
+    if (k === 0 || ap.ptSt[k] !== ap.ptSt[k - 1] || (ap.segs[k - 1] && ap.segs[k - 1].sprung)) geoMapObj.flyToBounds(st.punkte.map(function (a) { return [a.geo.lat, a.geo.lon]; }).concat([[st.mitte.lat + 0.002, st.mitte.lon + 0.002], [st.mitte.lat - 0.002, st.mitte.lon - 0.002]]), Object.assign({ padding: [70, 70], maxZoom: 14 }, o));
+  }
+  function apStand(pos, sofort) {
+    var L = window.L, d = ap.d, n = d.liste.length; pos = Math.max(0, Math.min(n - 1, pos));
+    var k = Math.min(n - 2, Math.floor(pos)), t = pos - k; if (pos >= n - 1) { k = n - 2; t = 1; }
+    var bis = t >= 1 ? k + 1 : k; // bis zu diesem Punkt ist alles gezeichnet
+    if (bis < ap.gezeichnet) { ap.schicht.clearLayers(); ap.jetzt = null; ap.gezeichnet = 0; }
+    function stationsMarker(si) { var s = d.stationen[si], ziel = si === d.stationen.length - 1 && d.stationen.length > 1; L.marker([s.mitte.lat, s.mitte.lon], { zIndexOffset: 1000, interactive: false, icon: L.divIcon({ className: 'route-nr' + (ziel ? ' ziel' : ''), html: '<span>' + (si + 1) + '</span><em>' + esc(s.name) + '</em>', iconSize: [36, 36], iconAnchor: [18, 18] }) }).addTo(ap.schicht); }
+    if (ap.gezeichnet === 0 && !ap.schicht.getLayers().length) stationsMarker(0);
+    while (ap.gezeichnet < bis) {
+      var i = ap.gezeichnet, seg = ap.segs[i], b = d.liste[i + 1], f = ap.farbe(b.datum), pts = [];
+      for (var u = 0; u <= 1.0001; u += seg.sprung ? 0.05 : 1) pts.push(seg.pos(u));
+      if (seg.km > 0.01) L.polyline(pts, { color: f, weight: seg.sprung ? 4 : 3.5, opacity: .95, dashArray: seg.sprung ? '8 8' : null, lineCap: 'round', interactive: false }).addTo(ap.schicht);
+      if (seg.sprung) L.marker(seg.pos(0.5), { interactive: false, icon: L.divIcon({ className: 'route-sprung', html: '<span style="border-color:' + f + '">' + sprungArt(b.datum) + Math.round(seg.km).toLocaleString('de-DE') + ' km</span>', iconSize: [0, 0] }) }).addTo(ap.schicht);
+      L.circleMarker([b.geo.lat, b.geo.lon], { radius: 5, weight: 2.5, color: f, fillColor: '#fff', fillOpacity: 1, interactive: false }).addTo(ap.schicht);
+      if (ap.ersterPunkt[i + 1] !== undefined) stationsMarker(ap.ersterPunkt[i + 1]);
+      ap.gezeichnet++;
+    }
+    var p = ap.segs[k].pos(t);
+    if (!ap.jetzt) ap.jetzt = L.marker(p, { zIndexOffset: 2000, interactive: false, icon: L.divIcon({ className: 'route-jetzt', html: '<span></span>', iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(ap.schicht);
+    else ap.jetzt.setLatLng(p);
+    ap.pos = pos; $('gpRegler').value = pos;
+    var a = d.liste[t > 0.5 ? k + 1 : k], st = d.stationen[ap.ptSt[t > 0.5 ? k + 1 : k]];
+    var fliegt = ap.segs[k].sprung && t > 0 && t < 1;
+    var dx = a.datum.split('-'); $('giTag').textContent = 'Tag ' + (d.tagIdx[a.datum] + 1) + ' · ' + ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(+dx[0], dx[1] - 1, +dx[2]).getDay()] + ' ' + dx[2] + '.' + dx[1] + '.';
+    $('giOrt').textContent = fliegt ? (sprungArt(d.liste[k + 1].datum) || '→ ') + d.stationen[ap.ptSt[k]].name + ' → ' + d.stationen[ap.ptSt[k + 1]].name : (st ? st.name : '') + (a.beschreibung ? ' · ' + a.beschreibung : '');
+    $('giSum').textContent = (multi || euroTrip) ? '' : geld(ap.tagSum[a.datum] || 0);
+    $('giBisher').textContent = (multi || euroTrip) ? '' : 'bisher ' + geld(ap.bisher[a.datum] || 0);
+    var leg = $('geoLeg').querySelectorAll('[data-rt]'); Array.prototype.forEach.call(leg, function (x) { var an = x.getAttribute('data-rt') === a.datum; if (an && !x.classList.contains('an')) { x.classList.add('an'); var L2 = $('geoLeg'); L2.scrollLeft = Math.max(0, x.offsetLeft - L2.clientWidth / 2 + x.offsetWidth / 2); } else if (!an) x.classList.remove('an'); });
+    apKamera(t > 0.98 ? Math.min(k + 1, n - 2) : k, sofort);
+  }
+  function apSchleife() {
+    var letzt = performance.now();
+    function schritt(jetzt) {
+      if (!ap || !$('geoKarte').classList.contains('offen')) { apStop(); return; }
+      var dt = Math.min(100, jetzt - letzt); letzt = jetzt;
+      var k = Math.min(ap.segs.length - 1, Math.floor(ap.pos)), seg = ap.segs[k];
+      var dauer = seg.sprung ? 2600 : (seg.km < 0.05 ? 260 : 700);
+      if (ap.ptSt[k + 1] !== ap.ptSt[k] && !seg.sprung) dauer = 1400;
+      var neu = ap.pos + dt * apTempo / dauer;
+      if (ap.segs[k].sprung && Math.floor(neu) > k) neu = k + 1; // nach Sprung kurz Station zeigen
+      if (neu >= ap.d.liste.length - 1) { apStand(ap.d.liste.length - 1); apStop(); setTimeout(function () { if (ap && !apRaf) geoMapObj.flyToBounds(ap.d.liste.map(function (a) { return [a.geo.lat, a.geo.lon]; }), { padding: [40, 40], maxZoom: 15, duration: 1.2 }); }, 900); return; }
+      apStand(neu); apRaf = requestAnimationFrame(schritt);
+    }
+    apRaf = requestAnimationFrame(schritt); gpSymbol();
+  }
+  $('gpPlay').addEventListener('click', function () {
+    if (apRaf) { apStop(); return; }
+    if (!ap || ap.pos >= ap.d.liste.length - 1) apStarten();
+    apSchleife();
+  });
+  $('gpTempo').addEventListener('click', function () { apTempo = apTempo === 1 ? 2 : apTempo === 2 ? 4 : apTempo === 4 ? 0.5 : 1; this.textContent = String(apTempo).replace('.', ',') + '×'; });
+  $('gpRegler').addEventListener('input', function () { apStop(); if (!ap) apStarten(); apStand(parseFloat(this.value) || 0); });
   $('geoLeg').addEventListener('click', function (e) {
     var b = e.target.closest('[data-rt]'); if (!b) return;
+    if (ap) {
+      var t0 = b.getAttribute('data-rt');
+      if (t0) { apStop(); var idx = ap.d.liste.findIndex(function (a) { return a.datum === t0; }); if (idx >= 0) apStand(idx); return; }
+      apBeenden(); routeTag = null; geoKarteZeichnen(); return;
+    }
     var t = b.getAttribute('data-rt'); routeTag = (!t || routeTag === t) ? null : t;
     var sl = $('geoLeg').scrollLeft; geoKarteZeichnen(); $('geoLeg').scrollLeft = sl;
   });
   $('geoUmschalt').addEventListener('click', function (e) {
     var b = e.target.closest('[data-gm]'); if (!b || !geoMapObj) return;
-    geoModus = b.getAttribute('data-gm'); routeTag = null;
+    apBeenden(); geoModus = b.getAttribute('data-gm'); routeTag = null;
     Array.prototype.forEach.call(document.querySelectorAll('#geoUmschalt button'), function (x) { x.classList.toggle('an', x === b); });
     geoMapObj.closePopup(); geoKarteZeichnen();
   });
