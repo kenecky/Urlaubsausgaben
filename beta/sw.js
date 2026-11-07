@@ -1,6 +1,9 @@
 // Service Worker: speichert die App beim ersten Öffnen, danach läuft sie offline.
 // Bei Änderungen an der App die Versionsnummer erhöhen, damit Handys die neue Fassung laden.
-var CACHE = 'reisen-beta-v14';
+// Andere Apps auf kenecky.github.io (z. B. F1 Race Control) teilen sich den Cache-Speicher.
+// Deshalb beim Aufräumen nur eigene alte Versionen (gleiches Präfix) löschen.
+var PREFIX = 'reisen-beta-v';
+var CACHE = PREFIX + '15';
 var DATEIEN = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
@@ -11,7 +14,7 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (namen) {
-      return Promise.all(namen.filter(function (n) { return n !== CACHE; })
+      return Promise.all(namen.filter(function (n) { return n.indexOf(PREFIX) === 0 && n !== CACHE; })
         .map(function (n) { return caches.delete(n); }));
     }).then(function () { return self.clients.claim(); })
   );
