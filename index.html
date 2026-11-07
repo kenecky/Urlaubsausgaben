@@ -4889,7 +4889,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var L = window.L;
     if (!geoMapObj) {
       geoMapObj = L.map('geoMap', { zoomControl: true, attributionControl: true }); window._geoKarte = geoMapObj;
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(geoMapObj);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap', keepBuffer: 4, updateWhenIdle: false }).addTo(geoMapObj);
       geoMapObj.on('click', function (e) { if (geoModus === 'wahl') { geoWahl = { lat: e.latlng.lat, lon: e.latlng.lng }; geoMarkerSetzen(); } });
     }
     geoMapObj.invalidateSize();
@@ -4987,7 +4987,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     return { km: km, sprung: true, pos: function (t) { return [(1 - t) * (1 - t) * a.geo.lat + 2 * (1 - t) * t * mLa + t * t * b.geo.lat, (1 - t) * (1 - t) * a.geo.lon + 2 * (1 - t) * t * mLo + t * t * b.geo.lon]; } };
   }
   function gpSymbol() { var spielt = !!apRaf; $('gpPlay').innerHTML = spielt ? '<svg viewBox="0 0 24 24"><rect x="6.5" y="5.5" width="4" height="13" rx="1"/><rect x="13.5" y="5.5" width="4" height="13" rx="1"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg>'; $('gpPlay').setAttribute('aria-label', spielt ? 'Pause' : 'Abspielen'); }
-  function apStop() { if (apRaf) cancelAnimationFrame(apRaf); apRaf = 0; gpSymbol(); }
+  function apStop() { if (apRaf) cancelAnimationFrame(apRaf); apRaf = 0; apBewegungEnde(); gpSymbol(); }
   function apBeenden() { apStop(); routeAbspiel = false; ap = null; if (geoMapObj) geoMapObj.options.zoomSnap = 1; }
   function apStarten() {
     var L = window.L, d = routeDaten(); if (d.liste.length < 2) return;
@@ -5030,7 +5030,15 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     // Punkt in die Mitte der freien Fläche über der Info-Karte setzen
     var info = $('geoInfo'), off = info.hidden ? 0 : (info.offsetHeight + 26) / 2;
     var mitte = off ? geoMapObj.unproject(geoMapObj.project([ap.cam.lat, ap.cam.lon], ap.cam.z).add([0, off]), ap.cam.z) : [ap.cam.lat, ap.cam.lon];
-    geoMapObj.setView(mitte, ap.cam.z, { animate: false });
+    // Wie Leaflets eigenes flyTo: Bewegung ohne Neuaufbau, damit Kacheln stehen bleiben und nachladen
+    if (sofort || typeof geoMapObj._move !== 'function') { apBewegungEnde(); geoMapObj.setView(mitte, ap.cam.z, { animate: false }); return; }
+    if (!ap.bewegt) { geoMapObj._moveStart(true, false); ap.bewegt = true; ap.seitEnde = 0; }
+    geoMapObj._move(mitte, ap.cam.z, { flyTo: true });
+    ap.seitEnde += dt || 16;
+    if (ap.seitEnde > 300) apBewegungEnde(); // regelmäßig Kacheln für die aktuelle Ansicht laden
+  }
+  function apBewegungEnde() {
+    if (ap && ap.bewegt && geoMapObj) { ap.bewegt = false; try { geoMapObj._moveEnd(true); } catch (e) {} }
   }
   function apStand(pos, sofort) {
     var L = window.L, d = ap.d, n = d.liste.length; pos = Math.max(0, Math.min(n - 1, pos));
