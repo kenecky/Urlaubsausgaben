@@ -4856,6 +4856,7 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
         return !b.contains('blatt-offen') && !t.closest('#wkBox, .wk-chips, input, select, textarea, button') &&
           (!t.closest('#reisenListe') || $('reisenListe').scrollTop <= 0);
       }
+      if (b.contains('blatt-offen') || t.closest('.leaflet-container, .unten-blatt, .wk-popup')) return false;
       return (b.contains('rs-haupt') || (b.contains('rs-unter') && window.scrollY <= 0)) && !b.contains('reise-offen') && !b.contains('umrechner-offen') && !b.contains('ab-offen') &&
         !b.contains('vb-offen') && !$('reiseAnsicht').hidden && !t.closest('.sheet, input, select, textarea, #suche, .tabs, #tabsKarte .tab-inhalt input');
     }
