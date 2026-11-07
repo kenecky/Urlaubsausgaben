@@ -5446,11 +5446,13 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   function ladeFertig() {
     var el = $('ladeschirm'); if (!el) return;
     var start = (window.performance && performance.now) ? performance.now() : 0, i = 0;
-    var proSchritt = Math.max(50, Math.min(80, (450 - start) / Math.max(1, ladeSchritte.length)));
+    var proSchritt = Math.max(180, Math.min(280, (1500 - start) / Math.max(1, ladeSchritte.length)));
+    var fertig = false; el.addEventListener('click', function () { if (fertig) return; fertig = true; el.classList.add('weg'); setTimeout(function () { el.remove(); }, 400); });
     (function weiter() {
+      if (fertig) return;
       if (i < ladeSchritte.length) { $('lsBalken').style.width = ladeSchritte[i][0] + '%'; $('lsText').textContent = ladeSchritte[i][1]; i++; setTimeout(weiter, proSchritt); return; }
       $('lsBalken').style.width = '100%'; $('lsText').textContent = 'Fertig';
-      setTimeout(function () { el.classList.add('weg'); setTimeout(function () { el.remove(); }, 400); }, 80);
+      setTimeout(function () { if (fertig) return; fertig = true; el.classList.add('weg'); setTimeout(function () { el.remove(); }, 400); }, 300);
     })();
   }
   ladeSchritt(20, 'Einstellungen werden geladen …');
