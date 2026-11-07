@@ -1196,7 +1196,7 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 #gpTempo { flex: none; width: 52px; height: 38px; margin: 0; padding: 0; font-size: 14px; font-weight: 700; }
 .route-jetzt { display: flex; align-items: center; justify-content: center; }
 .route-jetzt span { display: block; margin: 2px; flex: none; box-sizing: border-box; width: 24px; height: 24px; border-radius: 50%; background: #F5A524; border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(245,165,36,.3), 0 3px 8px rgba(0,0,0,.35); }
-.geo-btns { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 8px; margin: 0 0 12px; }
+.geo-btns { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 0 0 12px; }
 .geo-btns .geo-btn { margin: 0; padding: 0 6px; font-size: 14px; gap: 6px; }
 .geo-blatt.ablauf .geo-wrap { flex: none; height: 160px; min-height: 0; overflow: hidden; border-radius: 14px; }
 .geo-blatt.ablauf .geo-map { min-height: 0; height: 160px; }
@@ -2793,8 +2793,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     }).join('');
     var nGeo = ohneAbh.filter(function (a) { return a.geo; }).length;
     html = '<div class="geo-btns"><button type="button" class="hell geo-btn" id="geoUebersicht"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg>Karte</button>' +
-      '<button type="button" class="hell geo-btn" id="geoAblaufBtn"><svg viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><path d="M6 7v10M11 5h9M11 19h9M11 12h6"/></svg>Ablauf</button>' +
-      '<button type="button" class="hell geo-btn" id="geoRoute"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="6" r="2.4"/><path d="M8.4 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.6" stroke-dasharray="3 2.4"/></svg>Route</button></div>' + html;
+      '</div>' + html;
     $('tab-orte').innerHTML = html;
   }
   $('tab-orte').addEventListener('click', function (e) { if (e.target.closest('#geoUebersicht')) { geoKarteAuf('alle'); return; } if (e.target.closest('#geoRoute')) { geoKarteAuf('route'); return; } if (e.target.closest('#geoAblaufBtn')) { geoKarteAuf('ablauf'); return; } });
@@ -4978,6 +4977,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     }).join('') : '';
     $('geoLeg').hidden = d.tage.length < 2;
     $('geoPlayer').hidden = d.liste.length < 2;
+    geoMapObj.invalidateSize({ pan: false }); // Player/Tagesleiste ändern die Kartenhöhe
     if (!routeAbspiel) { $('geoInfo').hidden = true; gpSymbol(); var x0 = d.tage[0] ? d.tage[0].split('-') : null, x1 = d.tage.length ? d.tage[d.tage.length - 1].split('-') : null; $('gpVon').textContent = x0 ? x0[2] + '.' + x0[1] + '.' : ''; $('gpBis').textContent = x1 ? x1[2] + '.' + x1[1] + '.' : ''; $('gpRegler').max = Math.max(1, d.liste.length - 1); $('gpRegler').value = 0; }
     if (routeAbspiel) return;
     if (punkte.length) geoMapObj.fitBounds(punkte, { padding: [40, 40], maxZoom: 15 }); else geoMapObj.setView([20, 100], 3);
@@ -5079,7 +5079,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var L = window.L, pts = ap.d.liste.map(function (a) { return [a.geo.lat, a.geo.lon]; }), b = L.latLngBounds(pts);
     var unten = $('geoMap').clientHeight - ($('geoInfo').offsetTop - 14);
     var opt = { paddingTopLeft: [36, 44], paddingBottomRight: [90, Math.max(60, unten)], maxZoom: 15 };
-    geoMapObj.stop(); apBewegungEnde();
+    geoMapObj.stop(); apBewegungEnde(); geoMapObj.invalidateSize({ pan: false });
     geoMapObj.once('moveend', function () {
       if (!ap || apRaf) return;
       var kTop = $('geoInfo').offsetTop - 8, w = $('geoMap').clientHeight && $('geoMap').clientWidth, alleDrin = pts.every(function (q) { var p = geoMapObj.latLngToContainerPoint(q); return p.y > 10 && p.y < kTop && p.x > 10 && p.x < w - 10; });
