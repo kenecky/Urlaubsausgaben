@@ -4848,7 +4848,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   function geoKarteZeichnen() {
     var L = window.L;
     if (!geoMapObj) {
-      geoMapObj = L.map('geoMap', { zoomControl: true, attributionControl: true });
+      geoMapObj = L.map('geoMap', { zoomControl: true, attributionControl: true }); window._geoKarte = geoMapObj;
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(geoMapObj);
       geoMapObj.on('click', function (e) { if (geoModus === 'wahl') { geoWahl = { lat: e.latlng.lat, lon: e.latlng.lng }; geoMarkerSetzen(); } });
     }
@@ -4947,7 +4947,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   }
   function gpSymbol() { var spielt = !!apRaf; $('gpPlay').innerHTML = spielt ? '<svg viewBox="0 0 24 24"><rect x="6.5" y="5.5" width="4" height="13" rx="1"/><rect x="13.5" y="5.5" width="4" height="13" rx="1"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg>'; $('gpPlay').setAttribute('aria-label', spielt ? 'Pause' : 'Abspielen'); }
   function apStop() { if (apRaf) cancelAnimationFrame(apRaf); apRaf = 0; gpSymbol(); }
-  function apBeenden() { apStop(); routeAbspiel = false; ap = null; }
+  function apBeenden() { apStop(); routeAbspiel = false; ap = null; if (geoMapObj) geoMapObj.options.zoomSnap = 1; }
   function apStarten() {
     var L = window.L, d = routeDaten(); if (d.liste.length < 2) return;
     routeAbspiel = true; routeTag = null; geoMapObj.closePopup();
@@ -4959,17 +4959,34 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     d.tage.forEach(function (t) { tagSum[t] = ohne.filter(function (a) { return a.datum === t; }).reduce(function (x, a) { return x + lokalWert(a); }, 0); });
     var bisher = {}, lauf = 0; ohne.slice().sort(function (a, b) { return a.datum < b.datum ? -1 : 1; }).forEach(function (a) { lauf += lokalWert(a); bisher[a.datum] = lauf; });
     var segs = []; for (var i = 1; i < d.liste.length; i++) segs.push(segGeo(d.liste[i - 1], d.liste[i]));
-    ap = { d: d, farbe: farbe, ptSt: ptSt, ersterPunkt: ersterPunkt, tagSum: tagSum, bisher: bisher, segs: segs, pos: 0, gezeichnet: 0, schicht: L.layerGroup().addTo(geoSchicht), jetzt: null, kamera: -1 };
+    ap = { d: d, farbe: farbe, ptSt: ptSt, ersterPunkt: ersterPunkt, tagSum: tagSum, bisher: bisher, segs: segs, pos: 0, gezeichnet: 0, schicht: L.layerGroup().addTo(geoSchicht), jetzt: null, cam: null, ziel: null };
+    geoMapObj.options.zoomSnap = 0;
     $('geoInfo').hidden = false;
     apStand(0, true);
   }
-  function apKamera(k, sofort) {
-    if (!ap || ap.kamera === k) return; ap.kamera = k;
-    var o = sofort ? { animate: false } : { duration: 0.9 };
-    var seg = ap.segs[k];
-    if (seg && seg.sprung) { var a = ap.d.liste[k].geo, b = ap.d.liste[k + 1].geo; geoMapObj.flyToBounds([[a.lat, a.lon], [b.lat, b.lon]], Object.assign({ padding: [70, 70], maxZoom: 12 }, o)); return; }
-    var st = ap.d.stationen[ap.ptSt[k]]; if (!st) return;
-    if (k === 0 || ap.ptSt[k] !== ap.ptSt[k - 1] || (ap.segs[k - 1] && ap.segs[k - 1].sprung)) geoMapObj.flyToBounds(st.punkte.map(function (a) { return [a.geo.lat, a.geo.lon]; }).concat([[st.mitte.lat + 0.002, st.mitte.lon + 0.002], [st.mitte.lat - 0.002, st.mitte.lon - 0.002]]), Object.assign({ padding: [70, 70], maxZoom: 14 }, o));
+  function weich(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function apZoom(pts, pad) { var L = window.L; return geoMapObj.getBoundsZoom(L.latLngBounds(pts), false, L.point(pad, pad)); }
+  // Kamera-Ziel: Mittelpunkt = aktueller Punkt, Zoom passend zum Abschnitt
+  function apZiel(k, t, p) {
+    var d = ap.d, seg = ap.segs[k], a = d.liste[k].geo, b = d.liste[k + 1].geo;
+    function nahZoom(i) { // Zoom rund um Punkt i: Nachbarn in der Nähe einpassen
+      var g = d.liste[i].geo, pts = [[g.lat, g.lon]];
+      [i - 1, i + 1].forEach(function (j) { var x = d.liste[j]; if (x && kmZwischen(g, x.geo) <= 50) pts.push([x.geo.lat, x.geo.lon]); });
+      var z = pts.length > 1 ? apZoom(pts.concat([[g.lat + 0.0008, g.lon + 0.0008], [g.lat - 0.0008, g.lon - 0.0008]]), 70) : 16.5;
+      return Math.max(11, Math.min(17, z));
+    }
+    if (!seg.sprung) return { lat: p[0], lon: p[1], z: nahZoom(k) + (nahZoom(k + 1) - nahZoom(k)) * weich(t) };
+    var bogen = []; for (var u = 0; u <= 1.0001; u += 0.1) bogen.push(seg.pos(u));
+    var zJ = Math.min(apZoom(bogen, 50), 12), zA = Math.min(nahZoom(k), 15), zB = Math.min(nahZoom(k + 1), 15);
+    var z = t < 0.5 ? zA + (zJ - zA) * weich(t * 2) : zJ + (zB - zJ) * weich((t - 0.5) * 2);
+    return { lat: p[0], lon: p[1], z: z };
+  }
+  function apKameraSetzen(sofort, dt) {
+    if (!ap || !ap.ziel) return;
+    var z = ap.ziel;
+    if (sofort || !ap.cam) ap.cam = { lat: z.lat, lon: z.lon, z: z.z };
+    else { var f = 1 - Math.exp(-(dt || 16) / 170), fz = 1 - Math.exp(-(dt || 16) / 260); ap.cam.lat = z.lat; ap.cam.lon = z.lon; ap.cam.z += (z.z - ap.cam.z) * fz; }
+    geoMapObj.setView([ap.cam.lat, ap.cam.lon], ap.cam.z, { animate: false });
   }
   function apStand(pos, sofort) {
     var L = window.L, d = ap.d, n = d.liste.length; pos = Math.max(0, Math.min(n - 1, pos));
@@ -4987,7 +5004,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       if (ap.ersterPunkt[i + 1] !== undefined) stationsMarker(ap.ersterPunkt[i + 1]);
       ap.gezeichnet++;
     }
-    var p = ap.segs[k].pos(t);
+    var p = ap.segs[k].pos(weich(t));
     if (!ap.jetzt) ap.jetzt = L.marker(p, { zIndexOffset: 2000, interactive: false, icon: L.divIcon({ className: 'route-jetzt', html: '<span></span>', iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(ap.schicht);
     else ap.jetzt.setLatLng(p);
     ap.pos = pos; $('gpRegler').value = pos;
@@ -4998,21 +5015,29 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     $('giSum').textContent = (multi || euroTrip) ? '' : geld(ap.tagSum[a.datum] || 0);
     $('giBisher').textContent = (multi || euroTrip) ? '' : 'bisher ' + geld(ap.bisher[a.datum] || 0);
     var leg = $('geoLeg').querySelectorAll('[data-rt]'); Array.prototype.forEach.call(leg, function (x) { var an = x.getAttribute('data-rt') === a.datum; if (an && !x.classList.contains('an')) { x.classList.add('an'); var L2 = $('geoLeg'); L2.scrollLeft = Math.max(0, x.offsetLeft - L2.clientWidth / 2 + x.offsetWidth / 2); } else if (!an) x.classList.remove('an'); });
-    apKamera(t > 0.98 ? Math.min(k + 1, n - 2) : k, sofort);
+    ap.ziel = apZiel(k, t, p); if (sofort !== 'lauf') apKameraSetzen(true);
+  }
+  function apDauer(k) {
+    var seg = ap.segs[k];
+    if (seg.sprung) return Math.min(5200, 2600 + seg.km * 4);
+    if (ap.ptSt[k + 1] !== ap.ptSt[k]) return 1600;
+    return seg.km < 0.05 ? 650 : 1100;
   }
   function apSchleife() {
     var letzt = performance.now();
     function schritt(jetzt) {
       if (!ap || !$('geoKarte').classList.contains('offen')) { apStop(); return; }
-      var dt = Math.min(100, jetzt - letzt); letzt = jetzt;
-      var k = Math.min(ap.segs.length - 1, Math.floor(ap.pos)), seg = ap.segs[k];
-      var dauer = seg.sprung ? 2600 : (seg.km < 0.05 ? 260 : 700);
-      if (ap.ptSt[k + 1] !== ap.ptSt[k] && !seg.sprung) dauer = 1400;
-      var neu = ap.pos + dt * apTempo / dauer;
-      if (ap.segs[k].sprung && Math.floor(neu) > k) neu = k + 1; // nach Sprung kurz Station zeigen
-      if (neu >= ap.d.liste.length - 1) { apStand(ap.d.liste.length - 1); apStop(); setTimeout(function () { if (ap && !apRaf) geoMapObj.flyToBounds(ap.d.liste.map(function (a) { return [a.geo.lat, a.geo.lon]; }), { padding: [40, 40], maxZoom: 15, duration: 1.2 }); }, 900); return; }
-      apStand(neu); apRaf = requestAnimationFrame(schritt);
+      var dt = Math.min(60, jetzt - letzt); letzt = jetzt;
+      var k = Math.min(ap.segs.length - 1, Math.floor(ap.pos));
+      var neu = ap.pos + dt * apTempo / apDauer(k);
+      if (neu >= ap.d.liste.length - 1) {
+        apStand(ap.d.liste.length - 1, 'lauf'); apKameraSetzen(false, dt); apStop();
+        setTimeout(function () { if (ap && !apRaf) geoMapObj.flyToBounds(ap.d.liste.map(function (a) { return [a.geo.lat, a.geo.lon]; }), { padding: [40, 40], maxZoom: 15, duration: 1.4 }); }, 1000);
+        return;
+      }
+      apStand(neu, 'lauf'); apKameraSetzen(false, dt); apRaf = requestAnimationFrame(schritt);
     }
+    if (ap) ap.cam = null;
     apRaf = requestAnimationFrame(schritt); gpSymbol();
   }
   $('gpPlay').addEventListener('click', function () {
