@@ -439,6 +439,11 @@ button.rot { background: var(--rot-hell); color: var(--rot); }
   background: color-mix(in srgb, var(--k) 14%, transparent); color: var(--k); font-family: var(--display); font-weight: 700; }
 .kat-ico svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .eintrag .e-mitte { min-width: 0; }
+.eintrag { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+#liste .eintrag.zieht { position: relative; z-index: 5; background: var(--karte); border-radius: 14px; margin-left: -10px; margin-right: -10px; padding-left: 10px; padding-right: 10px; box-shadow: 0 14px 30px -10px rgba(0,0,0,.45), 0 0 0 2px #F5A524; transition: box-shadow .15s ease; }
+#liste .eintrag.zieht-weg { transition: transform .22s cubic-bezier(.2,.8,.2,1); }
+#liste .eintrag.hebt { animation: eHeben .22s ease-out; }
+@keyframes eHeben { 0% { transform: scale(1); } 60% { transform: scale(1.035); } 100% { transform: scale(1.02); } }
 .kein-gps { width: 14px; height: 14px; margin-right: 5px; vertical-align: -2px; fill: none; stroke: #E08A1E; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .eintrag .beschr { font-weight: 600; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .eintrag .meta { font-size: 13px; line-height: 1.4; margin-top: 2px; }
@@ -1836,6 +1841,9 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     });
   }
   function neueId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  // Reihenfolge innerhalb eines Tages: verschobene Einträge haben „pos“, sonst Zeitpunkt des Anlegens (aus der ID)
+  function posKey(a) { if (isFinite(a.pos)) return a.pos; var t = parseInt(String(a.id || '').slice(0, 8), 36); return isFinite(t) ? t : 0; }
+  function tagVergleich(a, b) { return a.datum.localeCompare(b.datum) || (posKey(a) - posKey(b)) || a.id.localeCompare(b.id); }
   var toastTimer;
   function toast(text) {
     var el = $('toast');
@@ -2288,6 +2296,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       if (dop && !confirm('Es gibt am ' + datumAnzeige(dop.datum) + ' schon eine Ausgabe „' + (dop.beschreibung || dop.kategorie) + '“ über ' + dop.betrag.toLocaleString('de-DE') + ' ' + waehrungSymbol(eintrag.waehrung) + (dop.zahlung ? ' (' + dop.zahlung + ')' : '') + '.\n\nTrotzdem speichern?')) return;
     }
     if (bearbeiteId) {
+      var altE = ausgaben.filter(function (a) { return a.id === bearbeiteId; })[0];
+      if (altE && isFinite(altE.pos) && altE.datum === eintrag.datum) eintrag.pos = altE.pos;
       ausgaben = ausgaben.map(function (a) { return a.id === bearbeiteId ? eintrag : a; });
       toast('Änderung gespeichert');
     } else {
@@ -2339,11 +2349,11 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var kopie = liste.slice();
     kopie.sort(function (a, b) {
       switch (modus) {
-        case 'datum-alt': return a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id);
+        case 'datum-alt': return tagVergleich(a, b);
         case 'betrag-hoch': return lokalWert(b) - lokalWert(a);
         case 'betrag-tief': return lokalWert(a) - lokalWert(b);
         case 'kategorie': return a.kategorie.localeCompare(b.kategorie, 'de') || b.datum.localeCompare(a.datum);
-        default: return b.datum.localeCompare(a.datum) || b.id.localeCompare(a.id);
+        default: return tagVergleich(b, a);
       }
     });
     return kopie;
@@ -2484,7 +2494,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var teile2 = [esc(istAbh(a) ? 'Bargeld' : a.kategorie), ortVon(a) ? esc(ortVon(a)) : '', a.zahlung ? esc(a.zahlung) : ''].filter(Boolean);
     if (!a.geo) zeile1 = '<svg class="kein-gps" viewBox="0 0 24 24" role="img" aria-label="ohne Standort"><title>Noch kein Standort</title><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.2"/><path d="M4 4l16 16"/></svg>' + zeile1;
     var meta = '<span class="m-zeile">' + zeile1 + '</span><span class="m-zeile">' + (teile2.length ? teile2.join(' · ') : '–') + '</span>';
-    return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' + katIcon(a.kategorie) +
+    return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '" data-datum="' + esc(a.datum) + '">' + katIcon(a.kategorie) +
       '<div class="e-mitte"><div class="beschr">' + esc(a.beschreibung || a.kategorie) + '</div><div class="meta">' + meta + '</div></div>' +
       '<div class="betrag">' + eintragBetragHtml(a) + status + '</div>' +
       '<div class="aktionen">' +
@@ -2598,6 +2608,97 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     }
   }
   $('liste').addEventListener('click', listeKlick);
+  // ---------- Einträge per langem Drücken verschieben (innerhalb eines Tages) ----------
+  (function () {
+    var liste = $('liste'), timer = null, st = null, z = null, klickWeg = false, raf = 0, letzteY = 0;
+    function seitY(clientY) { return clientY + window.scrollY; }
+    function abbrechen() { clearTimeout(timer); timer = null; st = null; }
+    function beginnen() {
+      timer = null; if (!st) return;
+      var el = st.el, modus = $('sortierung').value;
+      if (modus !== 'datum-neu' && modus !== 'datum-alt' && modus !== '') { toast('Verschieben geht nur bei Sortierung nach Datum.'); st = null; return; }
+      if (reise && reise.status === 'abgeschlossen') { toast('Die Reise ist abgeschlossen. Zum Ändern zuerst wieder öffnen.'); st = null; return; }
+      var datum = el.getAttribute('data-datum');
+      var gruppe = Array.prototype.filter.call(liste.querySelectorAll('.eintrag'), function (x) { return x.getAttribute('data-datum') === datum; });
+      var idx = gruppe.indexOf(el);
+      var obens = gruppe.map(function (x) { return x.getBoundingClientRect().top + window.scrollY; }), hoehen = gruppe.map(function (x) { return x.offsetHeight; });
+      var luecke = gruppe.length > 1 ? Math.max(0, obens[1] - obens[0] - hoehen[0]) : 0;
+      z = { el: el, gruppe: gruppe, idx: idx, neu: idx, y0: st.y, obens: obens, hoehen: hoehen, luecke: luecke, dy: 0, hinweis: false };
+      st = null;
+      if (navigator.vibrate) { try { navigator.vibrate(18); } catch (e) {} }
+      document.body.classList.add('zieht-aktiv');
+      el.classList.add('zieht', 'hebt');
+      gruppe.forEach(function (x) { if (x !== el) { x.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1)'; } });
+      raf = requestAnimationFrame(randScroll);
+    }
+    function bewegen(clientY) {
+      letzteY = clientY;
+      var dy = seitY(clientY) - z.y0, i = z.idx, n = z.gruppe.length;
+      var min = z.obens[0] - z.obens[i] - 14, max = (z.obens[n - 1] + z.hoehen[n - 1]) - (z.obens[i] + z.hoehen[i]) + 14;
+      if (n < 2 && Math.abs(dy) > 20 && !z.hinweis) { z.hinweis = true; toast('Verschieben geht nur innerhalb desselben Tages.'); }
+      dy = Math.max(min, Math.min(max, dy)); z.dy = dy;
+      z.el.classList.remove('hebt');
+      z.el.style.transform = 'translateY(' + dy + 'px) scale(1.02)';
+      var mitte = z.obens[i] + z.hoehen[i] / 2 + dy, schub = z.hoehen[i] + z.luecke, neu = i;
+      z.gruppe.forEach(function (x, j) {
+        if (j === i) return;
+        var m = z.obens[j] + z.hoehen[j] / 2, t = 0;
+        if (j > i && mitte > m) { t = -schub; neu = Math.max(neu, j); }
+        if (j < i && mitte < m) { t = schub; neu = Math.min(neu, j); }
+        x.style.transform = t ? 'translateY(' + t + 'px)' : '';
+      });
+      if (neu !== z.neu && navigator.vibrate) { try { navigator.vibrate(8); } catch (e) {} }
+      z.neu = neu;
+    }
+    function randScroll() {
+      if (!z) return;
+      var h = window.innerHeight, rand = 80, v = 0;
+      if (letzteY && letzteY > h - rand) v = Math.min(14, (letzteY - (h - rand)) / 5);
+      else if (letzteY && letzteY < rand + 60) v = -Math.min(14, ((rand + 60) - letzteY) / 5);
+      if (v) { var vor = window.scrollY; window.scrollBy(0, v); if (window.scrollY !== vor) bewegen(letzteY); }
+      raf = requestAnimationFrame(randScroll);
+    }
+    function beenden() {
+      cancelAnimationFrame(raf);
+      var zz = z; z = null; letzteY = 0;
+      klickWeg = true; setTimeout(function () { klickWeg = false; }, 400);
+      var i = zz.idx, neu = zz.neu, ziel = 0;
+      if (neu > i) for (var j = i + 1; j <= neu; j++) ziel += zz.hoehen[j] + zz.luecke;
+      if (neu < i) for (var k = neu; k < i; k++) ziel -= zz.hoehen[k] + zz.luecke;
+      zz.el.classList.remove('hebt'); zz.el.classList.add('zieht-weg');
+      zz.el.style.transform = 'translateY(' + ziel + 'px)';
+      setTimeout(function () {
+        document.body.classList.remove('zieht-aktiv');
+        if (neu === i) { zz.el.classList.remove('zieht', 'zieht-weg'); zz.gruppe.forEach(function (x) { x.style.transform = ''; x.style.transition = ''; }); return; }
+        var ids = zz.gruppe.map(function (x) { return x.getAttribute('data-id'); });
+        var bewegt = ids.splice(i, 1)[0]; ids.splice(neu, 0, bewegt);
+        if ($('sortierung').value !== 'datum-alt') ids.reverse(); // Anzeige „neueste zuerst“ → chronologisch umdrehen
+        var datum = zz.el.getAttribute('data-datum');
+        var tag = ausgaben.filter(function (a) { return a.datum === datum; }).sort(tagVergleich);
+        var sichtbar = {}; ids.forEach(function (id) { sichtbar[id] = true; });
+        var basis = Math.min.apply(null, tag.map(posKey)), k2 = 0, jetzt = Date.now();
+        var neueFolge = tag.map(function (a) { if (!sichtbar[a.id]) return a; var id = ids[k2++]; return tag.filter(function (x) { return x.id === id; })[0] || a; });
+        neueFolge.forEach(function (a, n) { var p = basis + n; if (a.pos !== p) { a.pos = p; a.geaendert = jetzt; } });
+        speichern(); zeichnen();
+      }, 230);
+    }
+    liste.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1 || z) return;
+      var el = e.target.closest('.eintrag');
+      if (!el || e.target.closest('button, .aktionen, a, input')) return;
+      st = { el: el, x: e.touches[0].clientX, y: seitY(e.touches[0].clientY) };
+      clearTimeout(timer); timer = setTimeout(beginnen, 420);
+    }, { passive: true });
+    liste.addEventListener('touchmove', function (e) {
+      if (z) { e.preventDefault(); e.stopPropagation(); bewegen(e.touches[0].clientY); return; }
+      if (st && (Math.abs(e.touches[0].clientX - st.x) > 8 || Math.abs(seitY(e.touches[0].clientY) - st.y) > 8)) abbrechen();
+    }, { passive: false });
+    function ende(e) { if (z) { if (e) e.stopPropagation(); beenden(); } else abbrechen(); }
+    liste.addEventListener('touchend', ende);
+    liste.addEventListener('touchcancel', ende);
+    liste.addEventListener('contextmenu', function (e) { if (z || timer) e.preventDefault(); });
+    liste.addEventListener('click', function (e) { if (klickWeg) { e.stopPropagation(); e.preventDefault(); klickWeg = false; } }, true);
+  })();
   $('sucheListe').addEventListener('click', listeKlick);
 
   // ---------- Reiter ----------
@@ -2621,7 +2722,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   // Aufgeklappte Zeilen merken sich, auch wenn die Ansicht neu gezeichnet wird
   var offenZahlung = {}, offenTag = {};
   function sortNeu(liste) {
-    return liste.slice().sort(function (a, b) { return b.datum.localeCompare(a.datum) || b.id.localeCompare(a.id); });
+    return liste.slice().sort(function (a, b) { return tagVergleich(b, a); });
   }
   function pfeil(offen) { return '<span class="pfeil">' + (offen ? '▾' : '▸') + '</span>'; }
   function aufklapp(liste) {
@@ -3091,7 +3192,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       var text = norm((a.beschreibung || '') + ' ' + (a.ort || ''));
       return woerter.every(function (w) { return text.indexOf(w) >= 0; });
     });
-    treffer.sort(function (a, b) { return b.datum.localeCompare(a.datum) || b.id.localeCompare(a.id); });
+    treffer.sort(function (a, b) { return tagVergleich(b, a); });
     return treffer;
   }
   function renderSuche() {
@@ -3293,6 +3394,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     if (typeof a.ort === 'string' && a.ort.trim()) e.ort = a.ort.trim().slice(0, 40);
     if (/^[A-Z]{3}$/.test(a.waehrung)) e.waehrung = a.waehrung;
     if (a.geaendert > 0 && isFinite(a.geaendert)) e.geaendert = a.geaendert;
+    if (typeof a.pos === 'number' && isFinite(a.pos)) e.pos = a.pos;
     return e;
   }
   // Zusammenführen: gleiche ID = derselbe Eintrag (der neuere gewinnt), neue IDs werden ergänzt, Löschmarken entfernen Einträge
@@ -4924,7 +5026,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   function idZeit(id) { var t = parseInt(String(id || '').slice(0, 8), 36); return isFinite(t) ? t : 0; }
   function routeDaten() {
     var liste = ausgaben.filter(function (a) { return a.geo && !istAbh(a) && !ganzeReise(a); }).slice()
-      .sort(function (a, b) { return a.datum < b.datum ? -1 : a.datum > b.datum ? 1 : idZeit(a.id) - idZeit(b.id); });
+      .sort(tagVergleich);
     var tage = [], tagIdx = {};
     liste.forEach(function (a) { if (!(a.datum in tagIdx)) { tagIdx[a.datum] = tage.length; tage.push(a.datum); } });
     // Stationen: aufeinanderfolgende Punkte im Umkreis von 25 km
@@ -5289,6 +5391,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var y0 = null, x0 = 0, dy = 0, modus = null, GRENZE = 80;
     function aktivHier(t) {
       var b = document.body.classList;
+      if (b.contains('zieht-aktiv')) return false;
       if (b.contains('start-an')) {
         return !b.contains('blatt-offen') && !t.closest('#wkBox, .wk-chips, input, select, textarea, button') &&
           (!t.closest('#reisenListe') || $('reisenListe').scrollTop <= 0);
@@ -5379,6 +5482,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     }, { passive: true });
     flaeche.addEventListener('touchmove', function (e) {
       if (sx === null) return;
+      if (document.body.classList.contains('zieht-aktiv')) { sx = null; modus = null; return; }
       var mx = e.touches[0].clientX - sx, my = e.touches[0].clientY - sy;
       if (!modus) {
         if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
