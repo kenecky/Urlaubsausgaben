@@ -5027,7 +5027,10 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var z = ap.ziel;
     if (sofort || !ap.cam) ap.cam = { lat: z.lat, lon: z.lon, z: z.z };
     else { var f = 1 - Math.exp(-(dt || 16) / 170), fz = 1 - Math.exp(-(dt || 16) / 260); ap.cam.lat = z.lat; ap.cam.lon = z.lon; ap.cam.z += (z.z - ap.cam.z) * fz; }
-    geoMapObj.setView([ap.cam.lat, ap.cam.lon], ap.cam.z, { animate: false });
+    // Punkt in die Mitte der freien Fläche über der Info-Karte setzen
+    var info = $('geoInfo'), off = info.hidden ? 0 : (info.offsetHeight + 26) / 2;
+    var mitte = off ? geoMapObj.unproject(geoMapObj.project([ap.cam.lat, ap.cam.lon], ap.cam.z).add([0, off]), ap.cam.z) : [ap.cam.lat, ap.cam.lon];
+    geoMapObj.setView(mitte, ap.cam.z, { animate: false });
   }
   function apStand(pos, sofort) {
     var L = window.L, d = ap.d, n = d.liste.length; pos = Math.max(0, Math.min(n - 1, pos));
