@@ -439,7 +439,7 @@ button.rot { background: var(--rot-hell); color: var(--rot); }
   background: color-mix(in srgb, var(--k) 14%, transparent); color: var(--k); font-family: var(--display); font-weight: 700; }
 .kat-ico svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .eintrag .e-mitte { min-width: 0; }
-.kein-gps { width: 14px; height: 14px; margin-left: 6px; vertical-align: -2px; fill: none; stroke: #E08A1E; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.kein-gps { width: 14px; height: 14px; margin-right: 5px; vertical-align: -2px; fill: none; stroke: #E08A1E; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .eintrag .beschr { font-weight: 600; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .eintrag .meta { font-size: 13px; line-height: 1.4; margin-top: 2px; }
 .eintrag .betrag { font-size: 16.5px; font-weight: 700; letter-spacing: -.01em; }
@@ -2480,7 +2480,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var zeile1 = istPauschal(a) ? esc(datumAnzeige(a.datum).slice(0, 6) + ' – ' + datumAnzeige(a.bis)) + ' · ' + verteilTage(a) + ' Tage' : esc(datumAnzeige(a.datum));
     var status = istGeprueft(a) ? '' : '<span class="e-status"><span class="offen-tag">Kurs offen</span></span>';
     var teile2 = [esc(istAbh(a) ? 'Bargeld' : a.kategorie), ortVon(a) ? esc(ortVon(a)) : '', a.zahlung ? esc(a.zahlung) : ''].filter(Boolean);
-    if (!a.geo && !istAbh(a) && !ganzeReise(a)) zeile1 += '<svg class="kein-gps" viewBox="0 0 24 24" role="img" aria-label="ohne Standort"><title>Noch kein Standort</title><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.2"/><path d="M4 4l16 16"/></svg>';
+    if (!a.geo) zeile1 = '<svg class="kein-gps" viewBox="0 0 24 24" role="img" aria-label="ohne Standort"><title>Noch kein Standort</title><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.2"/><path d="M4 4l16 16"/></svg>' + zeile1;
     var meta = '<span class="m-zeile">' + zeile1 + '</span><span class="m-zeile">' + (teile2.length ? teile2.join(' · ') : '–') + '</span>';
     return '<div class="eintrag' + (istGeprueft(a) ? ' erledigt' : '') + '" data-id="' + esc(a.id) + '">' + katIcon(a.kategorie) +
       '<div class="e-mitte"><div class="beschr">' + esc(a.beschreibung || a.kategorie) + '</div><div class="meta">' + meta + '</div></div>' +
