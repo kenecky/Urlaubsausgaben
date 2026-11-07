@@ -2690,7 +2690,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       var el = e.target.closest('.eintrag');
       if (!el || e.target.closest('button, .aktionen, a, input')) return;
       st = { el: el, x: e.touches[0].clientX, cy: e.touches[0].clientY, y: seitY(e.touches[0].clientY), sy: window.scrollY };
-      clearTimeout(timer); timer = setTimeout(beginnen, 420);
+      clearTimeout(timer); timer = setTimeout(beginnen, 700);
     }, { passive: true });
     liste.addEventListener('touchmove', function (e) {
       if (z) { e.preventDefault(); e.stopPropagation(); bewegen(e.touches[0].clientY); return; }
