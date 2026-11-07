@@ -1193,8 +1193,44 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 #gpTempo { flex: none; width: 52px; height: 38px; margin: 0; padding: 0; font-size: 14px; font-weight: 700; }
 .route-jetzt { display: flex; align-items: center; justify-content: center; }
 .route-jetzt span { display: block; margin: 2px; flex: none; box-sizing: border-box; width: 24px; height: 24px; border-radius: 50%; background: #F5A524; border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(245,165,36,.3), 0 3px 8px rgba(0,0,0,.35); }
-.geo-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; }
-.geo-btns .geo-btn { margin: 0; padding: 0 8px; font-size: 14px; }
+.geo-btns { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 8px; margin: 0 0 12px; }
+.geo-btns .geo-btn { margin: 0; padding: 0 6px; font-size: 14px; gap: 6px; }
+.geo-blatt.ablauf .geo-wrap { flex: none; height: 160px; min-height: 0; overflow: hidden; border-radius: 14px; }
+.geo-blatt.ablauf .geo-map { min-height: 0; height: 160px; }
+.geo-blatt.ablauf .geo-wrap .leaflet-control-zoom { display: none; }
+.geo-ablauf { flex: 1; overflow-y: auto; margin: 10px -4px 0; padding: 0 4px 10px; overscroll-behavior: contain; }
+.geo-ablauf[hidden] { display: none; }
+.ab-st { display: flex; gap: 10px; }
+.ab-lin { width: 32px; flex: none; display: flex; flex-direction: column; align-items: center; }
+.ab-num { width: 32px; height: 32px; border-radius: 50%; background: #0E4A55; color: #fff; display: flex; align-items: center; justify-content: center; font: 800 15px 'Bricolage', 'Figtree', sans-serif; flex: none; }
+.ab-num.ziel { background: #F5A524; color: #1f2937; }
+.ab-strich { flex: 1; width: 3px; background: var(--linie); min-height: 10px; }
+.ab-box { flex: 1; min-width: 0; background: var(--karte); border: 1px solid var(--linie); border-radius: 16px; padding: 11px 13px; margin-bottom: 6px; cursor: pointer; }
+.ab-box.offen { border-color: #F5A524; box-shadow: 0 0 0 1px #F5A524; }
+.ab-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ab-kopf b { font: 700 17px 'Bricolage', 'Figtree', sans-serif; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab-kopf strong { font: 700 16px 'Bricolage', 'Figtree', sans-serif; color: var(--blau-text); white-space: nowrap; }
+html:not([data-thema="dunkel"]) .ab-kopf strong { color: #0E4A55; }
+.ab-sub { font-size: 12.5px; color: var(--grau); margin-top: 2px; }
+.ab-bar { display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 9px; }
+.ab-kat { font-size: 11.5px; color: var(--grau); margin-top: 5px; }
+.ab-vgl { font-size: 12px; color: var(--grau); margin-top: 6px; }
+.ab-vgl .rauf { color: var(--rot); font-weight: 700; } .ab-vgl .runter { color: var(--gruen); font-weight: 700; }
+.ab-tage { margin-top: 9px; border-top: 1px solid var(--linie); }
+.ab-tag { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--linie); font-size: 13.5px; }
+.ab-tag:last-child { border-bottom: 0; }
+.ab-tag small { display: block; color: var(--grau); font-size: 12px; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab-tag > div { min-width: 0; } .ab-tag span { font-weight: 700; white-space: nowrap; }
+.ab-knoepfe { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.ab-knoepfe button { margin: 0; height: 38px; font-size: 13px; padding: 0 6px; }
+.ab-weg { display: flex; gap: 10px; align-items: center; margin: 0 0 6px; }
+.ab-weg .ab-lin { height: 40px; justify-content: center; }
+.ab-weg .ab-lin i { width: 3px; height: 100%; background: repeating-linear-gradient(var(--grau) 0 5px, transparent 5px 10px); }
+.ab-chip { border: 1px dashed var(--feld-rand); border-radius: 16px; padding: 5px 11px; font-size: 12.5px; font-weight: 600; background: var(--karte); }
+.ab-chip small { color: var(--grau); font-weight: 500; }
+.ab-extra { font-size: 12.5px; color: var(--grau); margin: 4px 0 8px 42px; }
+.ab-summe { display: flex; justify-content: space-between; gap: 6px; background: #0E4A55; color: #fff; border-radius: 16px; padding: 11px 13px; margin-top: 10px; font-size: 12.5px; }
+.ab-summe b { display: block; font: 700 16.5px 'Bricolage', 'Figtree', sans-serif; }
 .geo-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 12px; }
 .geo-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* Karten-Etikett in der Kachel Ausgabenliste */
@@ -1616,7 +1652,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
 <section class="karte unten-blatt geo-blatt" id="geoKarte" role="dialog" aria-modal="true" aria-labelledby="geoTitel">
   <button type="button" class="sheet-x blatt-x" aria-label="Karte schließen">✕</button>
   <h2 id="geoTitel">Karte</h2>
-  <div class="geo-umschalt" id="geoUmschalt" hidden><button type="button" data-gm="alle">Ausgaben</button><button type="button" data-gm="route">Reiseroute</button></div>
+  <div class="geo-umschalt" id="geoUmschalt" hidden><button type="button" data-gm="alle">Ausgaben</button><button type="button" data-gm="route">Route</button><button type="button" data-gm="ablauf">Ablauf</button></div>
   <p class="geo-hinweis" id="geoHinweis"></p>
   <div class="geo-wrap"><div class="geo-map" id="geoMap"></div>
     <div class="geo-info" id="geoInfo" hidden><div><b id="giTag"></b><span id="giOrt"></span></div><div class="gi-r"><b id="giSum"></b><span id="giBisher"></span></div></div></div>
@@ -1626,6 +1662,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     <button type="button" id="gpTempo" class="hell" aria-label="Geschwindigkeit">1×</button>
   </div>
   <div class="geo-leg" id="geoLeg" hidden></div>
+  <div class="geo-ablauf" id="geoAblauf" hidden></div>
   <div class="geo-knoepfe" id="geoKnoepfe"><button type="button" class="hell" id="geoHier">Mein Standort</button><button type="button" class="hell" id="geoWeg">Entfernen</button><button type="button" id="geoOk">Übernehmen</button></div>
 </section>
 <div class="sheet-dunkel" id="sheetDunkel"></div>
@@ -2752,10 +2789,11 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     }).join('');
     var nGeo = ohneAbh.filter(function (a) { return a.geo; }).length;
     html = '<div class="geo-btns"><button type="button" class="hell geo-btn" id="geoUebersicht"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg>Karte' + (nGeo ? ' (' + nGeo + ')' : '') + '</button>' +
-      '<button type="button" class="hell geo-btn" id="geoRoute"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="6" r="2.4"/><path d="M8.4 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.6" stroke-dasharray="3 2.4"/></svg>Reiseroute</button></div>' + html;
+      '<button type="button" class="hell geo-btn" id="geoAblaufBtn"><svg viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><path d="M6 7v10M11 5h9M11 19h9M11 12h6"/></svg>Ablauf</button>' +
+      '<button type="button" class="hell geo-btn" id="geoRoute"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="6" r="2.4"/><path d="M8.4 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.6" stroke-dasharray="3 2.4"/></svg>Route</button></div>' + html;
     $('tab-orte').innerHTML = html;
   }
-  $('tab-orte').addEventListener('click', function (e) { if (e.target.closest('#geoUebersicht')) { geoKarteAuf('alle'); return; } if (e.target.closest('#geoRoute')) { geoKarteAuf('route'); return; } });
+  $('tab-orte').addEventListener('click', function (e) { if (e.target.closest('#geoUebersicht')) { geoKarteAuf('alle'); return; } if (e.target.closest('#geoRoute')) { geoKarteAuf('route'); return; } if (e.target.closest('#geoAblaufBtn')) { geoKarteAuf('ablauf'); return; } });
   $('tab-orte').addEventListener('click', function (e) {
     if (e.target.closest('button[data-aktion]')) { listeKlick(e); return; }
     var k = e.target.closest('[data-ort]');
@@ -4838,7 +4876,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     geoModus = modus; geoWahl = start ? { lat: start.lat, lon: start.lon } : null;
     $('geoTitel').textContent = modus === 'wahl' ? 'Standort der Ausgabe' : 'Karte';
     $('geoKnoepfe').hidden = modus !== 'wahl';
-    $('geoUmschalt').hidden = modus === 'wahl'; $('geoLeg').hidden = true; routeTag = null; apBeenden(); $('geoPlayer').hidden = true; $('geoInfo').hidden = true;
+    $('geoUmschalt').hidden = modus === 'wahl'; $('geoLeg').hidden = true; routeTag = null; apBeenden(); $('geoPlayer').hidden = true; $('geoInfo').hidden = true; abOffen = null; ablaufLayout();
     Array.prototype.forEach.call(document.querySelectorAll('#geoUmschalt button'), function (b) { b.classList.toggle('an', b.getAttribute('data-gm') === modus); });
     $('geoHinweis').textContent = modus === 'wahl' ? 'Tippe auf die Karte oder ziehe die Markierung, um den Standort zu ändern.' : 'Lade Karte …';
     var istStart = !$('startseite').hidden;
@@ -4862,6 +4900,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     }
     $('geoLeg').hidden = geoModus !== 'route'; if (geoModus !== 'route') { $('geoPlayer').hidden = true; $('geoInfo').hidden = true; }
     if (geoModus === 'route') { routeZeichnen(); return; }
+    if (geoModus === 'ablauf') { routeZeichnen(); $('geoLeg').hidden = true; $('geoPlayer').hidden = true; $('geoHinweis').textContent = ''; ablaufRendern(); return; }
     var liste = ausgaben.filter(function (a) { return a.geo && !istAbh(a); }), punkte = [];
     geoSchicht = L.layerGroup().addTo(geoMapObj);
     liste.forEach(function (a) {
@@ -4912,7 +4951,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
         var dLa = b.geo.lat - a.geo.lat, dLo = b.geo.lon - a.geo.lon, mLa = (a.geo.lat + b.geo.lat) / 2 + dLo * 0.18, mLo = (a.geo.lon + b.geo.lon) / 2 - dLa * 0.18, kurve = [];
         for (var t = 0; t <= 1.0001; t += 0.05) kurve.push([(1 - t) * (1 - t) * a.geo.lat + 2 * (1 - t) * t * mLa + t * t * b.geo.lat, (1 - t) * (1 - t) * a.geo.lon + 2 * (1 - t) * t * mLo + t * t * b.geo.lon]);
         L.polyline(kurve, { color: f, weight: 4, opacity: op, dashArray: '8 8', lineCap: 'round' }).addTo(geoSchicht);
-        if (aktiv(b.datum)) L.marker(kurve[10], { interactive: false, icon: L.divIcon({ className: 'route-sprung', html: '<span style="border-color:' + f + '">' + sprungArt(b.datum) + (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km).toLocaleString('de-DE')) + ' km</span>', iconSize: [0, 0] }) }).addTo(geoSchicht);
+        if (aktiv(b.datum) && geoModus !== 'ablauf') L.marker(kurve[10], { interactive: false, icon: L.divIcon({ className: 'route-sprung', html: '<span style="border-color:' + f + '">' + sprungArt(b.datum) + (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km).toLocaleString('de-DE')) + ' km</span>', iconSize: [0, 0] }) }).addTo(geoSchicht);
       } else if (km > 0.01) L.polyline([[a.geo.lat, a.geo.lon], [b.geo.lat, b.geo.lon]], { color: f, weight: 3.5, opacity: op, lineCap: 'round' }).addTo(geoSchicht);
     }
     d.liste.forEach(function (a) {
@@ -4971,9 +5010,9 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var d = ap.d, seg = ap.segs[k], a = d.liste[k].geo, b = d.liste[k + 1].geo;
     function nahZoom(i) { // Zoom rund um Punkt i: Nachbarn in der Nähe einpassen
       var g = d.liste[i].geo, pts = [[g.lat, g.lon]];
-      [i - 1, i + 1].forEach(function (j) { var x = d.liste[j]; if (x && kmZwischen(g, x.geo) <= 50) pts.push([x.geo.lat, x.geo.lon]); });
-      var z = pts.length > 1 ? apZoom(pts.concat([[g.lat + 0.0008, g.lon + 0.0008], [g.lat - 0.0008, g.lon - 0.0008]]), 70) : 16.5;
-      return Math.max(11, Math.min(17, z));
+      [i - 2, i - 1, i + 1, i + 2].forEach(function (j) { var x = d.liste[j]; if (x && kmZwischen(g, x.geo) <= 40) pts.push([x.geo.lat, x.geo.lon]); });
+      var z = apZoom(pts.concat([[g.lat + 0.004, g.lon + 0.004], [g.lat - 0.004, g.lon - 0.004]]), 60) - 0.6;
+      return Math.max(10, Math.min(14.5, z));
     }
     if (!seg.sprung) return { lat: p[0], lon: p[1], z: nahZoom(k) + (nahZoom(k + 1) - nahZoom(k)) * weich(t) };
     var bogen = []; for (var u = 0; u <= 1.0001; u += 0.1) bogen.push(seg.pos(u));
@@ -5059,9 +5098,98 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   });
   $('geoUmschalt').addEventListener('click', function (e) {
     var b = e.target.closest('[data-gm]'); if (!b || !geoMapObj) return;
-    apBeenden(); geoModus = b.getAttribute('data-gm'); routeTag = null;
+    apBeenden(); geoModus = b.getAttribute('data-gm'); routeTag = null; ablaufLayout();
     Array.prototype.forEach.call(document.querySelectorAll('#geoUmschalt button'), function (x) { x.classList.toggle('an', x === b); });
-    geoMapObj.closePopup(); geoKarteZeichnen();
+    geoMapObj.closePopup(); setTimeout(function () { geoMapObj.invalidateSize(); geoKarteZeichnen(); }, 30);
+  });
+  // ---------- Ablauf: Reise als Stationen-Liste ----------
+  var abOffen = null;
+  function ablaufLayout() { var ab = geoModus === 'ablauf'; $('geoKarte').classList.toggle('ablauf', ab); $('geoAblauf').hidden = !ab; if (ab) $('geoHinweis').textContent = ''; }
+  function tagKurz(iso) { var x = iso.split('-'); return ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(+x[0], x[1] - 1, +x[2]).getDay()] + ' ' + x[2] + '.' + x[1] + '.'; }
+  function tageZwischen(a, b) { var x = a.split('-'), y = b.split('-'); return Math.round((Date.UTC(+y[0], y[1] - 1, +y[2]) - Date.UTC(+x[0], x[1] - 1, +x[2])) / 864e5); }
+  function abWert(liste) { return (multi || euroTrip) ? euroFmt(summeEuro(liste)).replace(',00 €', ' €') : geld(liste.reduce(function (x, a) { return x + lokalWert(a); }, 0)).replace(',00 ', ' '); }
+  function abBetrag(liste) { return (multi || euroTrip) ? summeEuro(liste) : liste.reduce(function (x, a) { return x + lokalWert(a); }, 0); }
+  function ablaufDaten() {
+    var d = routeDaten(); if (!d.stationen.length) return null;
+    var alle = ausgaben.filter(function (a) { return !istAbh(a); });
+    var gesamtReise = alle.filter(function (a) { return ganzeReise(a); });
+    var rest = alle.filter(function (a) { return !ganzeReise(a); });
+    var stVon = new Map(); d.stationen.forEach(function (s, i) { s.punkte.forEach(function (a) { stVon.set(a, i); }); });
+    // Station pro Tag: die mit den meisten Standort-Ausgaben an dem Tag (bei Gleichstand die spätere)
+    var proTag = {}; d.liste.forEach(function (a) { var i = stVon.get(a); proTag[a.datum] = proTag[a.datum] || {}; proTag[a.datum][i] = (proTag[a.datum][i] || 0) + 1; });
+    function tagStation(datum) {
+      if (proTag[datum]) { var m = proTag[datum], best = null; Object.keys(m).forEach(function (k) { if (best === null || m[k] >= m[best]) best = k; }); return +best; }
+      var vorher = d.liste.filter(function (a) { return a.datum <= datum; }); return vorher.length ? stVon.get(vorher[vorher.length - 1]) : 0;
+    }
+    var namen = {}; d.stationen.forEach(function (s, i) { if (!(s.name in namen)) namen[s.name] = []; namen[s.name].push(i); });
+    var st = d.stationen.map(function (s) { return { s: s, liste: [] }; });
+    rest.forEach(function (a) {
+      var i = stVon.get(a);
+      if (i === undefined) { var t = tagStation(a.datum); var kand = a.ort && namen[a.ort]; i = kand ? kand.reduce(function (b, k) { return Math.abs(k - t) < Math.abs(b - t) ? k : b; }, kand[0]) : t; }
+      st[i].liste.push(a);
+    });
+    st.forEach(function (x, i) {
+      var p = x.s.punkte; x.von = p[0].datum; x.bis = p[p.length - 1].datum;
+      x.liste.forEach(function (a) { if (a.datum < x.von && !istPauschal(a)) x.von = a.datum; });
+      x.naechte = i < st.length - 1 ? Math.max(0, tageZwischen(x.von, d.stationen[i + 1].punkte[0].datum)) : Math.max(0, tageZwischen(x.von, x.bis));
+      x.summe = abBetrag(x.liste);
+    });
+    var nTage = st.reduce(function (x, y) { return x + Math.max(1, y.naechte); }, 0);
+    return { d: d, st: st, gesamtReise: gesamtReise, alle: alle, nTage: Math.max(1, nTage) };
+  }
+  function ablaufRendern() {
+    var A = ablaufDaten(), box = $('geoAblauf');
+    if (!A) { box.innerHTML = '<p class="ab-sub" style="padding:10px 2px">Noch keine Ausgaben mit Standort. Sobald Ausgaben einen Standort haben, entsteht hier der Ablauf eurer Reise.</p>'; return; }
+    var schnitt = A.st.reduce(function (x, y) { return x + y.summe; }, 0) / A.nTage;
+    var html = A.st.map(function (x, i) {
+      var ziel = i === A.st.length - 1 && A.st.length > 1, offen = abOffen === i;
+      var tage = Math.max(1, x.naechte || 1), proTag = x.summe / tage;
+      var proK = {}; x.liste.forEach(function (a) { proK[a.kategorie] = (proK[a.kategorie] || 0) + ((multi || euroTrip) ? euroVon(a) : lokalWert(a)); });
+      var ks = Object.keys(proK).filter(function (k) { return proK[k] > 0; }).sort(function (a, b) { return proK[b] - proK[a]; });
+      var h = '<div class="ab-st"><div class="ab-lin"><div class="ab-num' + (ziel ? ' ziel' : '') + '">' + (i + 1) + '</div>' + (i < A.st.length - 1 ? '<div class="ab-strich"></div>' : '') + '</div>' +
+        '<div class="ab-box' + (offen ? ' offen' : '') + '" data-ab="' + i + '"><div class="ab-kopf"><b>' + esc(x.s.name) + '</b><strong>' + esc(abWert(x.liste)) + '</strong></div>' +
+        '<div class="ab-sub">' + tagKurz(x.von) + (x.bis !== x.von || x.naechte ? ' – ' + tagKurz(i < A.st.length - 1 ? A.st[i + 1].s.punkte[0].datum : x.bis) : '') + ' · ' + (x.naechte === 1 ? '1 Nacht' : x.naechte ? x.naechte + ' Nächte' : 'Tagesstopp') + (x.naechte > 0 && x.summe > 0 ? ' · ' + esc(((multi || euroTrip) ? euroFmt(proTag) : geld(proTag)).replace(/,\d\d /, ' ')) + '/Tag' : '') + '</div>';
+      if (ks.length && x.summe > 0) {
+        h += '<div class="ab-bar">' + ks.map(function (k) { return '<i style="flex:' + (proK[k] / x.summe).toFixed(4) + ';background:' + katStil(k).c + '"></i>'; }).join('') + '</div>' +
+          '<div class="ab-kat">' + ks.slice(0, 3).map(function (k) { return esc(k) + ' ' + Math.round(proK[k] / x.summe * 100) + '&nbsp;%'; }).join(' · ') + '</div>';
+      }
+      if (offen) {
+        if (x.naechte > 0 && schnitt > 0) { var dlt = Math.round((proTag / schnitt - 1) * 100); h += '<div class="ab-vgl">Pro Tag ' + (Math.abs(dlt) < 3 ? 'etwa im Reiseschnitt' : (dlt > 0 ? '<span class="rauf">+' + dlt + '&nbsp;%</span> über' : '<span class="runter">' + dlt + '&nbsp;%</span> unter') + ' dem Reiseschnitt') + '</div>'; }
+        var tg = {}; x.liste.forEach(function (a) { (tg[a.datum] = tg[a.datum] || []).push(a); });
+        h += '<div class="ab-tage">' + Object.keys(tg).sort().map(function (t) {
+          var l = tg[t].slice().sort(function (a, b) { return abBetrag([b]) - abBetrag([a]); });
+          return '<div class="ab-tag"><div><b>' + tagKurz(t) + '</b><small>' + l.slice(0, 2).map(function (a) { return esc(a.beschreibung || a.kategorie); }).join(' · ') + (l.length > 2 ? ' · +' + (l.length - 2) : '') + '</small></div><span>' + esc(abWert(tg[t])) + '</span></div>';
+        }).join('') + '</div>';
+        h += '<div class="ab-knoepfe"><button type="button" class="hell" data-ab-karte="' + i + '">Auf Karte</button><button type="button" class="hell" data-ab-play="' + i + '">▶ Ab hier abspielen</button></div>';
+      }
+      h += '</div></div>';
+      if (i < A.st.length - 1) {
+        var a = x.s.punkte[x.s.punkte.length - 1], b = A.st[i + 1].s.punkte[0], km = kmZwischen(a.geo, b.geo), art = sprungArt(b.datum);
+        h += '<div class="ab-weg"><div class="ab-lin"><i></i></div><div class="ab-chip">' + (art ? art + (art.indexOf('✈') === 0 ? 'Flug' : art.indexOf('⛴') === 0 ? 'Fähre' : 'Fahrt') : 'Weiter') + ' <small>· ' + (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km).toLocaleString('de-DE')) + ' km · ' + tagKurz(b.datum) + '</small></div></div>';
+      }
+      return h;
+    }).join('');
+    if (A.gesamtReise.length) html += '<p class="ab-extra">Über die ganze Reise verteilt: ' + esc(abWert(A.gesamtReise)) + '</p>';
+    var km = A.d.km;
+    html += '<div class="ab-summe"><div>Gesamt<b>' + esc(abWert(A.alle)) + '</b></div><div>pro Tag<b>' + esc(((multi || euroTrip) ? euroFmt(abBetrag(A.alle) / A.nTage) : geld(abBetrag(A.alle) / A.nTage)).replace(/,\d\d /, ' ')) + '</b></div><div>Strecke<b>≈ ' + (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km).toLocaleString('de-DE')) + ' km</b></div></div>';
+    var sp = box.scrollTop; box.innerHTML = html; box.scrollTop = sp;
+  }
+  $('geoAblauf').addEventListener('click', function (e) {
+    var k = e.target.closest('[data-ab-karte]'), pl = e.target.closest('[data-ab-play]');
+    if (k || pl) {
+      var i = +(k || pl).getAttribute('data-ab-' + (k ? 'karte' : 'play')), A = ablaufDaten(); if (!A) return;
+      geoModus = 'route'; ablaufLayout();
+      Array.prototype.forEach.call(document.querySelectorAll('#geoUmschalt button'), function (x) { x.classList.toggle('an', x.getAttribute('data-gm') === 'route'); });
+      setTimeout(function () {
+        geoMapObj.invalidateSize(); geoKarteZeichnen();
+        if (k) geoMapObj.fitBounds(A.st[i].s.punkte.map(function (a) { return [a.geo.lat, a.geo.lon]; }), { padding: [50, 50], maxZoom: 15 });
+        else { apStarten(); var idx = A.d.liste.indexOf(A.st[i].s.punkte[0]); apStand(Math.max(0, idx), true); apSchleife(); }
+      }, 60);
+      return;
+    }
+    var b = e.target.closest('[data-ab]'); if (!b) return;
+    var i2 = +b.getAttribute('data-ab'); abOffen = abOffen === i2 ? null : i2; ablaufRendern();
+    if (abOffen !== null) { var el = $('geoAblauf').querySelector('[data-ab="' + i2 + '"]'); if (el) setTimeout(function () { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 30); }
   });
   function geoMarkerSetzen() {
     var L = window.L;
