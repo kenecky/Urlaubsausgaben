@@ -439,6 +439,7 @@ button.rot { background: var(--rot-hell); color: var(--rot); }
   background: color-mix(in srgb, var(--k) 14%, transparent); color: var(--k); font-family: var(--display); font-weight: 700; }
 .kat-ico svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .eintrag .e-mitte { min-width: 0; }
+html.zieht-sperre, html.zieht-sperre body { overflow: hidden; overscroll-behavior: none; }
 .eintrag { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 #liste .eintrag.zieht { position: relative; z-index: 5; background: var(--karte); border-radius: 14px; margin-left: -10px; margin-right: -10px; padding-left: 10px; padding-right: 10px; box-shadow: 0 14px 30px -10px rgba(0,0,0,.45), 0 0 0 2px #F5A524; transition: box-shadow .15s ease; }
 #liste .eintrag.zieht-weg { transition: transform .22s cubic-bezier(.2,.8,.2,1); }
@@ -2613,8 +2614,10 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var liste = $('liste'), timer = null, st = null, z = null, klickWeg = false, raf = 0, letzteY = 0;
     function seitY(clientY) { return clientY + window.scrollY; }
     function abbrechen() { clearTimeout(timer); timer = null; st = null; }
+    window.addEventListener('scroll', function () { if (st && Math.abs(window.scrollY - st.sy) > 2) abbrechen(); }, { passive: true });
     function beginnen() {
       timer = null; if (!st) return;
+      if (Math.abs(window.scrollY - st.sy) > 2) { st = null; return; } // Seite ist in Bewegung
       var el = st.el, modus = $('sortierung').value;
       if (modus !== 'datum-neu' && modus !== 'datum-alt' && modus !== '') { toast('Verschieben geht nur bei Sortierung nach Datum.'); st = null; return; }
       if (reise && reise.status === 'abgeschlossen') { toast('Die Reise ist abgeschlossen. Zum Ändern zuerst wieder öffnen.'); st = null; return; }
@@ -2626,7 +2629,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       z = { el: el, gruppe: gruppe, idx: idx, neu: idx, y0: st.y, obens: obens, hoehen: hoehen, luecke: luecke, dy: 0, hinweis: false };
       st = null;
       if (navigator.vibrate) { try { navigator.vibrate(18); } catch (e) {} }
-      document.body.classList.add('zieht-aktiv');
+      document.body.classList.add('zieht-aktiv'); document.documentElement.classList.add('zieht-sperre');
       el.classList.add('zieht', 'hebt');
       gruppe.forEach(function (x) { if (x !== el) { x.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1)'; } });
       raf = requestAnimationFrame(randScroll);
@@ -2668,7 +2671,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       zz.el.classList.remove('hebt'); zz.el.classList.add('zieht-weg');
       zz.el.style.transform = 'translateY(' + ziel + 'px)';
       setTimeout(function () {
-        document.body.classList.remove('zieht-aktiv');
+        document.body.classList.remove('zieht-aktiv'); document.documentElement.classList.remove('zieht-sperre');
         if (neu === i) { zz.el.classList.remove('zieht', 'zieht-weg'); zz.gruppe.forEach(function (x) { x.style.transform = ''; x.style.transition = ''; }); return; }
         var ids = zz.gruppe.map(function (x) { return x.getAttribute('data-id'); });
         var bewegt = ids.splice(i, 1)[0]; ids.splice(neu, 0, bewegt);
@@ -2686,12 +2689,13 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       if (e.touches.length !== 1 || z) return;
       var el = e.target.closest('.eintrag');
       if (!el || e.target.closest('button, .aktionen, a, input')) return;
-      st = { el: el, x: e.touches[0].clientX, y: seitY(e.touches[0].clientY) };
+      st = { el: el, x: e.touches[0].clientX, cy: e.touches[0].clientY, y: seitY(e.touches[0].clientY), sy: window.scrollY };
       clearTimeout(timer); timer = setTimeout(beginnen, 420);
     }, { passive: true });
     liste.addEventListener('touchmove', function (e) {
       if (z) { e.preventDefault(); e.stopPropagation(); bewegen(e.touches[0].clientY); return; }
-      if (st && (Math.abs(e.touches[0].clientX - st.x) > 8 || Math.abs(seitY(e.touches[0].clientY) - st.y) > 8)) abbrechen();
+      // Scrollt der Browser schon (Ereignis nicht mehr abbrechbar) oder bewegt sich der Finger: kein Verschieben
+      if (st && (!e.cancelable || Math.abs(e.touches[0].clientX - st.x) > 8 || Math.abs(e.touches[0].clientY - st.cy) > 8)) abbrechen();
     }, { passive: false });
     function ende(e) { if (z) { if (e) e.stopPropagation(); beenden(); } else abbrechen(); }
     liste.addEventListener('touchend', ende);
