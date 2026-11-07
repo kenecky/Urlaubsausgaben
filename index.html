@@ -1161,6 +1161,23 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .geo-pop b { font-size: 14px; } .geo-pop span { font-size: 12px; color: #5E7377; } .geo-pop strong { font-size: 13.5px; margin: 2px 0 6px; }
 .geo-pop button { margin: 0; height: 32px; }
 .geo-pin span { display: block; width: 26px; height: 26px; margin: 2px; border-radius: 50% 50% 50% 0; background: var(--mango); border: 3px solid #fff; transform: rotate(-45deg); box-shadow: 0 3px 8px rgba(0,0,0,.35); }
+.geo-umschalt { display: flex; gap: 4px; background: var(--abh-bg); border-radius: 12px; padding: 3px; margin: 0 0 8px; }
+.geo-umschalt[hidden] { display: none; }
+.geo-umschalt button { flex: 1; margin: 0; height: 36px; border-radius: 9px; background: transparent; color: var(--abh-text); font-size: 14px; font-weight: 700; box-shadow: none; border: 0; }
+.geo-umschalt button.an { background: var(--karte); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.geo-leg { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
+.geo-leg[hidden] { display: none; }
+.geo-leg button { flex: none; width: auto; min-width: 0; margin: 0; height: 30px; padding: 0 10px; border-radius: 15px; background: var(--karte); color: var(--text); border: 1px solid var(--linie); font-size: 12.5px; font-weight: 600; display: flex; align-items: center; gap: 6px; box-shadow: none; }
+.geo-leg button i { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
+.geo-leg button.an { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); }
+.route-nr { display: flex; align-items: center; justify-content: center; }
+.route-nr span { width: 30px; height: 30px; border-radius: 50%; background: #0E4A55; color: #fff; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; font: 800 14px 'Bricolage', 'Figtree', sans-serif; box-shadow: 0 3px 8px rgba(0,0,0,.35); }
+.route-nr.ziel span { background: #F5A524; color: #1f2937; }
+.route-nr em { position: absolute; left: 34px; top: 6px; white-space: nowrap; font: 800 13.5px 'Figtree', sans-serif; font-style: normal; color: #0f172a; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; }
+.route-sprung { display: flex; align-items: center; justify-content: center; }
+.route-sprung span { white-space: nowrap; background: #fff; border: 1.5px solid; border-radius: 12px; padding: 3px 9px; font: 700 12px 'Figtree', sans-serif; color: #0f172a; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.geo-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; }
+.geo-btns .geo-btn { margin: 0; padding: 0 8px; font-size: 14px; }
 .geo-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 12px; }
 .geo-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* Karten-Etikett in der Kachel Ausgabenliste */
@@ -1582,8 +1599,10 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
 <section class="karte unten-blatt geo-blatt" id="geoKarte" role="dialog" aria-modal="true" aria-labelledby="geoTitel">
   <button type="button" class="sheet-x blatt-x" aria-label="Karte schließen">✕</button>
   <h2 id="geoTitel">Karte</h2>
+  <div class="geo-umschalt" id="geoUmschalt" hidden><button type="button" data-gm="alle">Ausgaben</button><button type="button" data-gm="route">Reiseroute</button></div>
   <p class="geo-hinweis" id="geoHinweis"></p>
   <div class="geo-map" id="geoMap"></div>
+  <div class="geo-leg" id="geoLeg" hidden></div>
   <div class="geo-knoepfe" id="geoKnoepfe"><button type="button" class="hell" id="geoHier">Mein Standort</button><button type="button" class="hell" id="geoWeg">Entfernen</button><button type="button" id="geoOk">Übernehmen</button></div>
 </section>
 <div class="sheet-dunkel" id="sheetDunkel"></div>
@@ -2709,10 +2728,11 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
         '<div class="zm-sub">' + sub + '</div></div>' + (offen ? aufklapp(liste) : '') + '</div>';
     }).join('');
     var nGeo = ohneAbh.filter(function (a) { return a.geo; }).length;
-    html = '<button type="button" class="hell geo-btn" id="geoUebersicht"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg>Karte der Ausgaben' + (nGeo ? ' (' + nGeo + ')' : '') + '</button>' + html;
+    html = '<div class="geo-btns"><button type="button" class="hell geo-btn" id="geoUebersicht"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg>Karte' + (nGeo ? ' (' + nGeo + ')' : '') + '</button>' +
+      '<button type="button" class="hell geo-btn" id="geoRoute"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="6" r="2.4"/><path d="M8.4 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.6" stroke-dasharray="3 2.4"/></svg>Reiseroute</button></div>' + html;
     $('tab-orte').innerHTML = html;
   }
-  $('tab-orte').addEventListener('click', function (e) { if (e.target.closest('#geoUebersicht')) { geoKarteAuf('alle'); return; } });
+  $('tab-orte').addEventListener('click', function (e) { if (e.target.closest('#geoUebersicht')) { geoKarteAuf('alle'); return; } if (e.target.closest('#geoRoute')) { geoKarteAuf('route'); return; } });
   $('tab-orte').addEventListener('click', function (e) {
     if (e.target.closest('button[data-aktion]')) { listeKlick(e); return; }
     var k = e.target.closest('[data-ort]');
@@ -4793,8 +4813,10 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   }
   function geoKarteAuf(modus, start) {
     geoModus = modus; geoWahl = start ? { lat: start.lat, lon: start.lon } : null;
-    $('geoTitel').textContent = modus === 'wahl' ? 'Standort der Ausgabe' : 'Karte der Ausgaben';
+    $('geoTitel').textContent = modus === 'wahl' ? 'Standort der Ausgabe' : 'Karte';
     $('geoKnoepfe').hidden = modus !== 'wahl';
+    $('geoUmschalt').hidden = modus === 'wahl'; $('geoLeg').hidden = true; routeTag = null;
+    Array.prototype.forEach.call(document.querySelectorAll('#geoUmschalt button'), function (b) { b.classList.toggle('an', b.getAttribute('data-gm') === modus); });
     $('geoHinweis').textContent = modus === 'wahl' ? 'Tippe auf die Karte oder ziehe die Markierung, um den Standort zu ändern.' : 'Lade Karte …';
     var istStart = !$('startseite').hidden;
     blattAuf('geoKarte');
@@ -4815,16 +4837,91 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       else { var mit = ausgaben.filter(function (a) { return a.geo; }); if (mit.length) geoMapObj.setView([mit[mit.length - 1].geo.lat, mit[mit.length - 1].geo.lon], 13); else geoMapObj.setView([20, 100], 3); }
       return;
     }
+    $('geoLeg').hidden = geoModus !== 'route';
+    if (geoModus === 'route') { routeZeichnen(); return; }
     var liste = ausgaben.filter(function (a) { return a.geo && !istAbh(a); }), punkte = [];
     geoSchicht = L.layerGroup().addTo(geoMapObj);
     liste.forEach(function (a) {
       var m = L.circleMarker([a.geo.lat, a.geo.lon], { radius: 9, weight: 2, color: '#fff', fillColor: katStil(a.kategorie).c, fillOpacity: .95 }).addTo(geoSchicht);
-      m.bindPopup('<div class="geo-pop"><b>' + esc(a.beschreibung || a.kategorie) + '</b><span>' + esc(datumAnzeige(a.datum)) + ' · ' + esc(a.kategorie) + (a.ort ? ' · ' + esc(a.ort) : '') + '</span><strong>' + esc(geld(lokalWert(a))) + (multi || euroTrip ? '' : ' · ' + esc(euroFmt(euroVon(a)))) + '</strong><button type="button" class="klein" data-geo-edit="' + esc(a.id) + '">Ändern</button></div>');
+      m.bindPopup(geoPopup(a));
       punkte.push([a.geo.lat, a.geo.lon]);
     });
     $('geoHinweis').textContent = liste.length ? liste.length + (liste.length === 1 ? ' Ausgabe mit Standort' : ' Ausgaben mit Standort') + ' · Farbe = Kategorie' : 'Noch keine Ausgabe mit Standort. Neue Ausgaben bekommen ihn beim Speichern.';
     if (punkte.length) geoMapObj.fitBounds(punkte, { padding: [30, 30], maxZoom: 15 }); else geoMapObj.setView([20, 100], 3);
   }
+  function geoPopup(a) { return '<div class="geo-pop"><b>' + esc(a.beschreibung || a.kategorie) + '</b><span>' + esc(datumAnzeige(a.datum)) + ' · ' + esc(a.kategorie) + (a.ort ? ' · ' + esc(a.ort) : '') + '</span><strong>' + esc(geld(lokalWert(a))) + (multi || euroTrip ? '' : ' · ' + esc(euroFmt(euroVon(a)))) + '</strong><button type="button" class="klein" data-geo-edit="' + esc(a.id) + '">Ändern</button></div>'; }
+  // ---------- Reiseroute: Ausgaben mit Standort in zeitlicher Reihenfolge ----------
+  var ROUTE_FARBEN = ['#0E4A55', '#2A7F8E', '#3E9D5B', '#8DB33A', '#E3B23C', '#F08A3E', '#E05A5A', '#B5498C', '#7B4FB5', '#3F6FD8'];
+  var routeTag = null;
+  function kmZwischen(a, b) { var R = 6371, r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r; var h = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2); return 2 * R * Math.asin(Math.min(1, Math.sqrt(h))); }
+  function idZeit(id) { var t = parseInt(String(id || '').slice(0, 8), 36); return isFinite(t) ? t : 0; }
+  function routeDaten() {
+    var liste = ausgaben.filter(function (a) { return a.geo && !istAbh(a) && !ganzeReise(a); }).slice()
+      .sort(function (a, b) { return a.datum < b.datum ? -1 : a.datum > b.datum ? 1 : idZeit(a.id) - idZeit(b.id); });
+    var tage = [], tagIdx = {};
+    liste.forEach(function (a) { if (!(a.datum in tagIdx)) { tagIdx[a.datum] = tage.length; tage.push(a.datum); } });
+    // Stationen: aufeinanderfolgende Punkte im Umkreis von 25 km
+    var stationen = [], st = null;
+    liste.forEach(function (a) {
+      if (!st || kmZwischen(st.mitte, a.geo) > 25) { st = { punkte: [], mitte: { lat: a.geo.lat, lon: a.geo.lon } }; stationen.push(st); }
+      st.punkte.push(a); var n = st.punkte.length; st.mitte = { lat: st.mitte.lat + (a.geo.lat - st.mitte.lat) / n, lon: st.mitte.lon + (a.geo.lon - st.mitte.lon) / n };
+    });
+    stationen.forEach(function (s, i) { var z = {}; s.punkte.forEach(function (a) { if (a.ort) z[a.ort] = (z[a.ort] || 0) + 1; }); var best = Object.keys(z).sort(function (x, y) { return z[y] - z[x]; })[0]; s.name = best || ('Station ' + (i + 1)); });
+    var km = 0; for (var i = 1; i < liste.length; i++) km += kmZwischen(liste[i - 1].geo, liste[i].geo);
+    return { liste: liste, tage: tage, tagIdx: tagIdx, stationen: stationen, km: km };
+  }
+  function sprungArt(datum) {
+    var t = ausgaben.filter(function (a) { return a.datum === datum || (a.bis && a.datum <= datum && a.bis >= datum && a.datum === datum); }).map(function (a) { return ((a.beschreibung || '') + ' ' + (a.kategorie || '')).toLowerCase(); }).join(' ');
+    if (/flug|flight|airline|airport|flughafen|cebu pac|airasia|philippine air|\bpal\b/.test(t)) return '✈ ';
+    if (/fähre|faehre|ferry|boot|boat|bangka|schiff|2go|montenegro|oceanjet/.test(t)) return '⛴ ';
+    if (/bus|van|taxi|grab|transfer|shuttle|tricycle/.test(t)) return '🚐 ';
+    return '';
+  }
+  function routeZeichnen() {
+    var L = window.L, d = routeDaten();
+    geoSchicht = L.layerGroup().addTo(geoMapObj);
+    var farbe = function (datum) { return ROUTE_FARBEN[d.tagIdx[datum] % ROUTE_FARBEN.length]; };
+    var aktiv = function (datum) { return routeTag === null || routeTag === datum; };
+    var punkte = [];
+    for (var i = 1; i < d.liste.length; i++) {
+      var a = d.liste[i - 1], b = d.liste[i], km = kmZwischen(a.geo, b.geo), f = farbe(b.datum), op = aktiv(b.datum) ? 0.9 : 0.15;
+      if (km > 50) {
+        var dLa = b.geo.lat - a.geo.lat, dLo = b.geo.lon - a.geo.lon, mLa = (a.geo.lat + b.geo.lat) / 2 + dLo * 0.18, mLo = (a.geo.lon + b.geo.lon) / 2 - dLa * 0.18, kurve = [];
+        for (var t = 0; t <= 1.0001; t += 0.05) kurve.push([(1 - t) * (1 - t) * a.geo.lat + 2 * (1 - t) * t * mLa + t * t * b.geo.lat, (1 - t) * (1 - t) * a.geo.lon + 2 * (1 - t) * t * mLo + t * t * b.geo.lon]);
+        L.polyline(kurve, { color: f, weight: 4, opacity: op, dashArray: '8 8', lineCap: 'round' }).addTo(geoSchicht);
+        if (aktiv(b.datum)) L.marker(kurve[10], { interactive: false, icon: L.divIcon({ className: 'route-sprung', html: '<span style="border-color:' + f + '">' + sprungArt(b.datum) + (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km).toLocaleString('de-DE')) + ' km</span>', iconSize: [0, 0] }) }).addTo(geoSchicht);
+      } else if (km > 0.01) L.polyline([[a.geo.lat, a.geo.lon], [b.geo.lat, b.geo.lon]], { color: f, weight: 3.5, opacity: op, lineCap: 'round' }).addTo(geoSchicht);
+    }
+    d.liste.forEach(function (a) {
+      var an = aktiv(a.datum);
+      L.circleMarker([a.geo.lat, a.geo.lon], { radius: 5, weight: 2.5, color: farbe(a.datum), opacity: an ? 1 : 0.2, fillColor: '#fff', fillOpacity: an ? 1 : 0.3 }).bindPopup(geoPopup(a)).addTo(geoSchicht);
+      if (an) punkte.push([a.geo.lat, a.geo.lon]);
+    });
+    d.stationen.forEach(function (s, i) {
+      var ziel = i === d.stationen.length - 1 && d.stationen.length > 1;
+      L.marker([s.mitte.lat, s.mitte.lon], { zIndexOffset: 1000, icon: L.divIcon({ className: 'route-nr' + (ziel ? ' ziel' : ''), html: '<span>' + (i + 1) + '</span><em>' + esc(s.name) + '</em>', iconSize: [36, 36], iconAnchor: [18, 18] }) })
+        .bindPopup('<div class="geo-pop"><b>' + (i + 1) + '. ' + esc(s.name) + '</b><span>' + esc(datumAnzeige(s.punkte[0].datum)) + (s.punkte[s.punkte.length - 1].datum !== s.punkte[0].datum ? ' – ' + esc(datumAnzeige(s.punkte[s.punkte.length - 1].datum)) : '') + ' · ' + s.punkte.length + (s.punkte.length === 1 ? ' Ausgabe' : ' Ausgaben') + '</span></div>').addTo(geoSchicht);
+    });
+    var kmTxt = d.km < 10 ? d.km.toFixed(1).replace('.', ',') : Math.round(d.km).toLocaleString('de-DE');
+    $('geoHinweis').textContent = d.liste.length < 2 ? 'Für eine Route braucht es mindestens zwei Ausgaben mit Standort.' :
+      d.stationen.length + (d.stationen.length === 1 ? ' Station' : ' Stationen') + ' · ≈ ' + kmTxt + ' km · ' + d.tage.length + (d.tage.length === 1 ? ' Tag' : ' Tage') + ' · Farbe = Tag, gestrichelt = großer Sprung';
+    $('geoLeg').innerHTML = d.tage.length > 1 ? '<button type="button" data-rt=""' + (routeTag === null ? ' class="an"' : '') + '>Alle Tage</button>' + d.tage.map(function (t) {
+      var x = t.split('-'); return '<button type="button" data-rt="' + t + '"' + (routeTag === t ? ' class="an"' : '') + '><i style="background:' + farbe(t) + '"></i>' + x[2] + '.' + x[1] + '.</button>';
+    }).join('') : '';
+    $('geoLeg').hidden = d.tage.length < 2;
+    if (punkte.length) geoMapObj.fitBounds(punkte, { padding: [40, 40], maxZoom: 15 }); else geoMapObj.setView([20, 100], 3);
+  }
+  $('geoLeg').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-rt]'); if (!b) return;
+    var t = b.getAttribute('data-rt'); routeTag = (!t || routeTag === t) ? null : t;
+    var sl = $('geoLeg').scrollLeft; geoKarteZeichnen(); $('geoLeg').scrollLeft = sl;
+  });
+  $('geoUmschalt').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-gm]'); if (!b || !geoMapObj) return;
+    geoModus = b.getAttribute('data-gm'); routeTag = null;
+    Array.prototype.forEach.call(document.querySelectorAll('#geoUmschalt button'), function (x) { x.classList.toggle('an', x === b); });
+    geoMapObj.closePopup(); geoKarteZeichnen();
+  });
   function geoMarkerSetzen() {
     var L = window.L;
     if (!geoMarker) { geoMarker = L.marker([geoWahl.lat, geoWahl.lon], { draggable: true, icon: L.divIcon({ className: 'geo-pin', html: '<span></span>', iconSize: [30, 40], iconAnchor: [15, 38] }) }).addTo(geoMapObj); geoMarker.on('dragend', function () { var p = geoMarker.getLatLng(); geoWahl = { lat: p.lat, lon: p.lng }; }); }
