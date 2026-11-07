@@ -2592,8 +2592,26 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     if (verschiebUndo) {
       var v = verschiebUndo; verschiebUndo = null; clearTimeout(undoTimer); $('undoBar').hidden = true;
       var jetzt = Date.now();
+      // Positionen vorher merken, dann umstellen und die Einträge sichtbar zurückgleiten lassen (FLIP)
+      var vorTop = {};
+      Array.prototype.forEach.call(document.querySelectorAll('#liste .eintrag'), function (el) { vorTop[el.getAttribute('data-id')] = el.getBoundingClientRect().top; });
       v.forEach(function (z) { var a = ausgaben.filter(function (x) { return x.id === z.id; })[0]; if (!a) return; if (z.pos === undefined) delete a.pos; else a.pos = z.pos; a.geaendert = jetzt; });
-      speichern(); zeichnen(); toast('Verschieben rückgängig gemacht');
+      speichern(); zeichnen();
+      var animiert = [];
+      Array.prototype.forEach.call(document.querySelectorAll('#liste .eintrag'), function (el) {
+        var id = el.getAttribute('data-id'); if (!(id in vorTop)) return;
+        var d = vorTop[id] - el.getBoundingClientRect().top; if (Math.abs(d) < 1) return;
+        el.style.transition = 'none'; el.style.transform = 'translateY(' + d + 'px)'; el.style.position = 'relative';
+        if (id === v.bewegt) { el.classList.add('zieht'); el.style.zIndex = '6'; }
+        animiert.push(el);
+      });
+      if (animiert.length) {
+        void document.body.offsetHeight;
+        requestAnimationFrame(function () {
+          animiert.forEach(function (el) { el.style.transition = 'transform .6s cubic-bezier(.45,0,.2,1), box-shadow .3s'; el.style.transform = ''; });
+          setTimeout(function () { animiert.forEach(function (el) { el.classList.remove('zieht'); el.style.transition = ''; el.style.position = ''; el.style.zIndex = ''; }); }, 750);
+        });
+      }
       return;
     }
     var x = loeschStapel.pop();
@@ -2724,7 +2742,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
         var sichtbar = {}; ids.forEach(function (id) { sichtbar[id] = true; });
         var basis = Math.min.apply(null, tag.map(posKey)), k2 = 0, jetzt = Date.now();
         var neueFolge = tag.map(function (a) { if (!sichtbar[a.id]) return a; var id = ids[k2++]; return tag.filter(function (x) { return x.id === id; })[0] || a; });
-        var vorher = tag.map(function (a) { return { id: a.id, pos: isFinite(a.pos) ? a.pos : undefined }; });
+        var vorher = tag.map(function (a) { return { id: a.id, pos: isFinite(a.pos) ? a.pos : undefined }; }); vorher.bewegt = bewegt;
         neueFolge.forEach(function (a, n) { var p = basis + n; if (a.pos !== p) { a.pos = p; a.geaendert = jetzt; } });
         speichern(); zeichnen(); verschiebUndoZeigen(vorher);
       }, 230);
