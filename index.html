@@ -1181,9 +1181,11 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .geo-wrap .geo-map { flex: 1; }
 .geo-info { position: absolute; left: 10px; right: 10px; bottom: 26px; z-index: 900; background: rgba(255,255,255,.96); color: #0f172a; border-radius: 14px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; box-shadow: 0 6px 18px -8px rgba(0,0,0,.4); pointer-events: none; }
 .geo-info[hidden] { display: none; }
-.geo-info b { display: block; font: 700 15.5px 'Bricolage', 'Figtree', sans-serif; }
-.geo-info span { display: block; font-size: 12px; color: #5E7377; }
-.geo-info .gi-r { text-align: right; } .geo-info .gi-r b { color: #0E4A55; }
+.geo-info b { display: block; font: 700 15.5px 'Bricolage', 'Figtree', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.geo-info .gi-l { flex: 1; min-width: 0; }
+.geo-info span { display: block; font-size: 12.5px; line-height: 1.35; color: #5E7377; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.geo-info .gi-r { text-align: right; flex: none; min-width: 112px; padding-left: 4px; align-self: flex-start; }
+.geo-info .gi-r b, .geo-info .gi-r span { overflow: visible; } .geo-info .gi-r b { color: #0E4A55; }
 .geo-player { display: flex; align-items: center; gap: 10px; padding: 10px 0 0; }
 .geo-player[hidden] { display: none; }
 #gpPlay { flex: none; width: 48px; height: 48px; margin: 0; padding: 0; border-radius: 50%; background: #0E4A55; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 14px -6px rgba(14,74,85,.7); }
@@ -1653,10 +1655,10 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
 <section class="karte unten-blatt geo-blatt" id="geoKarte" role="dialog" aria-modal="true" aria-labelledby="geoTitel">
   <button type="button" class="sheet-x blatt-x" aria-label="Karte schließen">✕</button>
   <h2 id="geoTitel">Karte</h2>
-  <div class="geo-umschalt" id="geoUmschalt" hidden><button type="button" data-gm="alle">Ausgaben</button><button type="button" data-gm="route">Route</button><button type="button" data-gm="ablauf">Ablauf</button></div>
+  <div class="geo-umschalt" id="geoUmschalt" hidden><button type="button" data-gm="alle">Ausgaben</button><button type="button" data-gm="ablauf">Ablauf</button><button type="button" data-gm="route">Route</button></div>
   <p class="geo-hinweis" id="geoHinweis"></p>
   <div class="geo-wrap"><div class="geo-map" id="geoMap"></div>
-    <div class="geo-info" id="geoInfo" hidden><div><b id="giTag"></b><span id="giOrt"></span></div><div class="gi-r"><b id="giSum"></b><span id="giBisher"></span></div></div></div>
+    <div class="geo-info" id="geoInfo" hidden><div class="gi-l"><b id="giTag"></b><span id="giOrt"></span><span id="giText"></span></div><div class="gi-r"><b id="giSum"></b><span id="giBisher"></span></div></div></div>
   <div class="geo-player" id="geoPlayer" hidden>
     <button type="button" id="gpPlay" aria-label="Abspielen"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></button>
     <div class="gp-mitte"><input type="range" id="gpRegler" min="0" max="1" step="0.001" value="0" aria-label="Zeitpunkt der Reise"><div class="gp-ticks"><span id="gpVon"></span><span id="gpBis"></span></div></div>
@@ -2790,7 +2792,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
         '<div class="zm-sub">' + sub + '</div></div>' + (offen ? aufklapp(liste) : '') + '</div>';
     }).join('');
     var nGeo = ohneAbh.filter(function (a) { return a.geo; }).length;
-    html = '<div class="geo-btns"><button type="button" class="hell geo-btn" id="geoUebersicht"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg>Karte' + (nGeo ? ' (' + nGeo + ')' : '') + '</button>' +
+    html = '<div class="geo-btns"><button type="button" class="hell geo-btn" id="geoUebersicht"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg>Karte</button>' +
       '<button type="button" class="hell geo-btn" id="geoAblaufBtn"><svg viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><path d="M6 7v10M11 5h9M11 19h9M11 12h6"/></svg>Ablauf</button>' +
       '<button type="button" class="hell geo-btn" id="geoRoute"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="6" r="2.4"/><path d="M8.4 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.6" stroke-dasharray="3 2.4"/></svg>Route</button></div>' + html;
     $('tab-orte').innerHTML = html;
@@ -3766,12 +3768,14 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   function wischSchliessen(blatt, zu, scrollEl) {
     var y0 = null, x0 = 0, dy = 0, t0 = 0;
     blatt.addEventListener('touchstart', function (e) {
-      if (e.touches.length !== 1 || blatt.scrollTop > 0 || (scrollEl && scrollEl.contains(e.target) && scrollEl.scrollTop > 0) || e.target.closest('input, select, textarea, .leaflet-container')) { y0 = null; return; }
+      var gescrollt = false; for (var el = e.target; el && el !== blatt; el = el.parentElement) { if (el.scrollTop > 0) { gescrollt = true; break; } }
+      if (e.touches.length !== 1 || gescrollt || blatt.scrollTop > 0 || (scrollEl && scrollEl.contains(e.target) && scrollEl.scrollTop > 0) || e.target.closest('input, select, textarea, .leaflet-container')) { y0 = null; return; }
       y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; t0 = Date.now();
     }, { passive: true });
     blatt.addEventListener('touchmove', function (e) {
       if (y0 === null) return;
       dy = e.touches[0].clientY - y0;
+      if (dy < -8) { y0 = null; dy = 0; blatt.style.transition = ''; blatt.style.transform = ''; return; } // erst nach oben gewischt = Liste scrollen
       if (Math.abs(e.touches[0].clientX - x0) > Math.abs(dy)) { if (blatt.style.transform) { blatt.style.transition = ''; blatt.style.transform = ''; } dy = 0; return; }
       if (dy > 0) { blatt.style.transition = 'none'; blatt.style.transform = 'translateY(' + dy + 'px)'; }
     }, { passive: true });
@@ -5062,8 +5066,9 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     ap.pos = pos; $('gpRegler').value = pos;
     var a = d.liste[t > 0.5 ? k + 1 : k], st = d.stationen[ap.ptSt[t > 0.5 ? k + 1 : k]];
     var fliegt = ap.segs[k].sprung && t > 0 && t < 1;
-    var dx = a.datum.split('-'); $('giTag').textContent = 'Tag ' + (d.tagIdx[a.datum] + 1) + ' · ' + ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(+dx[0], dx[1] - 1, +dx[2]).getDay()] + ' ' + dx[2] + '.' + dx[1] + '.';
-    $('giOrt').textContent = fliegt ? (sprungArt(d.liste[k + 1].datum) || '→ ') + d.stationen[ap.ptSt[k]].name + ' → ' + d.stationen[ap.ptSt[k + 1]].name : (st ? st.name : '') + (a.beschreibung ? ' · ' + a.beschreibung : '');
+    var dx = a.datum.split('-'); $('giTag').textContent = 'Tag ' + (d.tagIdx[a.datum] + 1) + ' · ' + ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(+dx[0], dx[1] - 1, +dx[2]).getDay()] + ' ' + dx[2] + '.' + dx[1] + '.' + dx[0];
+    $('giOrt').textContent = fliegt ? (sprungArt(d.liste[k + 1].datum) || '→ ') + d.stationen[ap.ptSt[k]].name + ' → ' + d.stationen[ap.ptSt[k + 1]].name : (st ? st.name : (a.ort || '–'));
+    $('giText').textContent = (fliegt ? d.liste[k + 1].beschreibung : a.beschreibung) || a.kategorie || '–';
     $('giSum').textContent = (multi || euroTrip) ? '' : geld(ap.tagSum[a.datum] || 0);
     $('giBisher').textContent = (multi || euroTrip) ? '' : 'bisher ' + geld(ap.bisher[a.datum] || 0);
     var leg = $('geoLeg').querySelectorAll('[data-rt]'); Array.prototype.forEach.call(leg, function (x) { var an = x.getAttribute('data-rt') === a.datum; if (an && !x.classList.contains('an')) { x.classList.add('an'); var L2 = $('geoLeg'); L2.scrollLeft = Math.max(0, x.offsetLeft - L2.clientWidth / 2 + x.offsetWidth / 2); } else if (!an) x.classList.remove('an'); });
