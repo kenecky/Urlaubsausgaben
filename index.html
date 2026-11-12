@@ -1176,7 +1176,7 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .geo-pin span { display: block; width: 26px; height: 26px; margin: 2px; border-radius: 50% 50% 50% 0; background: var(--mango); border: 3px solid #fff; transform: rotate(-45deg); box-shadow: 0 3px 8px rgba(0,0,0,.35); }
 .geo-umschalt { display: flex; gap: 4px; background: var(--abh-bg); border-radius: 12px; padding: 3px; margin: 0 0 8px; }
 .geo-umschalt[hidden] { display: none; }
-.geo-umschalt button { flex: 1; margin: 0; height: 36px; border-radius: 9px; background: transparent; color: var(--abh-text); font-size: 14px; font-weight: 700; box-shadow: none; border: 0; }
+.geo-umschalt button { display: flex; align-items: center; justify-content: center; padding: 0 4px !important; line-height: 1; min-height: 0; flex: 1; margin: 0; height: 36px; border-radius: 9px; background: transparent; color: var(--abh-text); font-size: 14px; font-weight: 700; box-shadow: none; border: 0; }
 .geo-umschalt button.an { background: var(--karte); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
 .geo-leg { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
 .geo-leg[hidden] { display: none; }
@@ -1209,7 +1209,8 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .route-jetzt { display: flex; align-items: center; justify-content: center; }
 .route-jetzt span { display: block; margin: 2px; flex: none; box-sizing: border-box; width: 24px; height: 24px; border-radius: 50%; background: #F5A524; border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(245,165,36,.3), 0 3px 8px rgba(0,0,0,.35); }
 .geo-btns { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 0 0 12px; }
-.geo-btns .geo-btn { margin: 0; padding: 0 6px; font-size: 14px; gap: 6px; }
+.geo-btns .geo-btn { margin: 0; padding: 0 6px; font-size: 16px; font-weight: 700; gap: 8px; height: 54px; min-height: 54px; border-radius: 14px; }
+.geo-btns .geo-btn svg { width: 22px; height: 22px; }
 .geo-blatt.ablauf .geo-wrap { flex: none; height: 160px; min-height: 0; overflow: hidden; border-radius: 14px; }
 .geo-blatt.ablauf .geo-map { min-height: 0; height: 160px; }
 .geo-blatt.ablauf .geo-wrap .leaflet-control-zoom { display: none; }
@@ -2888,9 +2889,11 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   });
 
   // Reiter „Pro Tag“
+  var nurTagesAusgaben = false; try { nurTagesAusgaben = localStorage.getItem('reisen.nurTagesAusgaben') === '1'; } catch (e) {}
   function renderProTag() {
     var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
-    var tagListe = ohneAbh, pausHtml = '';
+    var tagListe = nurTagesAusgaben ? ohneAbh.filter(function (a) { return !istPauschal(a) && !ganzeReise(a); }) : ohneAbh;
+    var pausHtml = '<label class="check" style="margin:2px 0 10px"><input type="checkbox" id="nurTagesAusgaben"' + (nurTagesAusgaben ? ' checked' : '') + '> Nur Tagesausgaben</label>';
     if (!tagListe.length) {
       $('tab-tag').innerHTML = pausHtml + '<div class="leer">Noch keine Tagesausgaben erfasst.</div>';
       return;
@@ -2902,10 +2905,9 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var max = 0, teuer = von;
     daten.forEach(function (d) { if (proTag[d] > max) { max = proTag[d]; teuer = d; } });
     var summe = summePeso(tagListe), summeE = summeEuro(tagListe);
-    var sp = schnittProTag(), dTage = sp.mitStart ? sp.tage : anzahl;
-    var html = '<div class="rz"><span>Durchschnitt pro Tag (' + dTage + (dTage === 1 ? ' Tag' : ' Tage') + ')</span><b>' + (sp.mitStart ? wertEuro(sp.lokal, sp.euro) : wertEuro(summe / anzahl, summeE / anzahl)) + '</b></div>' +
+    var sp = nurTagesAusgaben ? { mitStart: false } : schnittProTag(), dTage = sp.mitStart ? sp.tage : anzahl;
+    var html = pausHtml + '<div class="rz"><span>Durchschnitt pro Tag (' + dTage + (dTage === 1 ? ' Tag' : ' Tage') + ')</span><b>' + (sp.mitStart ? wertEuro(sp.lokal, sp.euro) : wertEuro(summe / anzahl, summeE / anzahl)) + '</b></div>' +
       '<div class="rz"><span>Teuerster Tag (' + esc(datumAnzeige(teuer).slice(0, 5)) + ')</span><b>' + wertEuro(max, proTagE[teuer]) + '</b></div>' +
-      pausHtml +
       '<div style="height:8px"></div>';
     for (var i = anzahl - 1; i >= 0; i--) {
       var d = tagPlus(von, i);
@@ -2926,6 +2928,11 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     }
     $('tab-tag').innerHTML = html;
   }
+  $('tab-tag').addEventListener('change', function (e) {
+    if (e.target.id !== 'nurTagesAusgaben') return;
+    nurTagesAusgaben = e.target.checked; try { localStorage.setItem('reisen.nurTagesAusgaben', nurTagesAusgaben ? '1' : '0'); } catch (x) {}
+    renderProTag();
+  });
   $('tab-tag').addEventListener('click', function (e) {
     if (e.target.closest('button[data-aktion]')) { listeKlick(e); return; }
     var k = e.target.closest('[data-tag]');
@@ -5219,7 +5226,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     // Wie Leaflets eigenes flyTo: Bewegung ohne Neuaufbau, damit Kacheln stehen bleiben und nachladen
     if (sofort || typeof geoMapObj._move !== 'function') { apBewegungEnde(); geoMapObj.setView(mitte, ap.cam.z, { animate: false }); return; }
     if (!ap.bewegt) { geoMapObj._moveStart(true, false); ap.bewegt = true; ap.seitEnde = 0; }
-    geoMapObj._move(mitte, ap.cam.z, { flyTo: true });
+    geoMapObj._move(mitte, ap.cam.z, { flyTo: true, pinch: true }); // „pinch“: Linien, Punkte und Kacheln folgen in jedem Bild, nicht erst am Ende
     ap.seitEnde += dt || 16;
     if (ap.seitEnde > 300) apBewegungEnde(); // regelmäßig Kacheln für die aktuelle Ansicht laden
   }
