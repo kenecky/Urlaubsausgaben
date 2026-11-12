@@ -1205,6 +1205,16 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .gp-mitte { flex: 1; min-width: 0; }
 #gpRegler { width: 100%; margin: 0; padding: 0; border: 0; background: transparent; accent-color: #F5A524; height: 26px; }
 .gp-ticks { display: flex; justify-content: space-between; font-size: 11px; color: var(--grau); margin-top: -2px; }
+#gpVideo { flex: none; width: 44px; height: 38px; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; }
+#gpVideo svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.vx-seg { display: flex; gap: 4px; background: var(--abh-bg); border-radius: 12px; padding: 3px; margin: 0 0 12px; }
+.vx-seg button { flex: 1; margin: 0; height: 40px; min-height: 0; padding: 0 6px; border-radius: 9px; background: transparent; color: var(--abh-text); font-size: 14px; font-weight: 700; box-shadow: none; border: 0; display: flex; align-items: center; justify-content: center; }
+.vx-seg button.an { background: var(--karte); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.vx-lbl { font-size: 12.5px; color: var(--grau); margin: 0 4px 6px; }
+.vx-balken { height: 8px; border-radius: 4px; background: var(--abh-bg); overflow: hidden; margin: 6px 0 10px; }
+.vx-balken i { display: block; height: 100%; width: 0; background: var(--mango); transition: width .2s; }
+#vxText { font-size: 14px; margin: 0 4px; }
+.vx-hinweis { font-size: 12px; color: var(--grau); margin: 2px 4px 10px; }
 #gpTempo { flex: none; width: 52px; height: 38px; margin: 0; padding: 0; font-size: 14px; font-weight: 700; }
 .route-jetzt { display: flex; align-items: center; justify-content: center; }
 .route-jetzt span { display: block; margin: 2px; flex: none; box-sizing: border-box; width: 24px; height: 24px; border-radius: 50%; background: #F5A524; border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(245,165,36,.3), 0 3px 8px rgba(0,0,0,.35); }
@@ -1721,6 +1731,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     <button type="button" id="gpPlay" aria-label="Abspielen"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></button>
     <div class="gp-mitte"><input type="range" id="gpRegler" min="0" max="1" step="0.001" value="0" aria-label="Zeitpunkt der Reise"><div class="gp-ticks"><span id="gpVon"></span><span id="gpBis"></span></div></div>
     <button type="button" id="gpTempo" class="hell" aria-label="Geschwindigkeit">1×</button>
+    <button type="button" id="gpVideo" class="hell" aria-label="Als Video exportieren"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3z"/></svg></button>
   </div>
   <div class="geo-leg" id="geoLeg" hidden></div>
   <div class="geo-ablauf" id="geoAblauf" hidden></div>
@@ -1734,6 +1745,16 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   <button type="button" class="hell" id="fotoWahlX">Abbrechen</button></div></div>
 <div class="wahl-blatt" id="verkehrWahl" hidden><div class="wb-karte"><b id="verkehrTitel">Wie seid ihr gereist?</b><div class="vk-gitter" id="verkehrGitter"></div>
   <button type="button" class="hell" id="verkehrX">Abbrechen</button></div></div>
+<div class="wahl-blatt" id="videoWahl" hidden><div class="wb-karte"><b>Route als Video</b>
+  <div id="vxOptionen">
+    <div class="vx-lbl">Kosten im Video</div><div class="vx-seg" id="vxKosten"><button type="button" data-v="1">Mit Kosten</button><button type="button" data-v="0">Ohne Kosten</button></div>
+    <div class="vx-lbl">Format</div><div class="vx-seg" id="vxFormat"><button type="button" data-v="hoch">Hochformat (Handy)</button><button type="button" data-v="quer">Querformat (TV/PC)</button></div>
+    <p class="vx-hinweis">Das Video wird hier auf dem Handy erstellt (Full HD, mit Fotos). Das dauert etwa 1–3 Minuten, bitte die App dabei offen lassen.</p>
+    <button type="button" id="vxStart">Video erstellen</button>
+  </div>
+  <div id="vxStatus" hidden><div id="vxText"></div><div class="vx-balken"><i id="vxBalken"></i></div>
+    <div id="vxErgebnis" hidden><button type="button" id="vxTeilen">Teilen …</button><button type="button" id="vxSpeichern">Auf dem Handy speichern</button></div></div>
+  <button type="button" class="hell" id="vxX">Abbrechen</button></div></div>
 <div class="foto-gross" id="fotoGross" hidden><img id="fotoGrossImg" alt=""><button type="button" class="foto-gross-x" id="fotoGrossX" aria-label="Schließen">✕</button></div>
 <div class="undo sicherung-hinweis" id="sicherungHinweis" hidden><span id="sicherungText">Heute noch keine Sicherung</span><button type="button" id="sicherungJetzt">Jetzt sichern</button><button type="button" class="sh-x" id="sicherungWeg" aria-label="Später">✕</button></div>
 <div class="undo" id="undoBar" hidden><span id="undoText"></span><button type="button" id="undoBtn">Rückgängig</button></div>
@@ -5152,7 +5173,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   function popVorab() {
     if (fotoPopIgnore > 0) { fotoPopIgnore--; return true; }
     if (!$('fotoGross').hidden) { fotoGrossZu(true); return true; }
-    var offen = ['fotoWahl', 'verkehrWahl'].filter(function (id) { return !$(id).hidden; });
+    if (!$('videoWahl').hidden && vxLaeuft) { try { history.pushState({ wahl: 'videoWahl' }, ''); } catch (e) {} return true; } // läuft noch: offen lassen
+    var offen = ['fotoWahl', 'verkehrWahl', 'videoWahl'].filter(function (id) { return !$(id).hidden; });
     if (offen.length) { offen.forEach(function (id) { $(id).hidden = true; }); return true; }
     return false;
   }
@@ -5519,6 +5541,265 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     if (ap.ptSt[k + 1] !== ap.ptSt[k]) return 1600;
     return seg.km < 0.05 ? 650 : 1100;
   }
+  // ---------- Route als Video exportieren (eigene Zeichnung auf Canvas, Kodierung mit WebCodecs) ----------
+  var vxAbbruch = false, vxLaeuft = false;
+  function vxSkript(url, globalName) {
+    if (window[globalName]) return Promise.resolve(window[globalName]);
+    return new Promise(function (ok, fehler) { var s = document.createElement('script'); s.src = url; s.onload = function () { window[globalName] ? ok(window[globalName]) : fehler(new Error('lib')); }; s.onerror = function () { fehler(new Error('netz')); }; document.head.appendChild(s); });
+  }
+  function vxWelt(lat, lon) { var s = Math.sin(Math.max(-85.05, Math.min(85.05, lat)) * Math.PI / 180); return { x: (lon + 180) / 360 * 256, y: (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 256 }; }
+  function vxRund(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function vxKuerzen(c, t, max) { t = String(t || ''); if (c.measureText(t).width <= max) return t; while (t.length > 1 && c.measureText(t + '…').width > max) t = t.slice(0, -1); return t + '…'; }
+  async function routeVideoErstellen(opt, fortschritt) {
+    var d = routeDaten(); if (d.liste.length < 2) throw new Error('Für ein Video braucht es mindestens zwei Ausgaben mit Standort.');
+    if (typeof VideoEncoder === 'undefined') throw new Error('Dieser Browser kann keine Videos erstellen. Bitte Chrome aktuell halten.');
+    var quer = opt.format === 'quer', W = quer ? 1920 : 1080, H = quer ? 1080 : 1920, FPS = 30, S = 2, LW = W / S, LH = H / S;
+    // Kodierung wählen: MP4 (H.264) bevorzugt, sonst WebM (VP9)
+    var codec = null, art = 'mp4';
+    var avcKandidaten = quer ? ['avc1.640033', 'avc1.640032', 'avc1.4d0033'] : ['avc1.640033', 'avc1.640032', 'avc1.4d0033'];
+    for (var ci = 0; ci < avcKandidaten.length && !codec; ci++) { try { var sp = await VideoEncoder.isConfigSupported({ codec: avcKandidaten[ci], width: W, height: H, bitrate: 6e6, framerate: FPS }); if (sp.supported) codec = avcKandidaten[ci]; } catch (e) {} }
+    if (!codec) { art = 'webm'; try { var sp2 = await VideoEncoder.isConfigSupported({ codec: 'vp09.00.40.08', width: W, height: H, bitrate: 6e6, framerate: FPS }); if (sp2.supported) codec = 'vp09.00.40.08'; } catch (e) {} }
+    if (!codec) throw new Error('Dieses Handy kann hier keine Videos kodieren.');
+    var Lib = art === 'mp4' ? await vxSkript('https://unpkg.com/mp4-muxer@5.2.2/build/mp4-muxer.js', 'Mp4Muxer') : await vxSkript('https://unpkg.com/webm-muxer@5.1.4/build/webm-muxer.js', 'WebMMuxer');
+    var muxer = art === 'mp4' ? new Lib.Muxer({ target: new Lib.ArrayBufferTarget(), video: { codec: 'avc', width: W, height: H, frameRate: FPS }, fastStart: 'in-memory' })
+      : new Lib.Muxer({ target: new Lib.ArrayBufferTarget(), video: { codec: 'V_VP9', width: W, height: H, frameRate: FPS } });
+    var encFehler = null;
+    var enc = new VideoEncoder({ output: function (chunk, meta) { muxer.addVideoChunk(chunk, meta); }, error: function (e) { encFehler = e; } });
+    enc.configure({ codec: codec, width: W, height: H, bitrate: quer ? 7e6 : 6e6, framerate: FPS, latencyMode: 'quality' });
+    try { await document.fonts.ready; } catch (e) {}
+
+    var cv = document.createElement('canvas'); cv.width = W; cv.height = H; var c = cv.getContext('2d');
+    // ---- Daten vorbereiten ----
+    var farbe = function (datum) { return ROUTE_FARBEN[d.tagIdx[datum] % ROUTE_FARBEN.length]; };
+    var P = d.liste.map(function (a) { return vxWelt(a.geo.lat, a.geo.lon); });
+    var segs = []; for (var i = 1; i < d.liste.length; i++) segs.push(segGeo(d.liste[i - 1], d.liste[i]));
+    var ptSt = [], ersterPunkt = {}; d.stationen.forEach(function (st, si) { st.punkte.forEach(function () { ptSt.push(si); }); ersterPunkt[d.liste.indexOf(st.punkte[0])] = si; });
+    var ohne = ausgaben.filter(function (a) { return !istAbh(a); }), tagSum = {}, bisher = {}, lauf = 0;
+    d.tage.forEach(function (t) { tagSum[t] = ohne.filter(function (a) { return a.datum === t; }).reduce(function (x, a) { return x + lokalWert(a); }, 0); });
+    ohne.slice().sort(function (a, b) { return a.datum < b.datum ? -1 : 1; }).forEach(function (a) { lauf += lokalWert(a); bisher[a.datum] = lauf; });
+    var fotos = {};
+    if (opt.fotos !== false) await Promise.all(d.liste.map(function (a) { if (!a.foto) return; return fotoGet(a.foto).then(function (rec) { if (rec && rec.gross) return createImageBitmap(rec.gross).then(function (bm) { fotos[a.id] = bm; }); }).catch(function () {}); }));
+    // ---- Kamera-Hilfen ----
+    function zoomFuer(pts, padX, padO, padU) {
+      var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      pts.forEach(function (p) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
+      var z = Math.log2(Math.min((LW - 2 * padX) / Math.max(x1 - x0, 1e-7), (LH - padO - padU) / Math.max(y1 - y0, 1e-7)));
+      return { z: Math.max(1.5, Math.min(17, z)), cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 + (padU - padO) / 2 / Math.pow(2, Math.max(1.5, Math.min(17, z))) };
+    }
+    var KARTE_H = 96, RAND = 16; // Info-Karte unten (logische Pixel)
+    function nahZoom(i) {
+      var g = d.liste[i].geo, pts = [P[i]];
+      [i - 2, i - 1, i + 1, i + 2].forEach(function (j) { var x = d.liste[j]; if (x && kmZwischen(g, x.geo) <= 40) pts.push(P[j]); });
+      pts.push(vxWelt(g.lat + 0.004, g.lon + 0.004)); pts.push(vxWelt(g.lat - 0.004, g.lon - 0.004));
+      return Math.max(10, Math.min(14.5, zoomFuer(pts, 60, 60, 60).z - 0.6));
+    }
+    function punktAuf(k, t) { var q = segs[k].pos(weich(t)); return vxWelt(q[0], q[1]); }
+    function zielZoom(k, t) {
+      var seg = segs[k];
+      if (!seg.sprung) return nahZoom(k) + (nahZoom(k + 1) - nahZoom(k)) * weich(t);
+      var bogen = []; for (var u = 0; u <= 1.0001; u += 0.1) { var q = seg.pos(u); bogen.push(vxWelt(q[0], q[1])); }
+      var zJ = Math.min(zoomFuer(bogen, 50, 60, KARTE_H + 60).z, 12), zA = Math.min(nahZoom(k), 15), zB = Math.min(nahZoom(k + 1), 15);
+      return t < 0.5 ? zA + (zJ - zA) * weich(t * 2) : zJ + (zB - zJ) * weich((t - 0.5) * 2);
+    }
+    var freiMitte = (LH - KARTE_H - RAND) / 2 - LH * 0.1; // Punkt etwas über der Mitte der freien Fläche
+    function kameraAufPunkt(w, z) { return { cx: w.x, cy: w.y - (freiMitte - LH / 2) / Math.pow(2, z), z: z }; }
+    var alleW = P.slice(), uebersicht = zoomFuer(alleW, 70, 160, KARTE_H + RAND + 50);
+    if (opt.kosten === false) {} // nur Anzeige
+    // ---- Kacheln ----
+    var kacheln = {}, sub = ['a', 'b', 'c'], nKachel = 0;
+    function kachel(z, x, y) {
+      var n = Math.pow(2, z); x = ((x % n) + n) % n; if (y < 0 || y >= n) return null;
+      var key = z + '/' + x + '/' + y; if (kacheln[key]) return kacheln[key];
+      var e = { img: new Image(), ok: false };
+      e.p = new Promise(function (ok) {
+        var fertig = false, to = setTimeout(function () { if (!fertig) { fertig = true; ok(); } }, 10000);
+        e.img.crossOrigin = 'anonymous';
+        e.img.onload = function () { e.ok = true; if (!fertig) { fertig = true; clearTimeout(to); ok(); } };
+        e.img.onerror = function () { if (!fertig) { fertig = true; clearTimeout(to); ok(); } };
+        e.img.src = 'https://' + sub[(x + y) % 3] + '.tile.openstreetmap.org/' + key + '.png'; nKachel++;
+      });
+      kacheln[key] = e; return e;
+    }
+    function kachelnFuer(cam) {
+      var zt = Math.max(0, Math.min(18, Math.round(cam.z))), sc = Math.pow(2, cam.z - zt), welt = Math.pow(2, zt);
+      var tlx = cam.cx * welt - LW / 2 / sc, tly = cam.cy * welt - LH / 2 / sc, liste = [];
+      for (var ty = Math.floor(tly / 256); ty <= Math.floor((tly + LH / sc) / 256); ty++)
+        for (var tx = Math.floor(tlx / 256); tx <= Math.floor((tlx + LW / sc) / 256); tx++) { var e = kachel(zt, tx, ty); if (e) liste.push({ e: e, x: (tx * 256 - tlx) * sc, y: (ty * 256 - tly) * sc, s: 256 * sc }); }
+      return liste;
+    }
+    // ---- Zeichnen ----
+    function bild(cam, st) {
+      var sc = Math.pow(2, cam.z);
+      var sx = function (w) { return (w.x - cam.cx) * sc + LW / 2; }, sy = function (w) { return (w.y - cam.cy) * sc + LH / 2; };
+      c.setTransform(S, 0, 0, S, 0, 0);
+      c.fillStyle = '#e8e4dc'; c.fillRect(0, 0, LW, LH);
+      st.kacheln.forEach(function (k) { if (k.e.ok) c.drawImage(k.e.img, k.x, k.y, k.s + 0.6, k.s + 0.6); });
+      c.lineCap = 'round'; c.lineJoin = 'round';
+      function linie(pts, farbe, breite, alpha, strich) { if (pts.length < 2) return; c.globalAlpha = alpha; c.strokeStyle = farbe; c.lineWidth = breite; c.setLineDash(strich || []); c.beginPath(); pts.forEach(function (w, i) { var x = sx(w), y = sy(w); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); c.setLineDash([]); c.globalAlpha = 1; }
+      function segPunkte(k, bis) { var seg = segs[k], n = seg.sprung ? 24 : 1, pts = []; for (var u = 0; u <= n; u++) { var t = u / n * bis; var q = seg.pos(t); pts.push(vxWelt(q[0], q[1])); } return pts; }
+      // ganze Route blass
+      for (var k = 0; k < segs.length; k++) if (segs[k].km > 0.01) linie(segPunkte(k, 1), '#0E4A55', 3, 0.22, segs[k].sprung ? (segs[k].boden ? [2, 7] : [8, 8]) : null);
+      // gefahrener Teil
+      var bisPunkt = st.bisPunkt;
+      for (var k2 = 0; k2 < segs.length; k2++) {
+        if (k2 + 1 <= bisPunkt) linie(segPunkte(k2, 1), farbe(d.liste[k2 + 1].datum), 4.5, 1, segs[k2].sprung ? (segs[k2].boden ? [2, 8] : [9, 9]) : null);
+        else if (k2 === st.k && st.t > 0 && st.t < 1) linie(segPunkte(k2, weich(st.t)), farbe(d.liste[k2 + 1].datum), 4.5, 1, segs[k2].sprung ? (segs[k2].boden ? [2, 8] : [9, 9]) : null);
+      }
+      // Punkte der Ausgaben
+      for (var j = 0; j <= Math.min(bisPunkt, P.length - 1); j++) { c.beginPath(); c.arc(sx(P[j]), sy(P[j]), 4.5, 0, 7); c.fillStyle = '#fff'; c.fill(); c.lineWidth = 2.5; c.strokeStyle = farbe(d.liste[j].datum); c.stroke(); }
+      // Sprung-Beschriftungen
+      c.font = "700 12px 'Figtree', sans-serif";
+      for (var k3 = 0; k3 < segs.length; k3++) {
+        if (!segs[k3].sprung || k3 + 1 > bisPunkt && !(k3 === st.k && st.t > 0.5)) continue;
+        var m = segs[k3].pos(0.5), mw = vxWelt(m[0], m[1]), txt = wegIcon(d.liste[k3 + 1]) + Math.round(segs[k3].km).toLocaleString('de-DE') + ' km', tw = c.measureText(txt).width + 18;
+        c.fillStyle = '#fff'; vxRund(c, sx(mw) - tw / 2, sy(mw) - 12, tw, 24, 12); c.fill(); c.lineWidth = 1.5; c.strokeStyle = farbe(d.liste[k3 + 1].datum); c.stroke();
+        c.fillStyle = '#0f172a'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, sx(mw), sy(mw) + 0.5);
+      }
+      // Stationen
+      d.stationen.forEach(function (stn, si) {
+        var erster = d.liste.indexOf(stn.punkte[0]); if (erster > bisPunkt && !st.alleStationen) return;
+        var w = vxWelt(stn.mitte.lat, stn.mitte.lon), x = sx(w), y = sy(w), ziel = si === d.stationen.length - 1 && d.stationen.length > 1;
+        c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 6; c.shadowOffsetY = 2;
+        c.beginPath(); c.arc(x, y, 15, 0, 7); c.fillStyle = ziel ? '#F5A524' : '#0E4A55'; c.fill(); c.shadowColor = 'transparent';
+        c.lineWidth = 3; c.strokeStyle = '#fff'; c.stroke();
+        c.fillStyle = ziel ? '#1f2937' : '#fff'; c.font = "800 14px 'Bricolage', 'Figtree', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(si + 1), x, y + 0.5);
+        c.font = "800 14px 'Figtree', sans-serif"; c.textAlign = 'left'; c.lineWidth = 4; c.strokeStyle = 'rgba(255,255,255,.95)'; c.strokeText(stn.name, x + 21, y); c.fillStyle = '#0f172a'; c.fillText(stn.name, x + 21, y);
+      });
+      // aktueller Punkt
+      if (st.marker) { var mx = sx(st.marker), my = sy(st.marker); c.beginPath(); c.arc(mx, my, 20, 0, 7); c.fillStyle = 'rgba(245,165,36,.3)'; c.fill(); c.beginPath(); c.arc(mx, my, 11, 0, 7); c.fillStyle = '#F5A524'; c.fill(); c.lineWidth = 3; c.strokeStyle = '#fff'; c.stroke(); }
+      // Foto
+      if (st.foto && st.fotoAlpha > 0) {
+        var bm = st.foto, fw = Math.min(LW * (quer ? 0.3 : 0.44), 260), fh = fw * 0.75, fx = LW - fw - 14, fy = 14, a = st.fotoAlpha;
+        c.globalAlpha = a; c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = 16; c.shadowOffsetY = 6;
+        c.fillStyle = '#fff'; vxRund(c, fx - 6, fy - 6, fw + 12, fh + 34, 16); c.fill(); c.shadowColor = 'transparent';
+        var q = Math.max(fw / bm.width, fh / bm.height), sw = fw / q, sh = fh / q;
+        c.save(); vxRund(c, fx, fy, fw, fh, 11); c.clip(); c.drawImage(bm, (bm.width - sw) / 2, (bm.height - sh) / 2, sw, sh, fx, fy, fw, fh); c.restore();
+        c.fillStyle = '#0f172a'; c.font = "600 12.5px 'Figtree', sans-serif"; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(vxKuerzen(c, st.fotoText, fw - 4), fx + 2, fy + fh + 14);
+        c.globalAlpha = 1;
+      }
+      // Info-Karte unten
+      if (st.info) {
+        var kx = RAND, ky = LH - KARTE_H - RAND, kw = LW - 2 * RAND;
+        c.globalAlpha = st.infoAlpha == null ? 1 : st.infoAlpha;
+        c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 18; c.shadowOffsetY = 6; c.fillStyle = 'rgba(255,255,255,.97)'; vxRund(c, kx, ky, kw, KARTE_H, 16); c.fill(); c.shadowColor = 'transparent';
+        var rechtsB = 0; c.textBaseline = 'alphabetic';
+        if (st.info.r1) { c.font = "700 17px 'Bricolage', 'Figtree', sans-serif"; rechtsB = Math.max(c.measureText(st.info.r1).width, (c.font = "500 13px 'Figtree', sans-serif", c.measureText(st.info.r2 || '').width)); }
+        var lw = kw - 28 - (rechtsB ? rechtsB + 16 : 0);
+        c.textAlign = 'left'; c.fillStyle = '#0f172a'; c.font = "700 17px 'Bricolage', 'Figtree', sans-serif"; c.fillText(vxKuerzen(c, st.info.l1, lw), kx + 14, ky + 28);
+        c.fillStyle = '#5E7377'; c.font = "500 13.5px 'Figtree', sans-serif"; c.fillText(vxKuerzen(c, st.info.l2, lw), kx + 14, ky + 52); c.fillText(vxKuerzen(c, st.info.l3, lw), kx + 14, ky + 74);
+        if (st.info.r1) { c.textAlign = 'right'; c.fillStyle = '#0E4A55'; c.font = "700 17px 'Bricolage', 'Figtree', sans-serif"; c.fillText(st.info.r1, kx + kw - 14, ky + 28); c.fillStyle = '#5E7377'; c.font = "500 13px 'Figtree', sans-serif"; c.fillText(st.info.r2 || '', kx + kw - 14, ky + 52); if (st.info.r3) c.fillText(st.info.r3, kx + kw - 14, ky + 74); }
+        c.globalAlpha = 1;
+      }
+      // Titel (Anfang)
+      if (st.titel && st.titelAlpha > 0) {
+        c.globalAlpha = st.titelAlpha; var tw2 = Math.min(LW - 40, 420), tx2 = (LW - tw2) / 2, ty2 = 40;
+        c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 18; c.shadowOffsetY = 6; c.fillStyle = 'rgba(14,74,85,.95)'; vxRund(c, tx2, ty2, tw2, 92, 18); c.fill(); c.shadowColor = 'transparent';
+        c.textAlign = 'center'; c.fillStyle = '#fff'; c.font = "800 24px 'Bricolage', 'Figtree', sans-serif"; c.fillText(vxKuerzen(c, st.titel.a, tw2 - 30), LW / 2, ty2 + 40);
+        c.fillStyle = 'rgba(255,255,255,.85)'; c.font = "500 14px 'Figtree', sans-serif"; c.fillText(vxKuerzen(c, st.titel.b, tw2 - 30), LW / 2, ty2 + 68);
+        c.globalAlpha = 1;
+      }
+      // Quellenangabe Karte
+      c.font = "500 10px 'Figtree', sans-serif"; c.textAlign = 'right'; c.textBaseline = 'alphabetic'; c.fillStyle = 'rgba(15,23,42,.65)'; c.fillText('© OpenStreetMap-Mitwirkende', LW - 8, LH - 4);
+    }
+    // ---- Texte ----
+    var mitK = opt.kosten !== false;
+    function wtag(iso) { var x = iso.split('-'); return ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(+x[0], x[1] - 1, +x[2]).getDay()] + ' ' + x[2] + '.' + x[1] + '.' + x[0]; }
+    function infoFuer(k, t) {
+      var a = d.liste[t > 0.5 ? k + 1 : k], stn = d.stationen[ptSt[t > 0.5 ? k + 1 : k]], fliegt = segs[k] && segs[k].sprung && t > 0 && t < 1;
+      return { l1: 'Tag ' + (d.tagIdx[a.datum] + 1) + ' · ' + wtag(a.datum),
+        l2: fliegt ? (wegIcon(d.liste[k + 1]) || '→ ') + d.stationen[ptSt[k]].name + ' → ' + d.stationen[ptSt[k + 1]].name : (stn ? stn.name : (a.ort || '')),
+        l3: (fliegt ? d.liste[k + 1].beschreibung : a.beschreibung) || a.kategorie || '',
+        r1: mitK && !(multi || euroTrip) ? geld(tagSum[a.datum] || 0) : '', r2: mitK && !(multi || euroTrip) ? 'bisher ' + geld(bisher[a.datum] || 0) : '' };
+    }
+    var von = (reise && reise.start) || d.tage[0], bisT = (reise && reise.ende) || d.tage[d.tage.length - 1], vx = von.split('-'), bx = bisT.split('-');
+    var zeitraum = vx[0] === bx[0] ? vx[2] + '.' + vx[1] + '. – ' + bx[2] + '.' + bx[1] + '.' + bx[0] : vx[2] + '.' + vx[1] + '.' + vx[0] + ' – ' + bx[2] + '.' + bx[1] + '.' + bx[0];
+    var nT = tageZwischen(von, bisT) + 1, kmT = Math.round(d.km).toLocaleString('de-DE');
+    var titel = { a: (reise && reise.name) || 'Unsere Reise', b: zeitraum + ' · ' + d.stationen.length + ' Stationen · ≈ ' + kmT + ' km' };
+    var gesamtL = ohne.reduce(function (x, a) { return x + lokalWert(a); }, 0), gesamtE = summeEuro(ohne);
+    var endInfo = { l1: zeitraum, l2: nT + (nT === 1 ? ' Tag' : ' Tage') + ' · ' + d.stationen.length + ' Stationen', l3: mitK ? ohne.length + ' Ausgaben' : '≈ ' + kmT + ' km',
+      r1: mitK ? ((multi || euroTrip) ? euroFmt(gesamtE) : geld(gesamtL)) : '', r2: mitK && !(multi || euroTrip) ? euroFmt(gesamtE) : '' };
+    // ---- Ablauf planen (Dauer in ms) ----
+    function dauer(k) { var seg = segs[k]; if (seg.sprung) return Math.min(5200, 2600 + seg.km * 4); if (ptSt[k + 1] !== ptSt[k]) return 1600; return seg.km < 0.05 ? 650 : 1100; }
+    var spielZeit = 0; for (var q2 = 0; q2 < segs.length; q2++) spielZeit += dauer(q2);
+    var nFotos = d.liste.filter(function (a) { return fotos[a.id]; }).length;
+    var tempo = Math.max(1, (spielZeit + nFotos * 2600) / 80000); // Video höchstens ca. 1,5 Minuten
+    var FOTO_MS = 2600, dt = 1000 / FPS;
+    var INTRO = 2600, ANFLUG = 2000, ABFLUG = 2000, ENDE = 3800;
+    var startCam = kameraAufPunkt(P[0], nahZoom(0));
+    var frames = Math.round((INTRO + ANFLUG + ABFLUG + ENDE) / dt) + Math.round((spielZeit / tempo + nFotos * FOTO_MS / Math.max(1, tempo / 2)) / dt) + 10;
+    var nr = 0, vorher = null;
+    async function frame(cam, st) {
+      if (vxAbbruch) throw new Error('abgebrochen');
+      if (encFehler) throw encFehler;
+      st.kacheln = kachelnFuer(cam);
+      await Promise.all(st.kacheln.map(function (k) { return k.e.p; }));
+      bild(cam, st);
+      var vf = new VideoFrame(cv, { timestamp: Math.round(nr * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
+      enc.encode(vf, { keyFrame: nr % (FPS * 2) === 0 }); vf.close(); nr++;
+      while (enc.encodeQueueSize > 4) await new Promise(function (r) { setTimeout(r, 5); });
+      if (nr % 10 === 0) { fortschritt(Math.min(0.99, nr / frames)); await new Promise(function (r) { setTimeout(r, 0); }); }
+    }
+    function mischen(a, b, t) { var e = weich(Math.max(0, Math.min(1, t))); return { cx: a.cx + (b.cx - a.cx) * e, cy: a.cy + (b.cy - a.cy) * e, z: a.z + (b.z - a.z) * e }; }
+    // 1) Übersicht mit Titel
+    for (var f = 0; f < INTRO / dt; f++) await frame(uebersicht, { bisPunkt: -1, alleStationen: true, titel: titel, titelAlpha: Math.min(1, f * dt / 400), info: null });
+    // 2) Anflug zum ersten Punkt
+    for (var f2 = 0; f2 < ANFLUG / dt; f2++) { var tt = f2 * dt / ANFLUG; await frame(mischen(uebersicht, startCam, tt), { bisPunkt: 0, titel: titel, titelAlpha: Math.max(0, 1 - tt * 2.5), marker: P[0], info: infoFuer(0, 0), infoAlpha: Math.min(1, tt * 2) }); }
+    // 3) Abspielen
+    var pos = 0, zCam = startCam.z, halt = 0, fotoBis = -1, fotoA = null, fotoAlpha = 0, n = d.liste.length;
+    while (true) {
+      var k = Math.min(segs.length - 1, Math.floor(pos)), t = pos - k; if (pos >= n - 1) { k = n - 2; t = 1; }
+      if (halt > 0) { halt -= dt * Math.max(1, tempo / 2); fotoAlpha = Math.min(1, fotoAlpha + dt / 350); if (halt < 350) fotoAlpha = Math.max(0, halt / 350); }
+      else {
+        fotoAlpha = 0;
+        if (pos >= n - 1) break;
+        var neu = pos + dt * tempo / dauer(k), bis = Math.min(n - 1, Math.floor(neu)), gestoppt = false;
+        for (var jj = fotoBis + 1; jj <= bis; jj++) { fotoBis = jj; if (fotos[d.liste[jj].id]) { neu = jj; halt = FOTO_MS; fotoA = d.liste[jj]; gestoppt = true; break; } }
+        pos = Math.min(n - 1, neu); k = Math.min(segs.length - 1, Math.floor(pos)); t = pos - k; if (pos >= n - 1) { k = n - 2; t = 1; }
+      }
+      var mw = punktAuf(k, t), zz = zielZoom(k, t);
+      zCam += (zz - zCam) * (1 - Math.exp(-dt / 260));
+      await frame(kameraAufPunkt(mw, zCam), { k: k, t: t, bisPunkt: t >= 1 ? k + 1 : k, marker: mw, info: infoFuer(k, t), foto: halt > 0 && fotoA ? fotos[fotoA.id] : null, fotoAlpha: fotoAlpha, fotoText: fotoA ? (fotoA.beschreibung || fotoA.kategorie) : '' });
+    }
+    // 4) Abflug zur Übersicht und 5) Ende
+    var endCam = kameraAufPunkt(P[n - 1], zCam), letzte = { k: n - 2, t: 1, bisPunkt: n - 1, marker: P[n - 1] };
+    for (var f3 = 0; f3 < ABFLUG / dt; f3++) { var t3 = f3 * dt / ABFLUG; await frame(mischen(endCam, uebersicht, t3), Object.assign({}, letzte, { alleStationen: true, info: t3 < 0.5 ? infoFuer(n - 2, 1) : endInfo })); }
+    for (var f4 = 0; f4 < ENDE / dt; f4++) await frame(uebersicht, Object.assign({}, letzte, { alleStationen: true, info: endInfo, titel: titel, titelAlpha: Math.min(1, f4 * dt / 500) }));
+    await enc.flush(); enc.close(); muxer.finalize();
+    var buf = muxer.target.buffer;
+    return { blob: new Blob([buf], { type: art === 'mp4' ? 'video/mp4' : 'video/webm' }), art: art, sekunden: Math.round(nr / FPS), kacheln: nKachel };
+  }
+  // Bedienung: Video-Knopf im Abspieler
+  var vxWahl = { kosten: true, format: 'hoch' };
+  function vxWahlZeigen() {
+    $('vxKosten').querySelectorAll('button').forEach(function (b) { b.classList.toggle('an', (b.getAttribute('data-v') === '1') === vxWahl.kosten); });
+    $('vxFormat').querySelectorAll('button').forEach(function (b) { b.classList.toggle('an', b.getAttribute('data-v') === vxWahl.format); });
+  }
+  $('gpVideo').addEventListener('click', function () { if (ap) apStop(); vxWahlZeigen(); $('vxStatus').hidden = true; $('vxOptionen').hidden = false; wahlAuf('videoWahl'); });
+  $('vxKosten').addEventListener('click', function (e) { var b = e.target.closest('[data-v]'); if (b) { vxWahl.kosten = b.getAttribute('data-v') === '1'; vxWahlZeigen(); } });
+  $('vxFormat').addEventListener('click', function (e) { var b = e.target.closest('[data-v]'); if (b) { vxWahl.format = b.getAttribute('data-v'); vxWahlZeigen(); } });
+  $('vxX').addEventListener('click', function () { if (vxLaeuft) { vxAbbruch = true; return; } wahlZu('videoWahl'); });
+  $('vxStart').addEventListener('click', async function () {
+    if (vxLaeuft) return; vxLaeuft = true; vxAbbruch = false;
+    $('vxOptionen').hidden = true; $('vxStatus').hidden = false; $('vxErgebnis').hidden = true; $('vxX').textContent = 'Abbrechen';
+    $('vxText').textContent = 'Video wird erstellt …'; $('vxBalken').style.width = '0%';
+    var lock = null; try { if (navigator.wakeLock) lock = await navigator.wakeLock.request('screen'); } catch (e) {}
+    try {
+      var erg = await routeVideoErstellen({ kosten: vxWahl.kosten, format: vxWahl.format }, function (p) { $('vxBalken').style.width = Math.round(p * 100) + '%'; $('vxText').textContent = 'Video wird erstellt … ' + Math.round(p * 100) + ' %'; });
+      $('vxBalken').style.width = '100%';
+      var name = 'route-' + (normT(reise ? reise.name : 'reise').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'reise') + (vxWahl.kosten ? '' : '-ohne-kosten') + '.' + erg.art;
+      vxDatei = new File([erg.blob], name, { type: erg.blob.type });
+      $('vxText').textContent = 'Fertig: ' + erg.sekunden + ' Sekunden, ' + (erg.blob.size / 1048576).toFixed(1).replace('.', ',') + ' MB';
+      $('vxErgebnis').hidden = false; $('vxTeilen').hidden = !(navigator.canShare && navigator.canShare({ files: [vxDatei] }));
+      window._vxLetztes = erg;
+    } catch (e) {
+      $('vxText').textContent = e && e.message === 'abgebrochen' ? 'Abgebrochen.' : 'Das hat nicht geklappt: ' + ((e && e.message) || e);
+    } finally {
+      vxLaeuft = false; $('vxX').textContent = 'Schließen'; try { if (lock) lock.release(); } catch (e) {}
+    }
+  });
+  var vxDatei = null;
+  $('vxSpeichern').addEventListener('click', function () { if (vxDatei) { download(vxDatei.name, vxDatei, vxDatei.type); toast('Video gespeichert (Ordner „Downloads“)'); } });
+  $('vxTeilen').addEventListener('click', function () { if (vxDatei && navigator.share) navigator.share({ files: [vxDatei], title: vxDatei.name }).catch(function () {}); });
   $('geoFoto').addEventListener('click', function () {
     var a = ap && ap.fotoA; if (!a) return;
     apStop(); // Route pausiert; Play setzt danach fort
