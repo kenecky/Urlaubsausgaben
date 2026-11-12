@@ -2889,11 +2889,14 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   });
 
   // Reiter „Pro Tag“
-  var nurTagesAusgaben = false; try { nurTagesAusgaben = localStorage.getItem('reisen.nurTagesAusgaben') === '1'; } catch (e) {}
+  var nurTagesAusgaben = false, ohneUnterkunftTransport = false;
+  try { nurTagesAusgaben = localStorage.getItem('reisen.nurTagesAusgaben') === '1'; ohneUnterkunftTransport = localStorage.getItem('reisen.ohneUnterkunftTransport') === '1'; } catch (e) {}
+  function istUnterkunftTransport(a) { var k = String(a.kategorie || '').toLowerCase(); return k === 'unterkunft' || k === 'transport'; }
   function renderProTag() {
     var ohneAbh = ausgaben.filter(function (a) { return !istAbh(a); });
-    var tagListe = nurTagesAusgaben ? ohneAbh.filter(function (a) { return !istPauschal(a) && !ganzeReise(a); }) : ohneAbh;
-    var pausHtml = '<label class="check" style="margin:2px 0 10px"><input type="checkbox" id="nurTagesAusgaben"' + (nurTagesAusgaben ? ' checked' : '') + '> Nur Tagesausgaben</label>';
+    var tagListe = ohneAbh.filter(function (a) { return (!nurTagesAusgaben || (!istPauschal(a) && !ganzeReise(a))) && (!ohneUnterkunftTransport || !istUnterkunftTransport(a)); });
+    var pausHtml = '<label class="check" style="margin:2px 0 4px"><input type="checkbox" id="nurTagesAusgaben"' + (nurTagesAusgaben ? ' checked' : '') + '> Nur Tagesausgaben</label>' +
+      '<label class="check" style="margin:6px 0 10px"><input type="checkbox" id="ohneUnterkunftTransport"' + (ohneUnterkunftTransport ? ' checked' : '') + '> Ohne Unterkunft und Transport</label>';
     if (!tagListe.length) {
       $('tab-tag').innerHTML = pausHtml + '<div class="leer">Noch keine Tagesausgaben erfasst.</div>';
       return;
@@ -2905,7 +2908,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var max = 0, teuer = von;
     daten.forEach(function (d) { if (proTag[d] > max) { max = proTag[d]; teuer = d; } });
     var summe = summePeso(tagListe), summeE = summeEuro(tagListe);
-    var sp = nurTagesAusgaben ? { mitStart: false } : schnittProTag(), dTage = sp.mitStart ? sp.tage : anzahl;
+    var sp = (nurTagesAusgaben || ohneUnterkunftTransport) ? { mitStart: false } : schnittProTag(), dTage = sp.mitStart ? sp.tage : anzahl;
     var html = pausHtml + '<div class="rz"><span>Durchschnitt pro Tag (' + dTage + (dTage === 1 ? ' Tag' : ' Tage') + ')</span><b>' + (sp.mitStart ? wertEuro(sp.lokal, sp.euro) : wertEuro(summe / anzahl, summeE / anzahl)) + '</b></div>' +
       '<div class="rz"><span>Teuerster Tag (' + esc(datumAnzeige(teuer).slice(0, 5)) + ')</span><b>' + wertEuro(max, proTagE[teuer]) + '</b></div>' +
       '<div style="height:8px"></div>';
@@ -2929,8 +2932,9 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     $('tab-tag').innerHTML = html;
   }
   $('tab-tag').addEventListener('change', function (e) {
-    if (e.target.id !== 'nurTagesAusgaben') return;
-    nurTagesAusgaben = e.target.checked; try { localStorage.setItem('reisen.nurTagesAusgaben', nurTagesAusgaben ? '1' : '0'); } catch (x) {}
+    if (e.target.id === 'nurTagesAusgaben') { nurTagesAusgaben = e.target.checked; try { localStorage.setItem('reisen.nurTagesAusgaben', nurTagesAusgaben ? '1' : '0'); } catch (x) {} }
+    else if (e.target.id === 'ohneUnterkunftTransport') { ohneUnterkunftTransport = e.target.checked; try { localStorage.setItem('reisen.ohneUnterkunftTransport', ohneUnterkunftTransport ? '1' : '0'); } catch (x) {} }
+    else return;
     renderProTag();
   });
   $('tab-tag').addEventListener('click', function (e) {
