@@ -327,7 +327,7 @@
     background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px;
     transition: transform .25s; z-index: 50; max-width: 90%;
   }
-  .toast { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(calc(100% + 40px)); transition: transform .25s, opacity .25s; touch-action: pan-y; }
+  .toast { z-index: 2100 !important; opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(calc(100% + 40px)); transition: transform .25s, opacity .25s; touch-action: pan-y; }
   .toast.sichtbar { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
   .abbrechen { display: none; }
   .bearbeiten .abbrechen { display: block; }
@@ -1239,9 +1239,11 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .route-sprung.wahl span { cursor: pointer; }
 .ab-chip.wahl { cursor: pointer; }
 .ab-chip.wahl::after { content: ' ✎'; color: var(--grau); font-weight: 500; }
-.foto-gross { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; }
+.foto-gross { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0); transition: background .36s ease; overflow: hidden; }
+.foto-gross.an { background: rgba(0,0,0,.92); }
 .foto-gross[hidden] { display: none; }
-.foto-gross img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.foto-gross img { position: absolute; left: 0; top: 0; transform-origin: 0 0; cursor: zoom-out; will-change: transform; border-radius: 0; }
+.foto-gross-x { opacity: 0; transition: opacity .3s; } .foto-gross.an .foto-gross-x { opacity: 1; }
 .foto-gross-x { position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; margin: 0; padding: 0; border-radius: 50%; background: rgba(255,255,255,.18); color: #fff; font-size: 20px; }
 .hat-foto { width: 14px; height: 14px; margin-left: 5px; vertical-align: -2px; fill: none; stroke: #2A7F8E; stroke-width: 2.2; stroke-linejoin: round; }
 .geo-pop img { display: block; width: 180px; max-width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin: 0 0 6px; }
@@ -2126,8 +2128,42 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     img.hidden = true; img.removeAttribute('src');
   }
   function fotoFormSetzen(id) { formFoto = { id: id || null, neu: null, weg: false }; fotoFormZeigen(); }
-  function fotoGrossZeigen(url) { if (!url) return; $('fotoGrossImg').src = url; $('fotoGross').hidden = false; try { history.pushState({ foto: true }, ''); } catch (e) {} }
-  function fotoGrossZu(ohneZurueck) { if ($('fotoGross').hidden) return; $('fotoGross').hidden = true; $('fotoGrossImg').removeAttribute('src'); if (!ohneZurueck && history.state && history.state.foto) { fotoPopIgnore++; try { history.back(); } catch (e) { fotoPopIgnore--; } } }
+  // Großansicht: das Foto wächst aus dem kleinen Bild heraus und schrumpft beim Schließen dorthin zurück
+  var fgQuelle = null, fgZiel = null, fgTimer = 0;
+  function fgRechteck(el) { if (!el || !el.isConnected) return null; var r = el.getBoundingClientRect(); return r.width > 4 && r.height > 4 && r.bottom > 0 && r.top < window.innerHeight ? r : null; }
+  function fgVon(r, ziel) { // Transform, die das große Bild auf das kleine Rechteck legt (Mitte auf Mitte, Fläche angepasst)
+    var sx = r.width / ziel.w, sy = r.height / ziel.h, s = Math.max(sx, sy);
+    return 'translate(' + (r.left + r.width / 2 - s * ziel.w / 2) + 'px,' + (r.top + r.height / 2 - s * ziel.h / 2) + 'px) scale(' + s + ')';
+  }
+  function fotoGrossZeigen(url, quelle) {
+    if (!url) return;
+    var box = $('fotoGross'), img = $('fotoGrossImg');
+    clearTimeout(fgTimer); fgQuelle = quelle || null;
+    img.onload = function () {
+      var vw = window.innerWidth, vh = window.innerHeight, f = Math.min(vw / img.naturalWidth, vh / img.naturalHeight), w = img.naturalWidth * f, h = img.naturalHeight * f;
+      fgZiel = { w: w, h: h, x: (vw - w) / 2, y: (vh - h) / 2 };
+      img.style.width = w + 'px'; img.style.height = h + 'px';
+      var r = fgRechteck(fgQuelle), endT = 'translate(' + fgZiel.x + 'px,' + fgZiel.y + 'px)';
+      img.style.transition = 'none'; img.style.opacity = r ? '1' : '0';
+      img.style.transform = r ? fgVon(r, fgZiel) : endT + ' scale(.92)';
+      box.hidden = false; void img.offsetWidth;
+      img.style.transition = 'transform .38s cubic-bezier(.2,.8,.2,1), opacity .3s ease';
+      img.style.transform = endT; img.style.opacity = '1'; box.classList.add('an');
+    };
+    img.src = url;
+    try { history.pushState({ foto: true }, ''); } catch (e) {}
+  }
+  function fotoGrossZu(ohneZurueck) {
+    var box = $('fotoGross'), img = $('fotoGrossImg');
+    if (box.hidden) return;
+    var r = fgRechteck(fgQuelle);
+    img.style.transition = 'transform .34s cubic-bezier(.4,0,.2,1), opacity .3s ease';
+    if (r && fgZiel) img.style.transform = fgVon(r, fgZiel); else { img.style.opacity = '0'; if (fgZiel) img.style.transform = 'translate(' + fgZiel.x + 'px,' + fgZiel.y + 'px) scale(.92)'; }
+    box.classList.remove('an');
+    clearTimeout(fgTimer); fgTimer = setTimeout(function () { box.hidden = true; img.onload = null; img.removeAttribute('src'); img.style.transform = ''; img.style.opacity = ''; }, 360);
+    fotoGrossNachZu(ohneZurueck);
+  }
+  function fotoGrossNachZu(ohneZurueck) { if (!ohneZurueck && history.state && history.state.foto) { fotoPopIgnore++; try { history.back(); } catch (e) { fotoPopIgnore--; } } }
   var filterKat = '', filterVon = '', filterBis = '';
   var nurOffen = false;
 
@@ -5159,11 +5195,12 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   }); });
   $('fotoWeg').addEventListener('click', function () { formFoto.neu = null; formFoto.weg = true; fotoFormZeigen(); });
   $('fotoVorschau').addEventListener('click', function () {
-    if (formFoto.neu) fotoGrossZeigen(URL.createObjectURL(formFoto.neu.gross));
-    else if (formFoto.id) fotoUrl(formFoto.id, true).then(fotoGrossZeigen);
+    var q = this;
+    if (formFoto.neu) fotoGrossZeigen(URL.createObjectURL(formFoto.neu.gross), q);
+    else if (formFoto.id) fotoUrl(formFoto.id, true).then(function (u) { fotoGrossZeigen(u, q); });
   });
   $('fotoGrossX').addEventListener('click', function () { fotoGrossZu(); });
-  $('fotoGross').addEventListener('click', function (e) { if (e.target === this) fotoGrossZu(); });
+  $('fotoGross').addEventListener('click', function () { fotoGrossZu(); }); // irgendwo antippen = schließen
   var fotoPopIgnore = 0;
   // Auswahl-Blätter (Foto-Quelle, Verkehrsmittel): Zurück-Taste schließt sie
   function wahlAuf(id) { $(id).hidden = false; try { history.pushState({ wahl: id }, ''); } catch (e) {} }
@@ -5178,7 +5215,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     if (offen.length) { offen.forEach(function (id) { $(id).hidden = true; }); return true; }
     return false;
   }
-  $('geoMap').addEventListener('click', function (e) { var im = e.target.closest('[data-foto-gross]'); if (im) fotoUrl(im.getAttribute('data-foto-gross'), true).then(fotoGrossZeigen); });
+  $('geoMap').addEventListener('click', function (e) { var im = e.target.closest('[data-foto-gross]'); if (im) fotoUrl(im.getAttribute('data-foto-gross'), true).then(function (u) { fotoGrossZeigen(u, im); }); });
   $('neuKopfBtn').addEventListener('click', function () {
     if (!reise || aktSeite === 'neu') return;
     if (typeof blattZu === 'function') blattZu();
@@ -5565,7 +5602,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       : new Lib.Muxer({ target: new Lib.ArrayBufferTarget(), video: { codec: 'V_VP9', width: W, height: H, frameRate: FPS } });
     var encFehler = null;
     var enc = new VideoEncoder({ output: function (chunk, meta) { muxer.addVideoChunk(chunk, meta); }, error: function (e) { encFehler = e; } });
-    enc.configure({ codec: codec, width: W, height: H, bitrate: quer ? 7e6 : 6e6, framerate: FPS, latencyMode: 'quality' });
+    enc.configure({ codec: codec, width: W, height: H, bitrate: quer ? 5e6 : 4.5e6, framerate: FPS, latencyMode: 'quality' });
     try { await document.fonts.ready; } catch (e) {}
 
     var cv = document.createElement('canvas'); cv.width = W; cv.height = H; var c = cv.getContext('2d');
@@ -5799,11 +5836,19 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   });
   var vxDatei = null;
   $('vxSpeichern').addEventListener('click', function () { if (vxDatei) { download(vxDatei.name, vxDatei, vxDatei.type); toast('Video gespeichert (Ordner „Downloads“)'); } });
-  $('vxTeilen').addEventListener('click', function () { if (vxDatei && navigator.share) navigator.share({ files: [vxDatei], title: vxDatei.name }).catch(function () {}); });
+  $('vxTeilen').addEventListener('click', function () {
+    if (!vxDatei) return;
+    if (!navigator.share) { download(vxDatei.name, vxDatei, vxDatei.type); toast('Teilen geht hier nicht – Video wurde in „Downloads“ gespeichert.'); return; }
+    navigator.share({ files: [vxDatei] }).catch(function (e) {
+      if (e && e.name === 'AbortError') return; // Teilen-Fenster selbst geschlossen
+      download(vxDatei.name, vxDatei, vxDatei.type);
+      toast('Teilen hat nicht geklappt (' + ((e && e.name) || 'Fehler') + '). Video ist in „Downloads“ gespeichert – von dort teilen.');
+    });
+  });
   $('geoFoto').addEventListener('click', function () {
     var a = ap && ap.fotoA; if (!a) return;
     apStop(); // Route pausiert; Play setzt danach fort
-    fotoUrl(a.foto, true).then(fotoGrossZeigen);
+    fotoUrl(a.foto, true).then(function (u) { fotoGrossZeigen(u, $('geoFotoImg')); });
   });
   function apFotoZeigen(a) {
     if (!ap) return; ap.fotoA = a;
