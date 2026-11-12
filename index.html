@@ -1213,15 +1213,31 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .foto-zeile .foto-btn { width: auto; flex: 1; margin: 0; height: 40px; min-height: 0; padding: 0 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; }
 .foto-zeile .foto-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
 .foto-zeile .foto-weg { width: 40px; height: 40px; min-height: 0; margin: 0; padding: 0; flex: none; }
+.wahl-blatt { position: fixed; inset: 0; z-index: 1900; background: rgba(15,23,42,.45); display: flex; align-items: flex-end; justify-content: center; }
+.wahl-blatt[hidden] { display: none; }
+.wb-karte { width: 100%; max-width: 520px; background: var(--karte); color: var(--text); border-radius: 22px 22px 0 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 30px rgba(0,0,0,.25); animation: wbRein .22s ease-out; }
+@keyframes wbRein { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.wb-karte > b { display: block; font: 700 17px 'Bricolage', 'Figtree', sans-serif; margin: 0 4px 12px; }
+.wb-karte > button { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 0 8px; height: 52px; padding: 0 16px; font-size: 15px; justify-content: flex-start; }
+.wb-karte > button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; flex: none; }
+.wb-karte > button.hell { justify-content: center; margin-top: 4px; }
+.vk-gitter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.vk-gitter button { margin: 0; height: 64px; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 13px; font-weight: 600; background: var(--abh-bg); color: var(--text); box-shadow: none; border: 2px solid transparent; }
+.vk-gitter button span { font-size: 22px; line-height: 1; }
+.vk-gitter button.an { border-color: var(--mango); background: var(--karte); }
+.vk-gitter button.auto { grid-column: 1 / -1; height: 42px; flex-direction: row; gap: 8px; }
+.route-sprung.wahl span { cursor: pointer; }
+.ab-chip.wahl { cursor: pointer; }
+.ab-chip.wahl::after { content: ' ✎'; color: var(--grau); font-weight: 500; }
 .foto-gross { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; }
 .foto-gross[hidden] { display: none; }
 .foto-gross img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .foto-gross-x { position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; margin: 0; padding: 0; border-radius: 50%; background: rgba(255,255,255,.18); color: #fff; font-size: 20px; }
 .hat-foto { width: 14px; height: 14px; margin-left: 5px; vertical-align: -2px; fill: none; stroke: #2A7F8E; stroke-width: 2.2; stroke-linejoin: round; }
 .geo-pop img { display: block; width: 180px; max-width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin: 0 0 6px; }
-.geo-foto { position: absolute; right: 10px; top: 10px; z-index: 950; width: min(40%, 200px); transform-origin: top right; transform: scale(.85); opacity: 0; transition: opacity .35s ease, transform .35s ease; background: #fff; border-radius: 16px; padding: 6px; box-shadow: 0 12px 30px -10px rgba(0,0,0,.55); pointer-events: none; }
+.geo-foto { position: absolute; right: 10px; top: 10px; z-index: 950; cursor: zoom-in; width: min(40%, 200px); transform-origin: top right; transform: scale(.85); opacity: 0; transition: opacity .35s ease, transform .35s ease; background: #fff; border-radius: 16px; padding: 6px; box-shadow: 0 12px 30px -10px rgba(0,0,0,.55); pointer-events: none; }
 .geo-foto[hidden] { display: block; visibility: hidden; }
-.geo-foto.an { opacity: 1; transform: scale(1); visibility: visible; }
+.geo-foto.an { opacity: 1; transform: scale(1); visibility: visible; pointer-events: auto; }
 .geo-foto img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 11px; }
 .geo-foto span { display: block; font: 600 12.5px 'Figtree', sans-serif; color: #0f172a; padding: 5px 4px 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sicherung-hinweis { bottom: 24px; z-index: 61; }
@@ -1437,6 +1453,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
         <button type="button" class="hell foto-btn" id="fotoBtn"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg><span id="fotoBtnText">Foto hinzufügen</span></button>
         <button type="button" class="hell foto-weg" id="fotoWeg" aria-label="Foto entfernen" hidden>✕</button>
         <input type="file" id="fotoDatei" accept="image/*" hidden>
+        <input type="file" id="fotoKamera" accept="image/*" capture="environment" hidden>
       </div>
       <div class="geo-zeile" id="geoZeile"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg><span id="geoText">Standort wird beim Speichern erfasst</span><button type="button" id="geoKarteBtn">Karte</button></div>
       <datalist id="orteListe"></datalist>
@@ -1711,6 +1728,12 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
 </section>
 <div class="sheet-dunkel" id="sheetDunkel"></div>
 <div class="vollbild" id="vollbild" hidden><div class="vb-innen" id="vbInnen"></div><button type="button" class="vb-zu" id="vbZu" aria-label="Vollbild schließen">✕</button></div>
+<div class="wahl-blatt" id="fotoWahl" hidden><div class="wb-karte"><b>Foto hinzufügen</b>
+  <button type="button" id="fotoWahlKamera"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>Kamera – jetzt ein Foto machen</button>
+  <button type="button" id="fotoWahlDatei"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8.5 8.5"/></svg>Galerie / Dateien – vorhandenes Foto</button>
+  <button type="button" class="hell" id="fotoWahlX">Abbrechen</button></div></div>
+<div class="wahl-blatt" id="verkehrWahl" hidden><div class="wb-karte"><b id="verkehrTitel">Wie seid ihr gereist?</b><div class="vk-gitter" id="verkehrGitter"></div>
+  <button type="button" class="hell" id="verkehrX">Abbrechen</button></div></div>
 <div class="foto-gross" id="fotoGross" hidden><img id="fotoGrossImg" alt=""><button type="button" class="foto-gross-x" id="fotoGrossX" aria-label="Schließen">✕</button></div>
 <div class="undo sicherung-hinweis" id="sicherungHinweis" hidden><span id="sicherungText">Heute noch keine Sicherung</span><button type="button" id="sicherungJetzt">Jetzt sichern</button><button type="button" class="sh-x" id="sicherungWeg" aria-label="Später">✕</button></div>
 <div class="undo" id="undoBar" hidden><span id="undoText"></span><button type="button" id="undoBtn">Rückgängig</button></div>
@@ -1770,6 +1793,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     }
     return aus;
   }
+  var VERKEHR_ARTEN = { flug: ['✈', 'Flug'], faehre: ['⛴', 'Fähre'], boot: ['🚤', 'Boot'], auto: ['🚗', 'Auto'], bus: ['🚌', 'Bus'], zug: ['🚆', 'Zug'], roller: ['🛵', 'Roller'], tricycle: ['🛺', 'Tricycle'], '': ['', 'Automatisch'] };
   function einstSauber(d) {
     d = d && typeof d === 'object' ? d : {};
     var e = { kategorien: [], budget: null, letzterKurs: null, startkurs: null, kurse: {}, letzteWaehrung: '', restbei: 'beide', pauschal: [], geloescht: {}, letzterOrt: '' };
@@ -1783,6 +1807,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     e.pauschal = Array.isArray(d.pauschal) ? d.pauschal.filter(function (k) { return typeof k === 'string'; }) : [];
     e.geloescht = sauberGeloescht(d.geloescht);
     e.letzterOrt = typeof d.letzterOrt === 'string' ? d.letzterOrt.slice(0, 40) : '';
+    e.verkehr = {};
+    if (d.verkehr && typeof d.verkehr === 'object') Object.keys(d.verkehr).forEach(function (k) { var v = d.verkehr[k]; if (k.length < 80 && v && VERKEHR_ARTEN[v.a] !== undefined && isFinite(v.t)) e.verkehr[k] = { a: v.a, t: +v.t }; });
     e.refKurse = {};
     if (d.refKurse && typeof d.refKurse === 'object') Object.keys(d.refKurse).forEach(function (c) {
       if (!/^[A-Z]{3}$/.test(c) || !d.refKurse[c] || typeof d.refKurse[c] !== 'object') return;
@@ -3428,6 +3454,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     blattWarOffen = offen;
   }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('popstate', function () {
+    if (popVorab()) return;
     if (blattPopIgnorieren) { blattPopIgnorieren = false; return; }
     if (typeof vbZurueck !== 'undefined' && vbZurueck) return; // Vollbild schließt sich zuerst
     if (blattIstOffen()) { alleBlaetterZu(); return; }
@@ -3635,6 +3662,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     if (!ziel.budget) ziel.budget = neu.budget;
     if (!ziel.startkurs) ziel.startkurs = neu.startkurs;
     Object.keys(neu.kurse).forEach(function (c) { if (!ziel.kurse[c]) ziel.kurse[c] = neu.kurse[c]; });
+    Object.keys(neu.verkehr || {}).forEach(function (k) { ziel.verkehr = ziel.verkehr || {}; if (!ziel.verkehr[k] || neu.verkehr[k].t > ziel.verkehr[k].t) ziel.verkehr[k] = neu.verkehr[k]; });
     Object.keys(neu.refKurse || {}).forEach(function (c) { ziel.refKurse = ziel.refKurse || {}; ziel.refKurse[c] = Object.assign({}, neu.refKurse[c], ziel.refKurse[c] || {}); });
   }
   var importModus = 'merge';
@@ -5097,13 +5125,17 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     seiteOeffnen(n);
   });
   // Plus oben in der Kopfleiste: von jeder Unterseite direkt zu „Neue Ausgabe“
-  $('fotoBtn').addEventListener('click', function () { $('fotoDatei').value = ''; $('fotoDatei').click(); });
-  $('fotoDatei').addEventListener('change', function () {
+  $('fotoBtn').addEventListener('click', function () { wahlAuf('fotoWahl'); });
+  $('fotoWahlX').addEventListener('click', function () { wahlZu('fotoWahl'); });
+  $('fotoWahl').addEventListener('click', function (e) { if (e.target === this) wahlZu('fotoWahl'); });
+  $('fotoWahlKamera').addEventListener('click', function () { wahlZu('fotoWahl'); $('fotoKamera').value = ''; $('fotoKamera').click(); });
+  $('fotoWahlDatei').addEventListener('click', function () { wahlZu('fotoWahl'); $('fotoDatei').value = ''; $('fotoDatei').click(); });
+  ['fotoDatei', 'fotoKamera'].forEach(function (fid) { $(fid).addEventListener('change', function () {
     var f = this.files && this.files[0]; if (!f) return;
     $('fotoBtnText').textContent = 'Foto wird vorbereitet …';
     fotoAusDatei(f).then(function (rec) { formFoto.neu = rec; formFoto.weg = false; fotoFormZeigen(); })
       .catch(function () { fotoFormZeigen(); toast('Das Foto konnte nicht gelesen werden.'); });
-  });
+  }); });
   $('fotoWeg').addEventListener('click', function () { formFoto.neu = null; formFoto.weg = true; fotoFormZeigen(); });
   $('fotoVorschau').addEventListener('click', function () {
     if (formFoto.neu) fotoGrossZeigen(URL.createObjectURL(formFoto.neu.gross));
@@ -5112,10 +5144,18 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   $('fotoGrossX').addEventListener('click', function () { fotoGrossZu(); });
   $('fotoGross').addEventListener('click', function (e) { if (e.target === this) fotoGrossZu(); });
   var fotoPopIgnore = 0;
-  window.addEventListener('popstate', function (e) {
-    if (fotoPopIgnore > 0) { fotoPopIgnore--; e.stopImmediatePropagation(); return; }
-    if (!$('fotoGross').hidden) { fotoGrossZu(true); e.stopImmediatePropagation(); }
-  }, true);
+  // Auswahl-Blätter (Foto-Quelle, Verkehrsmittel): Zurück-Taste schließt sie
+  function wahlAuf(id) { $(id).hidden = false; try { history.pushState({ wahl: id }, ''); } catch (e) {} }
+  function wahlZu(id) { if ($(id).hidden) return; $(id).hidden = true; if (history.state && history.state.wahl === id) { fotoPopIgnore++; try { history.back(); } catch (e) { fotoPopIgnore--; } } }
+
+  // Wird als Erstes im Zurück-Handler aufgerufen: Foto-Vollbild und Auswahl-Blätter schließen sich zuerst
+  function popVorab() {
+    if (fotoPopIgnore > 0) { fotoPopIgnore--; return true; }
+    if (!$('fotoGross').hidden) { fotoGrossZu(true); return true; }
+    var offen = ['fotoWahl', 'verkehrWahl'].filter(function (id) { return !$(id).hidden; });
+    if (offen.length) { offen.forEach(function (id) { $(id).hidden = true; }); return true; }
+    return false;
+  }
   $('geoMap').addEventListener('click', function (e) { var im = e.target.closest('[data-foto-gross]'); if (im) fotoUrl(im.getAttribute('data-foto-gross'), true).then(fotoGrossZeigen); });
   $('neuKopfBtn').addEventListener('click', function () {
     if (!reise || aktSeite === 'neu') return;
@@ -5274,6 +5314,35 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var km = 0; for (var i = 1; i < liste.length; i++) km += kmZwischen(liste[i - 1].geo, liste[i].geo);
     return { liste: liste, tage: tage, tagIdx: tagIdx, stationen: stationen, km: km };
   }
+  // Verkehrsmittel einer weiten Strecke: selbst gewählt (pro Zielpunkt gespeichert) oder aus den Ausgaben des Tages geraten
+  function wegArtKey(b) {
+    var v = einst.verkehr && einst.verkehr[b.id]; if (v && v.a) return v.a;
+    var r = sprungArt(b.datum); return r.indexOf('✈') === 0 ? 'flug' : r.indexOf('⛴') === 0 ? 'faehre' : r.indexOf('🚐') === 0 ? 'auto' : '';
+  }
+  function wegIcon(b) { var k = wegArtKey(b); return k ? VERKEHR_ARTEN[k][0] + ' ' : ''; }
+  function wegName(b) { var k = wegArtKey(b); return k ? VERKEHR_ARTEN[k][1] : 'Weiter'; }
+  function wegBogen(b) { var k = wegArtKey(b); return !k || k === 'flug'; }
+  var verkehrZiel = null;
+  function verkehrWaehlen(b, von, nach) {
+    verkehrZiel = b;
+    var gewaehlt = (einst.verkehr && einst.verkehr[b.id] && einst.verkehr[b.id].a) || '';
+    $('verkehrTitel').textContent = (von && nach ? von + ' → ' + nach : 'Strecke') + ': womit?';
+    $('verkehrGitter').innerHTML = Object.keys(VERKEHR_ARTEN).map(function (k) {
+      return '<button type="button" data-vk="' + k + '" class="' + (k === '' ? 'auto ' : '') + (k === gewaehlt ? 'an' : '') + '">' + (k ? '<span>' + VERKEHR_ARTEN[k][0] + '</span>' : '') + VERKEHR_ARTEN[k][1] + (k === '' ? ' (aus den Ausgaben erraten)' : '') + '</button>';
+    }).join('');
+    wahlAuf('verkehrWahl');
+  }
+  $('verkehrX').addEventListener('click', function () { wahlZu('verkehrWahl'); });
+  $('verkehrWahl').addEventListener('click', function (e) {
+    if (e.target === this) { wahlZu('verkehrWahl'); return; }
+    var b = e.target.closest('[data-vk]'); if (!b || !verkehrZiel) return;
+    if (reise && reise.status === 'abgeschlossen') { toast('Die Reise ist abgeschlossen.'); return; }
+    var k = b.getAttribute('data-vk'); einst.verkehr = einst.verkehr || {};
+    einst.verkehr[verkehrZiel.id] = { a: k, t: Date.now() };
+    speichernEinst(); wahlZu('verkehrWahl');
+    if (geoMapObj && $('geoKarte').classList.contains('offen')) { if (ap) apBeenden(); geoKarteZeichnen(); }
+    toast(k ? 'Verkehrsmittel: ' + VERKEHR_ARTEN[k][1] : 'Verkehrsmittel wird wieder erraten');
+  });
   function sprungArt(datum) {
     var t = ausgaben.filter(function (a) { return a.datum === datum || (a.bis && a.datum <= datum && a.bis >= datum && a.datum === datum); }).map(function (a) { return ((a.beschreibung || '') + ' ' + (a.kategorie || '')).toLowerCase(); }).join(' ');
     if (/flug|flight|airline|airport|flughafen|cebu pac|airasia|philippine air|\bpal\b/.test(t)) return '✈ ';
@@ -5290,10 +5359,13 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     for (var i = 1; i < d.liste.length; i++) {
       var a = d.liste[i - 1], b = d.liste[i], km = kmZwischen(a.geo, b.geo), f = farbe(b.datum), op = aktiv(b.datum) ? 0.9 : 0.15;
       if (km > 50) {
-        var dLa = b.geo.lat - a.geo.lat, dLo = b.geo.lon - a.geo.lon, mLa = (a.geo.lat + b.geo.lat) / 2 + dLo * 0.18, mLo = (a.geo.lon + b.geo.lon) / 2 - dLa * 0.18, kurve = [];
-        for (var t = 0; t <= 1.0001; t += 0.05) kurve.push([(1 - t) * (1 - t) * a.geo.lat + 2 * (1 - t) * t * mLa + t * t * b.geo.lat, (1 - t) * (1 - t) * a.geo.lon + 2 * (1 - t) * t * mLo + t * t * b.geo.lon]);
-        L.polyline(kurve, { color: f, weight: 4, opacity: op, dashArray: '8 8', lineCap: 'round' }).addTo(geoSchicht);
-        if (aktiv(b.datum) && geoModus !== 'ablauf') L.marker(kurve[10], { interactive: false, icon: L.divIcon({ className: 'route-sprung', html: '<span style="border-color:' + f + '">' + sprungArt(b.datum) + (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km).toLocaleString('de-DE')) + ' km</span>', iconSize: [0, 0] }) }).addTo(geoSchicht);
+        var sg = segGeo(a, b), kurve = [];
+        for (var t = 0; t <= 1.0001; t += 0.05) kurve.push(sg.pos(t));
+        L.polyline(kurve, { color: f, weight: 4, opacity: op, dashArray: wegBogen(b) ? '8 8' : '2 7', lineCap: 'round' }).addTo(geoSchicht);
+        if (aktiv(b.datum) && geoModus !== 'ablauf') (function (a, b) {
+          var mk = L.marker(kurve[10], { interactive: true, icon: L.divIcon({ className: 'route-sprung wahl', html: '<span style="border-color:' + f + '">' + wegIcon(b) + (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km).toLocaleString('de-DE')) + ' km ✎</span>', iconSize: [0, 0] }) }).addTo(geoSchicht);
+          mk.on('click', function () { var d2 = routeDaten(), st = function (p) { var s = d2.stationen.filter(function (x) { return x.punkte.indexOf(p) >= 0; })[0]; return s ? s.name : ''; }; verkehrWaehlen(b, st(d2.liste.filter(function (x) { return x.id === a.id; })[0]), st(d2.liste.filter(function (x) { return x.id === b.id; })[0])); });
+        })(a, b);
       } else if (km > 0.01) L.polyline([[a.geo.lat, a.geo.lon], [b.geo.lat, b.geo.lon]], { color: f, weight: 3.5, opacity: op, lineCap: 'round' }).addTo(geoSchicht);
     }
     d.liste.forEach(function (a) {
@@ -5324,6 +5396,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   function segGeo(a, b) {
     var km = kmZwischen(a.geo, b.geo);
     if (km <= 50) return { km: km, sprung: false, pos: function (t) { return [a.geo.lat + (b.geo.lat - a.geo.lat) * t, a.geo.lon + (b.geo.lon - a.geo.lon) * t]; } };
+    if (!wegBogen(b)) return { km: km, sprung: true, boden: true, pos: function (t) { return [a.geo.lat + (b.geo.lat - a.geo.lat) * t, a.geo.lon + (b.geo.lon - a.geo.lon) * t]; } };
     var dLa = b.geo.lat - a.geo.lat, dLo = b.geo.lon - a.geo.lon, mLa = (a.geo.lat + b.geo.lat) / 2 + dLo * 0.18, mLo = (a.geo.lon + b.geo.lon) / 2 - dLa * 0.18;
     return { km: km, sprung: true, pos: function (t) { return [(1 - t) * (1 - t) * a.geo.lat + 2 * (1 - t) * t * mLa + t * t * b.geo.lat, (1 - t) * (1 - t) * a.geo.lon + 2 * (1 - t) * t * mLo + t * t * b.geo.lon]; } };
   }
@@ -5392,8 +5465,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     while (ap.gezeichnet < bis) {
       var i = ap.gezeichnet, seg = ap.segs[i], b = d.liste[i + 1], f = ap.farbe(b.datum), pts = [];
       for (var u = 0; u <= 1.0001; u += seg.sprung ? 0.05 : 1) pts.push(seg.pos(u));
-      if (seg.km > 0.01) L.polyline(pts, { color: f, weight: seg.sprung ? 4 : 3.5, opacity: .95, dashArray: seg.sprung ? '8 8' : null, lineCap: 'round', interactive: false }).addTo(ap.schicht);
-      if (seg.sprung) L.marker(seg.pos(0.5), { interactive: false, icon: L.divIcon({ className: 'route-sprung', html: '<span style="border-color:' + f + '">' + sprungArt(b.datum) + Math.round(seg.km).toLocaleString('de-DE') + ' km</span>', iconSize: [0, 0] }) }).addTo(ap.schicht);
+      if (seg.km > 0.01) L.polyline(pts, { color: f, weight: seg.sprung ? 4 : 3.5, opacity: .95, dashArray: seg.sprung ? (seg.boden ? '2 7' : '8 8') : null, lineCap: 'round', interactive: false }).addTo(ap.schicht);
+      if (seg.sprung) L.marker(seg.pos(0.5), { interactive: false, icon: L.divIcon({ className: 'route-sprung', html: '<span style="border-color:' + f + '">' + wegIcon(b) + Math.round(seg.km).toLocaleString('de-DE') + ' km</span>', iconSize: [0, 0] }) }).addTo(ap.schicht);
       L.circleMarker([b.geo.lat, b.geo.lon], { radius: 5, weight: 2.5, color: f, fillColor: '#fff', fillOpacity: 1, interactive: false }).addTo(ap.schicht);
       if (ap.ersterPunkt[i + 1] !== undefined) stationsMarker(ap.ersterPunkt[i + 1]);
       ap.gezeichnet++;
@@ -5405,7 +5478,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var a = d.liste[t > 0.5 ? k + 1 : k], st = d.stationen[ap.ptSt[t > 0.5 ? k + 1 : k]];
     var fliegt = ap.segs[k].sprung && t > 0 && t < 1;
     var dx = a.datum.split('-'); $('giTag').textContent = 'Tag ' + (d.tagIdx[a.datum] + 1) + ' · ' + ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(+dx[0], dx[1] - 1, +dx[2]).getDay()] + ' ' + dx[2] + '.' + dx[1] + '.' + dx[0];
-    $('giOrt').textContent = fliegt ? (sprungArt(d.liste[k + 1].datum) || '→ ') + d.stationen[ap.ptSt[k]].name + ' → ' + d.stationen[ap.ptSt[k + 1]].name : (st ? st.name : (a.ort || '–'));
+    $('giOrt').textContent = fliegt ? (wegIcon(d.liste[k + 1]) || '→ ') + d.stationen[ap.ptSt[k]].name + ' → ' + d.stationen[ap.ptSt[k + 1]].name : (st ? st.name : (a.ort || '–'));
     $('giText').textContent = (fliegt ? d.liste[k + 1].beschreibung : a.beschreibung) || a.kategorie || '–';
     $('giSum').textContent = (multi || euroTrip) ? '' : geld(ap.tagSum[a.datum] || 0);
     $('giBisher').textContent = (multi || euroTrip) ? '' : 'bisher ' + geld(ap.bisher[a.datum] || 0);
@@ -5446,8 +5519,13 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     if (ap.ptSt[k + 1] !== ap.ptSt[k]) return 1600;
     return seg.km < 0.05 ? 650 : 1100;
   }
+  $('geoFoto').addEventListener('click', function () {
+    var a = ap && ap.fotoA; if (!a) return;
+    apStop(); // Route pausiert; Play setzt danach fort
+    fotoUrl(a.foto, true).then(fotoGrossZeigen);
+  });
   function apFotoZeigen(a) {
-    if (!ap) return;
+    if (!ap) return; ap.fotoA = a;
     $('geoFotoImg').src = fotoUrls[a.foto + ':g']; $('geoFotoText').textContent = a.beschreibung || a.kategorie || '';
     var el = $('geoFoto'); el.hidden = false; requestAnimationFrame(function () { el.classList.add('an'); });
     ap.halt = 2600;
@@ -5562,8 +5640,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       }
       h += '</div></div>';
       if (i < A.st.length - 1) {
-        var a = x.s.punkte[x.s.punkte.length - 1], b = A.st[i + 1].s.punkte[0], km = kmZwischen(a.geo, b.geo), art = sprungArt(b.datum);
-        h += '<div class="ab-weg"><div class="ab-lin"><i></i></div><div class="ab-chip">' + (art ? art + (art.indexOf('✈') === 0 ? 'Flug' : art.indexOf('⛴') === 0 ? 'Fähre' : 'Fahrt') : 'Weiter') + ' <small>· ' + (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km).toLocaleString('de-DE')) + ' km · ' + tagKurz(b.datum) + '</small></div></div>';
+        var a = x.s.punkte[x.s.punkte.length - 1], b = A.st[i + 1].s.punkte[0], km = kmZwischen(a.geo, b.geo);
+        h += '<div class="ab-weg"><div class="ab-lin"><i></i></div><div class="ab-chip wahl" data-ab-weg="' + esc(b.id) + '" data-von="' + esc(x.s.name) + '" data-nach="' + esc(A.st[i + 1].s.name) + '">' + wegIcon(b) + esc(wegName(b)) + ' <small>· ' + (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km).toLocaleString('de-DE')) + ' km · ' + tagKurz(b.datum) + '</small></div></div>';
       }
       return h;
     }).join('');
@@ -5573,6 +5651,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var sp = box.scrollTop; box.innerHTML = html; box.scrollTop = sp;
   }
   $('geoAblauf').addEventListener('click', function (e) {
+    var wg = e.target.closest('[data-ab-weg]');
+    if (wg) { var bid = wg.getAttribute('data-ab-weg'), bp = ausgaben.filter(function (x) { return x.id === bid; })[0]; if (bp) verkehrWaehlen(bp, wg.getAttribute('data-von'), wg.getAttribute('data-nach')); return; }
     var k = e.target.closest('[data-ab-karte]'), pl = e.target.closest('[data-ab-play]');
     if (k || pl) {
       var i = +(k || pl).getAttribute('data-ab-' + (k ? 'karte' : 'play')), A = ablaufDaten(); if (!A) return;
