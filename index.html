@@ -6588,6 +6588,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     function aktivHier(t) {
       var b = document.body.classList;
       if (b.contains('zieht-aktiv')) return false;
+      // Über offenen Blättern (Bargeld zählen, Auswahl-Fenster) nie neu laden
+      if (!$('geldBlatt').hidden || document.querySelector('.wahl-blatt:not([hidden])') || t.closest('.geld-blatt, .wahl-blatt')) return false;
       if (b.contains('start-an')) {
         return !b.contains('blatt-offen') && !t.closest('#wkBox, .wk-chips, input, select, textarea, button') &&
           (!t.closest('#reisenListe') || $('reisenListe').scrollTop <= 0);
