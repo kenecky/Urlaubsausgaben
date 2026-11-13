@@ -1269,7 +1269,8 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .gz-mz-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .gz-mz-kopf span { font-weight: 700; color: var(--text); font-size: 14px; text-align: right; }
 .gz-mz canvas { width: 100%; border-radius: 12px; margin-top: 8px; display: block; }
-.gz-mz button { width: 100%; margin-top: 8px; }
+.gz-mz .gz-gross { width: 100%; margin-top: 8px; }
+#gzMzListe .gz-zeile { background: var(--bg); }
 .gz-abgleich { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: #0E4A55; color: #fff; border-radius: 16px; padding: 12px; font-size: 12.5px; text-align: center; }
 .gz-abgleich b { display: block; font: 700 16px 'Bricolage', 'Figtree', sans-serif; margin-top: 2px; }
 .gz-minus { color: #fca5a5; } .gz-plus { color: #86efac; } .gz-gleich { color: #fff; }
@@ -1830,6 +1831,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     <div class="gz-mz"><div class="gz-mz-kopf"><b>Münzen</b><span id="gzMzSumme"></span></div>
       <canvas id="gzMzBild" hidden></canvas>
       <p class="hinweis" id="gzMzText"></p>
+      <div id="gzMzListe"></div>
       <button type="button" class="hell gz-gross" id="gzMzFoto"><span class="gz-k-titel" id="gzMzFotoTxt">Münzen fotografieren</span><span class="gz-k-status"></span><span class="gz-balken"><i></i></span></button>
       <label class="gz-muenz" id="gzMzHand">Summe der Münzen (optional) <input type="text" inputmode="decimal" id="gzMuenzen" placeholder="0"></label>
     </div>
@@ -6330,10 +6332,12 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   function muenzBereichZeigen() {
     var E = gz.ergebnis, kann = !!MUENZ_TYPEN[gz.code], M = E.mz, c = $('gzMzBild');
     $('gzMzFoto').hidden = !kann; $('gzMzHand').hidden = kann;
+    E.mzExtra = E.mzExtra || {};
+    if (kann) muenzListeZeigen(); else $('gzMzListe').innerHTML = '';
     if (!kann || !M) {
       c.hidden = true; $('gzMzSumme').textContent = '';
       $('gzMzText').textContent = kann ? 'Keine Münzen gezählt.' : '';
-      if (kann) { E.muenzen = 0; $('gzMzSumme').textContent = geldFmt(0); $('gzMzFotoTxt').textContent = 'Münzen doch fotografieren'; } return;
+      if (kann) { E.muenzen = muenzZusatzSumme(); $('gzMzSumme').textContent = geldFmt(E.muenzen); $('gzMzFotoTxt').textContent = 'Münzen doch fotografieren'; if (E.muenzen) $('gzMzText').textContent = ''; } return;
     }
     // Ausschnitt um die Münzen, damit die Werte gut lesbar sind
     var bx = [0, 0, M.canvas.width, M.canvas.height];
@@ -6355,13 +6359,27 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       x.fillStyle = farbe; x.beginPath(); x.roundRect ? x.roundRect(m.x - tw / 2, m.y - fs * 0.75, tw, fs * 1.5, fs * 0.75) : x.rect(m.x - tw / 2, m.y - fs * 0.75, tw, fs * 1.5); x.fill();
       x.fillStyle = '#1f2937'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, m.x, m.y + 1);
     });
-    x.restore(); E.muenzen = summe;
-    var teile = Object.keys(anz).map(Number).sort(function (a, b) { return b - a; }).map(function (w) { return anz[w] + '× ' + scheinTxt(w); });
+    x.restore();
+    Object.keys(E.mzExtra).forEach(function (w) { if (E.mzExtra[w]) anz[w] = (anz[w] || 0) + E.mzExtra[w]; }); summe += muenzZusatzSumme(); E.muenzen = summe;
+    var teile = Object.keys(anz).filter(function (w) { return anz[w] > 0; }).map(Number).sort(function (a, b) { return b - a; }).map(function (w) { return anz[w] + '× ' + scheinTxt(w); });
     $('gzMzSumme').textContent = (teile.length ? teile.join(' · ') + ' = ' : '') + geldFmt(summe);
     $('gzMzText').textContent = !M.liste.length ? 'Keine Münze erkannt. Liegen sie einzeln auf einem dunklen, einfarbigen Untergrund?' :
       (unsicher ? unsicher + (unsicher === 1 ? ' Münze ist' : ' Münzen sind') + ' unsicher (rot, mit „?“) – antippen bestätigt. ' : '') + 'Falscher Wert? Münze antippen, bis er stimmt (✕ = keine Münze). Daraus lernt die Erkennung.';
     $('gzMzFotoTxt').textContent = 'Münzen neu fotografieren';
   }
+  function muenzZusatzSumme() { var E = gz.ergebnis, s2 = 0; Object.keys(E.mzExtra || {}).forEach(function (w) { s2 += w * E.mzExtra[w]; }); return s2; }
+  function muenzErkannt(w) { var M = gz.ergebnis.mz; return M ? M.liste.filter(function (m) { return m.wert === w; }).length : 0; }
+  function muenzListeZeigen() {
+    var E = gz.ergebnis;
+    $('gzMzListe').innerHTML = muenzWerte().slice().reverse().map(function (w) {
+      var n = muenzErkannt(w) + (E.mzExtra[w] || 0);
+      return '<div class="gz-zeile"><b>' + esc(scheinTxt(w)) + ' ' + esc(waehrungSymbol(gz.code)) + '</b><button type="button" class="hell gz-pm" data-mz="' + w + ':-1">−</button><span class="gz-n">' + n + ' ×</span><button type="button" class="hell gz-pm" data-mz="' + w + ':1">+</button><span class="gz-s">' + esc(geldFmt(n * w)) + '</span></div>';
+    }).join('');
+  }
+  $('gzMzListe').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-mz]'); if (!b || !gz.ergebnis) return; var t = b.getAttribute('data-mz').split(':'), w = +t[0], d = +t[1], E = gz.ergebnis;
+    var ex = E.mzExtra[w] || 0; if (d < 0 && muenzErkannt(w) + ex <= 0) return; E.mzExtra[w] = ex + d; ergebnisZeigen();
+  });
   // Korrigierte Münzen merken (Größe je Typ nachlernen)
   function muenzKorrekturenLernen() {
     var M = gz.ergebnis && gz.ergebnis.mz; if (!M || M.gelernt) return; M.gelernt = true;
@@ -6380,7 +6398,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       knopfLaeuft(id, 'Münzen werden gesucht …', 94, 2500);
       return malen().then(function () {
         muenzKorrekturenLernen();
-        E.mz = { canvas: canvas, liste: muenzenFinden(r.cv, canvas, gz.code) };
+        E.mz = { canvas: canvas, liste: muenzenFinden(r.cv, canvas, gz.code) }; E.mzExtra = {};
         knopfLaeuft(id, 'Fertig', 100, 200); return new Promise(function (ok) { setTimeout(ok, 250); });
       }).then(function () { knopfFertig(id); ergebnisZeigen(); $('geldBlatt').scrollTop = 0; });
     }).catch(function (e) { knopfFertig(id); status.textContent = (e && e.message) || 'Das hat nicht geklappt.'; });
