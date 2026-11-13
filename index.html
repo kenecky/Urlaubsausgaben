@@ -1242,8 +1242,24 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .gz-balken i { display: block; height: 100%; background: #fff; border-radius: 3px; transform-origin: left center; transform: scaleX(0); will-change: transform; }
 .gz-gross.laeuft, .gz-gross.laeuft:disabled { background: #98A4A6 !important; color: #fff !important; opacity: 1 !important; filter: none !important; }
 .gz-gross.laeuft .gz-k-status, .gz-gross.laeuft .gz-balken { display: block; }
-#gzMzSchritt .hell { width: 100%; margin-top: 10px; }
 .gz-unbek { color: #E11D48; font-weight: 600; margin: -4px 2px 12px; }
+#gzFotos h3 { margin-top: 4px; }
+#gzFotosKnoepfe > button { width: 100%; margin-top: 10px; }
+#gzAuswerten { background: var(--mango); color: var(--mango-text); }
+#gzFotoNeu { background: var(--petrol); }
+#gzFotoNeu.zweit { background: var(--abh-bg); color: var(--petrol); }
+.gz-fk { display: flex; gap: 12px; align-items: center; background: var(--karte); border-radius: 14px; padding: 8px; margin-bottom: 8px; transition: transform .25s, box-shadow .25s, opacity .25s; }
+.gz-fk canvas { width: 76px; height: 76px; object-fit: cover; border-radius: 10px; flex: none; background: #000; }
+.gz-fk .gz-fk-txt { flex: 1; min-width: 0; }
+.gz-fk .gz-fk-txt b { display: block; font-size: 14.5px; }
+.gz-fk .gz-fk-txt span { display: block; font-size: 13px; color: var(--grau); margin-top: 2px; }
+.gz-fk .gz-fk-bal { height: 6px; border-radius: 3px; background: var(--abh-bg); overflow: hidden; margin-top: 7px; }
+.gz-fk .gz-fk-bal i { display: block; height: 100%; background: var(--mango); transform-origin: left center; transform: scaleX(0); will-change: transform; }
+.gz-fk.fertig .gz-fk-bal i { background: #22C55E; }
+.gz-fk.aktiv { box-shadow: 0 0 0 3px var(--mango); transform: scale(1.02); }
+.gz-fk.wartet { opacity: .6; }
+.gz-fk-weg { width: 36px; height: 36px; min-height: 0; margin: 0; padding: 0; flex: none; border-radius: 50%; }
+#gzMzBilder canvas { display: block; width: 100%; height: auto; border-radius: 12px; margin-top: 8px; cursor: pointer; }
 .gz-schein-info { background: var(--karte); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; font-size: 14px; display: flex; justify-content: space-between; }
 #gzBuchen { background: var(--mango); color: var(--mango-text); }
 .gz-lern-auf { margin-top: 18px; }
@@ -1260,7 +1276,6 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 #gzBilder canvas { margin-bottom: 8px; }
 #gzEckenBild, #gzBilder canvas { display: block; width: 100%; height: auto; border-radius: 14px; touch-action: none; background: #000; }
 #gzBilder canvas { touch-action: auto; cursor: pointer; }
-#gzMzSchritt #gzWeiter { margin-top: 0; margin-bottom: 14px; }
 #gzMzLernBild { display: block; width: 100%; height: auto; border-radius: 14px; background: #000; cursor: pointer; }
 .gz-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .gz-chips button { width: auto; flex: 1 0 28%; min-width: 0; margin: 0; padding: 10px 8px; min-height: 44px; }
@@ -1273,6 +1288,12 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .gz-pm { width: 38px; height: 38px; min-height: 0; margin: 0; padding: 0; font-size: 20px; flex: none; }
 .gz-n { min-width: 40px; text-align: center; font-weight: 700; }
 .gz-s { margin-left: auto; font-weight: 700; }
+.gz-zeile.gz-zz { display: grid; grid-template-columns: auto 34px minmax(34px, auto) 34px 1fr; gap: 6px; padding: 7px 10px; }
+.gz-zz > b, .gz-zz .gz-s, .gz-zz .gz-n { white-space: nowrap; font-size: 14.5px; }
+.gz-zz > b { min-width: 0; }
+.gz-zz .gz-pm { width: 34px; height: 34px; font-size: 19px; }
+.gz-zz .gz-n { min-width: 0; }
+.gz-zz .gz-s { text-align: right; overflow: hidden; text-overflow: ellipsis; }
 .gz-muenz { display: block; margin: 10px 0; font-size: 13.5px; color: var(--grau); }
 .gz-muenz input { margin-top: 4px; }
 .gz-mz { background: var(--karte); border-radius: 16px; padding: 10px 12px; margin: 10px 0; }
@@ -1840,21 +1861,25 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     <p class="gz-status" id="gzEckenStatus"></p>
     <div class="gz-knoepfe"><button type="button" class="hell" id="gzEckenAbbruch">Abbrechen</button><button type="button" id="gzEckenOk">Übernehmen</button></div>
   </div>
-  <div id="gzMzSchritt" hidden>
-    <div class="gz-schein-info"><span id="gzScheinInfo"></span><b id="gzScheinSumme"></b></div>
+  <div id="gzFotos" hidden>
+    <div class="gz-schein-info" id="gzScheinKarte" hidden><span id="gzScheinInfo"></span><b id="gzScheinSumme"></b></div>
     <p class="hinweis gz-unbek" id="gzUnbekInfo" hidden></p>
-    <button type="button" class="hell gz-gross" id="gzWeiter"><span class="gz-k-titel">+ Weiteres Scheinfoto (mehr Scheine)</span><span class="gz-k-status"></span><span class="gz-balken"><i></i></span></button>
-    <button type="button" id="gzMzJetzt" class="gz-gross"><span class="gz-k-titel"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>Jetzt Münzen fotografieren</span><span class="gz-k-status"></span><span class="gz-balken"><i></i></span></button>
-    <p class="hinweis" id="gzMzHinweis"></p>
-    <p class="gz-status" id="gzMzStatus"></p>
-    <button type="button" class="hell" id="gzMzKeine">Keine Münzen vorhanden</button>
+    <h3 id="gzFotosTitel"></h3>
+    <p class="hinweis" id="gzFotosHinweis"></p>
+    <div id="gzFotoListe"></div>
+    <div id="gzFotosKnoepfe">
+      <button type="button" class="gz-gross" id="gzFotoNeu"><span class="gz-k-titel"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg><span id="gzFotoNeuTxt">Foto machen</span></span></button>
+      <button type="button" id="gzAuswerten" class="gz-gross"></button>
+      <button type="button" class="hell" id="gzFotosKeine">Keine Münzen vorhanden</button>
+    </div>
+    <p class="gz-status" id="gzFotosStatus"></p>
   </div>
   <div id="gzErgebnis" hidden>
     <div id="gzBilder"></div>
     <p class="hinweis" id="gzTreffer"></p>
     <div id="gzListe"></div>
     <div class="gz-mz"><div class="gz-mz-kopf"><b>Münzen</b><span id="gzMzSumme"></span></div>
-      <canvas id="gzMzBild" hidden></canvas>
+      <div id="gzMzBilder"></div>
       <p class="hinweis" id="gzMzText"></p>
       <div id="gzMzListe"></div>
       <button type="button" class="hell gz-gross" id="gzMzFoto"><span class="gz-k-titel" id="gzMzFotoTxt">Münzen fotografieren</span><span class="gz-k-status"></span><span class="gz-balken"><i></i></span></button>
@@ -1866,7 +1891,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     <button type="button" class="hell" id="gzNeu">Bargeld neu zählen</button>
     <button type="button" class="hell" id="gzAbbrechen">Abbrechen</button>
   </div>
-  <input type="file" id="gzDatei" accept="image/*" hidden><input type="file" id="gzKamera" accept="image/*" capture="environment" hidden>
+  <input type="file" id="gzDatei" accept="image/*" multiple hidden><input type="file" id="gzKamera" accept="image/*" capture="environment" hidden>
 </div></div>
 <div class="wahl-blatt" id="videoWahl" hidden><div class="wb-karte"><b>Route als Video</b>
   <div id="vxOptionen">
@@ -6356,6 +6381,103 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var r = rechteckeAusMaske(cv, m, W, H, minA, maxA, 1.3, 3.6, 0.5, false); r = r.filter(function (x) { return x.solid > 0.75 && x.fill > 0.75; }); m.delete();
     return r.map(function (x) { return x.q.map(function (p) { return [p[0] / s, p[1] / s]; }); });
   }
+  // Farb-Raster einer Schein-Fläche (8×4 Felder, Lab), für den Farbvergleich zwischen Scheinwerten
+  var FARB_W = 160, FARB_H = 66, FARB_GX = 8, FARB_GY = 4;
+  function farbRaster(cv, rgba) {
+    var rgb = new cv.Mat(), lab = new cv.Mat(); cv.cvtColor(rgba, rgb, cv.COLOR_RGBA2RGB); cv.cvtColor(rgb, lab, cv.COLOR_RGB2Lab); rgb.delete();
+    var d = lab.data, W = lab.cols, H = lab.rows, f = new Float32Array(FARB_GX * FARB_GY * 3), n = new Float32Array(FARB_GX * FARB_GY), mL = 0;
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) {
+      var g = Math.min(FARB_GY - 1, Math.floor(y * FARB_GY / H)) * FARB_GX + Math.min(FARB_GX - 1, Math.floor(x * FARB_GX / W)), i = (y * W + x) * 3;
+      f[g * 3] += d[i]; f[g * 3 + 1] += d[i + 1]; f[g * 3 + 2] += d[i + 2]; n[g]++;
+    }
+    lab.delete();
+    for (var k = 0; k < n.length; k++) { f[k * 3] /= n[k] || 1; f[k * 3 + 1] /= n[k] || 1; f[k * 3 + 2] /= n[k] || 1; mL += f[k * 3]; }
+    mL /= n.length; for (k = 0; k < n.length; k++) f[k * 3] -= mL; // Helligkeit angleichen
+    return f;
+  }
+  function vorlageFarbe(cv, canvas) { var m = cv.imread(canvas), s = new cv.Mat(); cv.resize(m, s, new cv.Size(FARB_W, FARB_H), 0, 0, cv.INTER_AREA); m.delete(); var f = farbRaster(cv, s); s.delete(); return f; }
+  function farbAbstand(a, b, gedreht) {
+    var s = 0, N = FARB_GX * FARB_GY;
+    for (var k = 0; k < N; k++) { var j = gedreht ? N - 1 - k : k; s += 0.35 * Math.abs(a[k * 3] - b[j * 3]) + Math.abs(a[k * 3 + 1] - b[j * 3 + 1]) + Math.abs(a[k * 3 + 2] - b[j * 3 + 2]); }
+    return s / N;
+  }
+  // Scheine finden (Version 2): jede Vorlage bekommt alle passenden Merkmale, gefundene Scheine sperren ihre Fläche für alle Vorlagen,
+  // danach entscheidet der Farbvergleich zwischen Scheinwerten mit ähnlichem Muster
+  function scheineFinden2(cv, canvas, vorlagen, fortschritt) {
+    var g = cvGrau(cv, canvas), sz = cvOrb(cv, g, 12000, 9), flaecheBild = g.rows * g.cols; g.delete();
+    var szRgba = cv.imread(canvas);
+    var bf = new cv.BFMatcher(cv.NORM_HAMMING, false), listen = [];
+    vorlagen.forEach(function (v, vi) {
+      var l = []; listen.push(l);
+      if (!v.des.rows || !sz.des.rows) return;
+      var mm = new cv.DMatchVectorVector(); bf.knnMatch(sz.des, v.des, mm, 2);
+      for (var i = 0; i < mm.size(); i++) {
+        var pr = mm.get(i); if (pr.size() < 2) continue;
+        var a = pr.get(0), b = pr.get(1);
+        if (a.distance < 0.82 * b.distance && a.distance < 70) l.push({ q: a.queryIdx, t: a.trainIdx });
+      }
+      mm.delete();
+    });
+    bf.delete(); sz.des.delete();
+    var gesperrt = {}, treffer = [], aus = vorlagen.map(function () { return {}; });
+    for (var runde = 0; runde < 80; runde++) {
+      var bestH = null;
+      for (var vi = 0; vi < vorlagen.length; vi++) {
+        var ids = listen[vi].filter(function (m) { return !gesperrt[m.q] && !aus[vi][m.q]; });
+        if (ids.length < 10) continue;
+        var v = vorlagen[vi], src = [], dst = [];
+        ids.forEach(function (m) { var tp = v.pts[m.t], sp = sz.pts[m.q]; src.push(tp[0], tp[1]); dst.push(sp[0], sp[1]); });
+        var sM = cv.matFromArray(ids.length, 1, cv.CV_32FC2, src), dM = cv.matFromArray(ids.length, 1, cv.CV_32FC2, dst), mask = new cv.Mat();
+        var H = cv.findHomography(sM, dM, cv.RANSAC, 6.0, mask, 3000, 0.995);
+        if (!H.empty()) {
+          var inl = []; for (var j = 0; j < ids.length; j++) if (mask.data[j]) inl.push(ids[j].q);
+          if (!bestH || inl.length > bestH.inl.length) bestH = { vi: vi, H: Array.prototype.slice.call(H.data64F), inl: inl };
+        }
+        sM.delete(); dM.delete(); mask.delete(); H.delete();
+      }
+      if (!bestH || bestH.inl.length < 12) break;
+      var v2 = vorlagen[bestH.vi], Hm = bestH.H;
+      var ecken = [[0, 0], [v2.w, 0], [v2.w, v2.h], [0, v2.h]].map(function (p) { return hTrans(Hm, p[0], p[1]); });
+      var fl = Math.abs(polyFlaeche(ecken)), a1 = Math.hypot(ecken[1][0] - ecken[0][0], ecken[1][1] - ecken[0][1]), b1 = Math.hypot(ecken[3][0] - ecken[0][0], ecken[3][1] - ecken[0][1]);
+      var ratio = Math.max(a1, b1) / Math.max(1, Math.min(a1, b1)), soll = v2.w / v2.h, winkelOk = true, vorz = 0, konvex = true;
+      for (var q = 0; q < 4; q++) {
+        var p0 = ecken[(q + 3) % 4], p1 = ecken[q], p2 = ecken[(q + 1) % 4], ux = p0[0] - p1[0], uy = p0[1] - p1[1], wx = p2[0] - p1[0], wy = p2[1] - p1[1];
+        var cosw = (ux * wx + uy * wy) / Math.max(1e-6, Math.hypot(ux, uy) * Math.hypot(wx, wy)), wnk = Math.acos(Math.max(-1, Math.min(1, cosw))) * 180 / Math.PI;
+        if (wnk < 65 || wnk > 115) winkelOk = false;
+        var kreuz = ux * wy - uy * wx; if (vorz && Math.sign(kreuz) !== vorz) konvex = false; vorz = Math.sign(kreuz) || vorz;
+      }
+      var mitte = [ecken.reduce(function (s, p) { return s + p[0]; }, 0) / 4, ecken.reduce(function (s, p) { return s + p[1]; }, 0) / 4];
+      var doppelt = treffer.some(function (t) { // überdeckt der neue Schein zu großen Teilen einen schon gefundenen?
+        var drin = 0, n = 0;
+        for (var u = 0.1; u < 1; u += 0.2) for (var w2 = 0.1; w2 < 1; w2 += 0.2) {
+          var px = ecken[0][0] + (ecken[1][0] - ecken[0][0]) * u + (ecken[3][0] - ecken[0][0]) * w2, py = ecken[0][1] + (ecken[1][1] - ecken[0][1]) * u + (ecken[3][1] - ecken[0][1]) * w2;
+          n++; if (imPolygon([px, py], t.ecken)) drin++;
+        }
+        return drin / n > 0.6;
+      });
+      var ok = konvex && winkelOk && !doppelt && fl > 0.008 * flaecheBild && ratio > soll * 0.8 && ratio < soll * 1.2;
+      if (!ok) { bestH.inl.forEach(function (k) { aus[bestH.vi][k] = true; }); continue; }
+      // Fläche für alle Vorlagen sperren
+      for (var k = 0; k < sz.pts.length; k++) if (!gesperrt[k] && imPolygon(sz.pts[k], ecken)) gesperrt[k] = true;
+      bestH.inl.forEach(function (k2) { gesperrt[k2] = true; });
+      // Farbvergleich: Bereich in Vorlagen-Lage ausschneiden
+      var wert = v2.wert, seite = v2.seite;
+      if (v2.farbe) {
+        var S = [v2.w / FARB_W, 0, 0, 0, v2.h / FARB_H, 0, 0, 0, 1], M = [];
+        for (var r = 0; r < 3; r++) for (var c = 0; c < 3; c++) { var sum = 0; for (var z = 0; z < 3; z++) sum += Hm[r * 3 + z] * S[z * 3 + c]; M.push(sum); }
+        var Mm = cv.matFromArray(3, 3, cv.CV_64F, M), aus2 = new cv.Mat();
+        cv.warpPerspective(szRgba, aus2, Mm, new cv.Size(FARB_W, FARB_H), cv.INTER_LINEAR | cv.WARP_INVERSE_MAP, cv.BORDER_REPLICATE);
+        var fr = farbRaster(cv, aus2); Mm.delete(); aus2.delete();
+        var eigen = farbAbstand(fr, v2.farbe, false), besteW = null;
+        vorlagen.forEach(function (v3) { if (!v3.farbe) return; var d = Math.min(farbAbstand(fr, v3.farbe, false), farbAbstand(fr, v3.farbe, true)); if (!besteW || d < besteW.d) besteW = { d: d, v: v3 }; });
+        if (besteW && besteW.v.wert !== wert && besteW.d < eigen * 0.75) { wert = besteW.v.wert; seite = besteW.v.seite; }
+      }
+      treffer.push({ wert: wert, seite: seite, ecken: ecken, inl: bestH.inl.length, orbWert: v2.wert });
+      if (fortschritt) fortschritt(treffer.length);
+    }
+    szRgba.delete();
+    return treffer;
+  }
   // ---------- Bargeld per Foto zählen: Scheine anlernen, erkennen, mit dem App-Bestand abgleichen ----------
   var SCHEIN_WERTE = { PHP: [1000, 500, 200, 100, 50, 20], EUR: [200, 100, 50, 20, 10, 5], USD: [100, 50, 20, 10, 5, 1], THB: [1000, 500, 100, 50, 20], IDR: [100000, 50000, 20000, 10000, 5000, 2000, 1000], VND: [500000, 200000, 100000, 50000, 20000, 10000], MYR: [100, 50, 20, 10, 5, 1], SGD: [100, 50, 10, 5, 2], JPY: [10000, 5000, 1000], GBP: [50, 20, 10, 5], CHF: [200, 100, 50, 20, 10], AUD: [100, 50, 20, 10, 5], KHR: [100000, 50000, 20000, 10000, 5000, 2000, 1000], LAK: [100000, 50000, 20000, 10000, 5000], LKR: [5000, 1000, 500, 100, 50, 20], INR: [500, 200, 100, 50, 20, 10], TRY: [200, 100, 50, 20, 10, 5], MXN: [1000, 500, 200, 100, 50, 20] };
   var gz = { code: 'PHP', vorlagen: null, ergebnis: null, ecken: null, quelle: null };
@@ -6364,12 +6486,13 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   function scheinIndexSetzen(ix) { try { localStorage.setItem('reisen.scheine', JSON.stringify(ix)); } catch (e) {} }
   function scheinKey(code, wert, seite) { return 'schein:' + code + ':' + wert + ':' + seite; }
   function geldErwartet() { var b = bargeldProWaehrung().filter(function (x) { return x.code === gz.code; })[0]; return b ? b.rest : 0; }
+  function geldKurz(x) { x = Math.round(x * 100) / 100; return (x % 1 ? zahl(x) : Math.round(x).toLocaleString('de-DE')) + '\u00a0' + waehrungSymbol(gz.code); }
   function geldFmt(x) { return zahl(Math.round(x * 100) / 100) + ' ' + waehrungSymbol(gz.code); }
   function geldStartZeigen() {
     gz.code = lokal.code;
     var werte = SCHEIN_WERTE[gz.code], ix = scheinIndex()[gz.code] || {};
     $('gzErwartet').textContent = geldFmt(geldErwartet());
-    $('gzStart').hidden = false; $('gzErgebnis').hidden = true; $('gzEcken').hidden = true; $('gzMzSchritt').hidden = true; $('gzMzLern').hidden = true; muenzGelerntZeigen(); $('gzStatus').textContent = ''; knopfFertig('gzFoto');
+    $('gzStart').hidden = false; $('gzErgebnis').hidden = true; $('gzEcken').hidden = true; $('gzFotos').hidden = true; $('gzMzLern').hidden = true; muenzGelerntZeigen(); $('gzStatus').textContent = ''; knopfFertig('gzFoto');
     if (!werte) { $('gzLernen').innerHTML = '<p class="hinweis">Für ' + esc(gz.code) + ' kenne ich die Scheine noch nicht. Sag mir Bescheid, dann ergänze ich die Liste.</p>'; $('gzFoto').disabled = true; return; }
     var angelernt = 0;
     $('gzLernen').innerHTML = werte.map(function (w) {
@@ -6394,7 +6517,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var w = canvas.width, h = canvas.height, bw = w * 0.8, bh = bw / 2.42; if (bh > h * 0.8) { bh = h * 0.8; bw = bh * 2.42; }
     gz.ecken = [[(w - bw) / 2, (h - bh) / 2], [(w + bw) / 2, (h - bh) / 2], [(w + bw) / 2, (h + bh) / 2], [(w - bw) / 2, (h + bh) / 2]];
     $('gzEckenTitel').textContent = scheinTxt(wert) + ' ' + waehrungSymbol(gz.code) + ' – ' + (seite === 'v' ? 'Vorderseite' : 'Rückseite');
-    $('gzStart').hidden = true; $('gzErgebnis').hidden = true; $('gzMzSchritt').hidden = true; $('gzMzLern').hidden = true; $('gzEcken').hidden = false;
+    $('gzStart').hidden = true; $('gzErgebnis').hidden = true; $('gzFotos').hidden = true; $('gzMzLern').hidden = true; $('gzEcken').hidden = false;
     var cv2 = $('gzEckenBild'); cv2.width = w; cv2.height = h; eckenZeichnen();
     // Ecken automatisch vorschlagen
     gz.eckenBewegt = false; var quelle = canvas; $('gzEckenStatus').textContent = 'Ecken werden gesucht …';
@@ -6450,7 +6573,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     return Promise.all(aufgaben.map(function (a) {
       return fotoGet(scheinKey(gz.code, a.w, a.s)).then(function (rec) {
         if (!rec || !rec.gross) return null;
-        return createImageBitmap(rec.gross).then(function (bm) { var c = document.createElement('canvas'); c.width = bm.width; c.height = bm.height; c.getContext('2d').drawImage(bm, 0, 0); return scheinVorlage(cv, c, a.w, a.s); });
+        return createImageBitmap(rec.gross).then(function (bm) { var c = document.createElement('canvas'); c.width = bm.width; c.height = bm.height; c.getContext('2d').drawImage(bm, 0, 0); var v = scheinVorlage(cv, c, a.w, a.s); v.farbe = vorlageFarbe(cv, c); return v; });
       });
     })).then(function (l) { l = l.filter(Boolean); gz.vorlagen = { code: gz.code, liste: l }; return l; });
   }
@@ -6466,30 +6589,104 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var q = fotoPruefen(canvas); if (!q.problem) return true;
     return confirm('Das Foto ist ' + q.problem + '. Die Erkennung kann dann danebenliegen.\n\nTrotzdem auswerten? (Abbrechen = neu fotografieren)');
   }
-  function geldZaehlen(datei, anhaengen) {
-    var id = anhaengen ? 'gzWeiter' : 'gzFoto', status = anhaengen ? $('gzMzStatus') : $('gzStatus');
-    status.textContent = ''; knopfLaeuft(id, 'Foto wird geladen …', 12, 400);
-    var canvas, cv;
-    return geldBildLaden(datei, 1600).then(function (c) {
-      canvas = c; knopfLaeuft(id, 'Foto wird geprüft …', 18, 300);
-      return malen().then(function () { if (!fotoOk(canvas)) throw { still: true }; knopfLaeuft(id, 'Erkennung wird geladen …', 45, 9000); return cvLaden(); });
-    }).then(function (r) {
-      cv = r.cv; knopfLaeuft(id, 'Scheine werden vorbereitet …', 55, 400); return malen().then(function () { return vorlagenLaden(cv); });
-    }).then(function (v) {
-      if (!v.length) throw new Error('Keine angelernten Scheine gefunden.');
-      knopfLaeuft(id, 'Scheine werden gesucht …', 94, 4000);
-      return malen().then(function () {
-        var t = scheineFinden(cv, canvas, v), unbek = [];
-        try { unbek = unbekannteScheine(cv, canvas, t); } catch (e) { unbek = []; }
-        if (!anhaengen || !gz.ergebnis) gz.ergebnis = { bilder: [], treffer: [], extra: {}, muenzen: 0, mz: null };
-        var E = gz.ergebnis, bi = E.bilder.length;
-        E.bilder.push({ canvas: canvas, unbek: unbek });
-        t.forEach(function (x) { x.zaehlt = true; x.bild = bi; E.treffer.push(x); });
-        knopfLaeuft(id, 'Fertig', 100, 200);
-        return new Promise(function (ok) { setTimeout(ok, 250); });
-      }).then(function () { knopfFertig(id); if (muenzWerte().length) muenzSchrittZeigen(); else ergebnisZeigen(); });
-    }).catch(function (e) { knopfFertig(id); status.textContent = e && e.still ? '' : ((e && e.message) || 'Das hat nicht geklappt.'); });
+  // ---------- Fotos sammeln, dann nacheinander auswerten (erst Scheine, dann Münzen) ----------
+  function fotosStart(art) {
+    gz.phase = art; gz.fotos = []; gz.laeuft = false;
+    if (art === 'scheine') gz.ergebnis = { bilder: [], treffer: [], extra: {}, muenzen: 0, mzBilder: [], mzExtra: {} };
+    else { gz.ergebnis.mzBilder = []; gz.ergebnis.mzExtra = {}; }
+    fotosZeigen();
   }
+  function fotosZeigen() {
+    var sch = gz.phase === 'scheine', n = gz.fotos.length, E = gz.ergebnis;
+    $('gzStart').hidden = true; $('gzEcken').hidden = true; $('gzErgebnis').hidden = true; $('gzMzLern').hidden = true; $('gzFotos').hidden = false;
+    $('gzFotosTitel').textContent = sch ? 'Scheine fotografieren' : 'Münzen fotografieren';
+    $('gzFotosHinweis').textContent = gz.laeuft ? 'Die Fotos werden nacheinander ausgewertet …' : sch ? 'Scheine nebeneinander hinlegen, höchstens leicht überlappend. Bei vielen Scheinen einfach mehrere Fotos machen – ausgewertet wird erst, wenn du fertig bist.' :
+      (muenzFotoMoeglich() ? 'Münzen nebeneinander auf einen dunklen, einfarbigen Untergrund legen (nicht stapeln), von oben fotografieren. Mehrere Fotos sind möglich.' : 'Münzen sind für ' + gz.code + ' noch nicht angelernt (unter „Münzen anlernen“ auf der Startseite). Du kannst sie in der Übersicht von Hand zählen.');
+    var karte = !sch && E; $('gzScheinKarte').hidden = !karte;
+    if (karte) {
+      var nt = E.treffer.length, nb = E.bilder.length;
+      $('gzScheinInfo').textContent = (nt ? nt + (nt === 1 ? ' Schein erkannt' : ' Scheine erkannt') : 'Kein Schein erkannt') + (nb > 1 ? ' (' + nb + ' Fotos)' : '');
+      $('gzScheinSumme').textContent = geldFmt(scheinSumme());
+      var ut = unbekText(); $('gzUnbekInfo').hidden = !ut; $('gzUnbekInfo').textContent = ut;
+    } else $('gzUnbekInfo').hidden = true;
+    var kannFoto = sch || muenzFotoMoeglich();
+    $('gzFotosKnoepfe').hidden = gz.laeuft;
+    $('gzFotoNeu').hidden = !kannFoto; $('gzFotoNeuTxt').textContent = n ? '+ Weiteres Foto' : (sch ? 'Scheine fotografieren' : 'Münzen fotografieren'); $('gzFotoNeu').classList.toggle('zweit', n > 0);
+    $('gzAuswerten').hidden = !n; $('gzAuswerten').textContent = 'Fertig – ' + (n === 1 ? 'Foto' : n + ' Fotos') + ' auswerten';
+    $('gzFotosKeine').hidden = sch || n > 0; $('gzFotosKeine').textContent = kannFoto ? 'Keine Münzen vorhanden' : 'Weiter zur Übersicht';
+    fotoListeZeigen();
+  }
+  function fotoListeZeigen() {
+    var box = $('gzFotoListe'); box.innerHTML = '';
+    gz.fotos.forEach(function (f, i) {
+      var d = document.createElement('div'); d.className = 'gz-fk' + (f.zustand === 'fertig' ? ' fertig' : '') + (f.zustand === 'aktiv' ? ' aktiv' : '') + (gz.laeuft && f.zustand === 'wartet' ? ' wartet' : '');
+      d.innerHTML = '<canvas></canvas><div class="gz-fk-txt"><b>Foto ' + (i + 1) + '</b><span>' + esc(f.text || (gz.laeuft ? 'wartet …' : 'bereit')) + '</span><div class="gz-fk-bal"><i></i></div></div>' + (gz.laeuft ? '' : '<button type="button" class="hell gz-fk-weg" data-weg="' + i + '" aria-label="Foto entfernen">✕</button>');
+      var c = d.querySelector('canvas'), q = 120, sc = Math.max(q / f.canvas.width, q / f.canvas.height); c.width = q; c.height = q;
+      c.getContext('2d').drawImage(f.canvas, (q - f.canvas.width * sc) / 2, (q - f.canvas.height * sc) / 2, f.canvas.width * sc, f.canvas.height * sc);
+      var bal = d.querySelector('.gz-fk-bal i'); bal.style.transition = 'none'; bal.style.transform = 'scaleX(' + (f.pct || 0) / 100 + ')';
+      f.el = d; box.appendChild(d);
+    });
+  }
+  function fotoFortschritt(f, text, pct, ms) {
+    f.text = text; f.pct = pct; if (!f.el) return;
+    f.el.querySelector('.gz-fk-txt span').textContent = text;
+    var i = f.el.querySelector('.gz-fk-bal i'); i.style.transition = 'transform ' + (ms || 300) + 'ms ' + (ms > 1000 ? 'cubic-bezier(.2,.6,.3,1)' : 'ease-out'); i.style.transform = 'scaleX(' + pct / 100 + ')';
+  }
+  function fotoZustand(f, z) { f.zustand = z; if (!f.el) return; f.el.classList.toggle('aktiv', z === 'aktiv'); f.el.classList.toggle('fertig', z === 'fertig'); f.el.classList.toggle('wartet', z === 'wartet'); }
+  // Fotos aufnehmen (eines oder mehrere aus der Galerie); Qualität sofort prüfen
+  function fotosHinzu(dateien) {
+    $('gzFotosStatus').textContent = 'Foto wird geladen …';
+    var liste = Array.prototype.slice.call(dateien), max = gz.phase === 'scheine' ? 1600 : 2000;
+    return liste.reduce(function (p, datei) {
+      return p.then(function () { return geldBildLaden(datei, max); }).then(function (c) {
+        if (!fotoOk(c)) return; gz.fotos.push({ canvas: c, zustand: 'bereit' });
+      }).catch(function () { toast('Ein Foto konnte nicht gelesen werden.'); });
+    }, Promise.resolve()).then(function () { $('gzFotosStatus').textContent = ''; fotosZeigen(); });
+  }
+  var auswertDauer = { scheine: 5000, muenzen: 2500 };
+  function fotosAuswerten() {
+    if (!gz.fotos.length || gz.laeuft) return;
+    var sch = gz.phase === 'scheine', E = gz.ergebnis, cv, vorl;
+    gz.laeuft = true; gz.fotos.forEach(function (f) { f.zustand = 'wartet'; f.text = 'wartet …'; f.pct = 0; }); fotosZeigen();
+    function eins(i) {
+      if (i >= gz.fotos.length) return Promise.resolve();
+      var f = gz.fotos[i]; fotoZustand(f, 'aktiv'); try { f.el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+      fotoFortschritt(f, cv ? 'wird vorbereitet …' : 'Erkennung wird geladen …', 15, cv ? 300 : 8000);
+      return malen().then(function () { return cv ? null : cvLaden().then(function (r) { cv = r.cv; }); }).then(function () {
+        if (!sch || vorl) return; fotoFortschritt(f, 'Scheine werden vorbereitet …', 25, 300);
+        return malen().then(function () { return vorlagenLaden(cv); }).then(function (v) { vorl = v; if (!v.length) throw new Error('Keine angelernten Scheine gefunden.'); });
+      }).then(function () {
+        fotoFortschritt(f, sch ? 'Scheine werden gesucht …' : 'Münzen werden gesucht …', 95, auswertDauer[gz.phase] * 1.3);
+        return malen();
+      }).then(function () {
+        var t0 = Date.now(), txt;
+        if (sch) {
+          var t = scheineFinden2(cv, f.canvas, vorl), unbek = [];
+          try { unbek = unbekannteScheine(cv, f.canvas, t); } catch (e) { unbek = []; }
+          var bi = E.bilder.length; E.bilder.push({ canvas: f.canvas, unbek: unbek });
+          var sum = 0; t.forEach(function (x) { x.zaehlt = true; x.bild = bi; E.treffer.push(x); sum += x.wert; });
+          txt = '✓ ' + t.length + (t.length === 1 ? ' Schein' : ' Scheine') + ' · ' + geldKurz(sum) + (unbek.length ? ' · ' + unbek.length + ' unbekannt' : '');
+        } else {
+          var l = muenzenFinden(cv, f.canvas, gz.code); E.mzBilder.push({ canvas: f.canvas, liste: l });
+          var ms = 0; l.forEach(function (m) { ms += m.wert || 0; });
+          txt = '✓ ' + l.length + (l.length === 1 ? ' Münze' : ' Münzen') + ' · ' + geldKurz(ms);
+        }
+        auswertDauer[gz.phase] = 0.5 * auswertDauer[gz.phase] + 0.5 * (Date.now() - t0);
+        fotoFortschritt(f, txt, 100, 250); fotoZustand(f, 'fertig');
+        return new Promise(function (ok) { setTimeout(ok, 350); });
+      }).then(function () { return eins(i + 1); });
+    }
+    return eins(0).then(function () {
+      gz.laeuft = false;
+      return new Promise(function (ok) { setTimeout(ok, 500); });
+    }).then(function () {
+      if (sch && muenzWerte().length) fotosStart('muenzen'); else { ergebnisZeigen(); $('geldBlatt').scrollTop = 0; }
+    }).catch(function (e) { gz.laeuft = false; fotosZeigen(); $('gzFotosStatus').textContent = (e && e.message) || 'Das hat nicht geklappt.'; });
+  }
+  $('gzFotoNeu').addEventListener('click', function () { gz.wahl = { art: 'sammeln' }; fotoWahlZiel = 'geld'; wahlAuf('fotoWahl'); });
+  $('gzAuswerten').addEventListener('click', fotosAuswerten);
+  $('gzFotosKeine').addEventListener('click', function () { var E = gz.ergebnis; if (!E) return; E.mzBilder = []; E.keineMz = true; ergebnisZeigen(); $('geldBlatt').scrollTop = 0; });
+  $('gzFotoListe').addEventListener('click', function (ev) { var b = ev.target.closest('[data-weg]'); if (!b || gz.laeuft) return; gz.fotos.splice(+b.getAttribute('data-weg'), 1); fotosZeigen(); });
   function unbekAnzahl() { var E = gz.ergebnis; return E ? E.bilder.reduce(function (s2, b) { return s2 + b.unbek.length; }, 0) : 0; }
   function unbekText() {
     var u = unbekAnzahl(); if (!u) return '';
@@ -6497,17 +6694,6 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     return (u === 1 ? 'Da liegt vermutlich 1 weiterer Schein' : 'Da liegen vermutlich ' + u + ' weitere Scheine') + ', die nicht erkannt wurden (rot gestrichelt). Angelernt sind bisher nur: ' + gelernt.map(scheinTxt).join(', ') + ' ' + waehrungSymbol(gz.code) + '. Fehlende Werte unter „Scheine anlernen“ ergänzen oder in der Übersicht mit + zählen.';
   }
   function scheinSumme() { var E = gz.ergebnis, s2 = 0; E.treffer.forEach(function (t) { if (t.zaehlt) s2 += t.wert; }); Object.keys(E.extra).forEach(function (w) { s2 += w * E.extra[w]; }); return s2; }
-  function muenzSchrittZeigen() {
-    var E = gz.ergebnis, n = E.treffer.length;
-    $('gzStart').hidden = true; $('gzEcken').hidden = true; $('gzErgebnis').hidden = true; $('gzMzSchritt').hidden = false;
-    var nb = E.bilder.length;
-    $('gzScheinInfo').textContent = (n ? n + (n === 1 ? ' Schein erkannt' : ' Scheine erkannt') : 'Kein Schein erkannt') + (nb > 1 ? ' (' + nb + ' Fotos)' : '');
-    var foto = muenzFotoMoeglich(); $('gzMzJetzt').hidden = !foto; $('gzMzHinweis').textContent = foto ? 'Münzen nebeneinander auf einen dunklen, einfarbigen Untergrund legen (nicht stapeln), von oben fotografieren.' : 'Münzen sind für ' + gz.code + ' noch nicht angelernt (unter „Münzen anlernen“ auf der Startseite). Du kannst sie in der Übersicht von Hand zählen.';
-    $('gzMzKeine').textContent = foto ? 'Keine Münzen vorhanden' : 'Weiter zur Übersicht';
-    var ut = unbekText(); $('gzUnbekInfo').hidden = !ut; $('gzUnbekInfo').textContent = ut; knopfFertig('gzWeiter');
-    $('gzScheinSumme').textContent = geldFmt(scheinSumme()); $('gzMzStatus').textContent = ''; knopfFertig('gzMzJetzt');
-    $('geldBlatt').scrollTop = 0;
-  }
   function ergebnisZeichnen() {
     var E = gz.ergebnis, box = $('gzBilder');
     while (box.children.length > E.bilder.length) box.removeChild(box.lastChild);
@@ -6534,7 +6720,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     });
   }
   function ergebnisZeigen() {
-    var E = gz.ergebnis; $('gzStart').hidden = true; $('gzEcken').hidden = true; $('gzMzSchritt').hidden = true; $('gzMzLern').hidden = true; $('gzErgebnis').hidden = false;
+    var E = gz.ergebnis; $('gzStart').hidden = true; $('gzEcken').hidden = true; $('gzFotos').hidden = true; $('gzMzLern').hidden = true; $('gzErgebnis').hidden = false;
     ergebnisZeichnen();
     var werte = SCHEIN_WERTE[gz.code] || [], anz = {};
     E.treffer.forEach(function (t) { if (t.zaehlt) anz[t.wert] = (anz[t.wert] || 0) + 1; });
@@ -6542,7 +6728,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     $('gzListe').innerHTML = werte.map(function (w) {
       var n = (anz[w] || 0) + (E.extra[w] || 0); summe += n * w;
       if (!n && !(scheinIndex()[gz.code] || {})[w]) return '';
-      return '<div class="gz-zeile"><b>' + esc(scheinTxt(w)) + ' ' + esc(waehrungSymbol(gz.code)) + '</b><button type="button" class="hell gz-pm" data-pm="' + w + ':-1">−</button><span class="gz-n">' + n + ' ×</span><button type="button" class="hell gz-pm" data-pm="' + w + ':1">+</button><span class="gz-s">' + esc(geldFmt(n * w)) + '</span></div>';
+      return '<div class="gz-zeile gz-zz"><b>' + esc(scheinTxt(w)) + ' ' + esc(waehrungSymbol(gz.code)) + '</b><button type="button" class="hell gz-pm" data-pm="' + w + ':-1">−</button><span class="gz-n">' + n + ' ×</span><button type="button" class="hell gz-pm" data-pm="' + w + ':1">+</button><span class="gz-s">' + esc(geldKurz(n * w)) + '</span></div>';
     }).join('');
     muenzBereichZeigen();
     var mz = +E.muenzen || 0; summe += mz;
@@ -6557,50 +6743,56 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   function muenzWerte() { var t = muenzTypen(gz.code); return (MUENZ_WERTE[gz.code] || []).concat(t.map(function (x) { return x.wert; })).filter(function (w, i, a) { return a.indexOf(w) === i; }).sort(function (a, b) { return a - b; }); }
   function muenzFotoMoeglich() { return muenzTypen(gz.code).length > 0; }
   function muenzBereichZeigen() {
-    var E = gz.ergebnis, kann = muenzWerte().length > 0, M = E.mz, c = $('gzMzBild');
+    var E = gz.ergebnis, kann = muenzWerte().length > 0, B = E.mzBilder || [], box = $('gzMzBilder');
     $('gzMzFoto').hidden = !muenzFotoMoeglich(); $('gzMzHand').hidden = kann;
     E.mzExtra = E.mzExtra || {};
     if (kann) muenzListeZeigen(); else $('gzMzListe').innerHTML = '';
-    if (!kann || !M) {
-      c.hidden = true; $('gzMzSumme').textContent = '';
+    box.innerHTML = '';
+    if (!kann || !B.length) {
+      $('gzMzSumme').textContent = '';
       $('gzMzText').textContent = kann ? (muenzFotoMoeglich() ? 'Keine Münzen gezählt.' : 'Münzen sind noch nicht angelernt – hier von Hand zählen.') : '';
       if (kann) { E.muenzen = muenzZusatzSumme(); $('gzMzSumme').textContent = geldFmt(E.muenzen); $('gzMzFotoTxt').textContent = 'Münzen doch fotografieren'; if (E.muenzen) $('gzMzText').textContent = ''; } return;
     }
-    // Ausschnitt um die Münzen, damit die Werte gut lesbar sind
-    var bx = [0, 0, M.canvas.width, M.canvas.height];
-    if (M.liste.length) {
-      var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; M.liste.forEach(function (m) { var r = m.r * 1.6; x0 = Math.min(x0, m.x - r); y0 = Math.min(y0, m.y - r); x1 = Math.max(x1, m.x + r); y1 = Math.max(y1, m.y + r); });
-      var bw = x1 - x0, bh = y1 - y0; if (bh > bw * 1.2) { x0 -= (bh / 1.2 - bw) / 2; bw = bh / 1.2; } else if (bw > bh * 1.6) { y0 -= (bw / 1.6 - bh) / 2; bh = bw / 1.6; }
-      x0 = Math.max(0, x0); y0 = Math.max(0, y0); bx = [x0, y0, Math.min(M.canvas.width - x0, bw), Math.min(M.canvas.height - y0, bh)];
-    }
-    M.bx = bx; c.dataset.bx = bx.map(Math.round).join(","); c.hidden = false; c.width = Math.round(bx[2]); c.height = Math.round(bx[3]); var x = c.getContext('2d'); x.drawImage(M.canvas, bx[0], bx[1], bx[2], bx[3], 0, 0, c.width, c.height);
-    x.save(); x.translate(-bx[0], -bx[1]);
-    var k = c.width / 700, anz = {}, summe = 0, unsicher = 0;
-    M.liste.forEach(function (m) {
-      if (m.wert) { anz[m.wert] = (anz[m.wert] || 0) + 1; summe += m.wert; } if ((m.wert && !m.sicher) || (!m.wert && !m.korr)) unsicher++;
-      var farbe = !m.wert ? (m.korr ? '#94a3b8' : '#FB7185') : (m.sicher ? '#F5A524' : '#FB7185');
-      x.lineWidth = 5 * k; x.strokeStyle = farbe; x.setLineDash(m.wert && m.sicher ? [] : [10 * k, 8 * k]);
-      x.beginPath(); x.arc(m.x, m.y, m.r + 3 * k, 0, 7); x.stroke(); x.setLineDash([]);
-      var txt = m.wert ? (muenzTxt(m.wert) + (m.sicher ? '' : '?')) : (m.korr ? '✕' : '?'), fs = Math.max(18 * k, Math.min(34 * k, m.r * 0.6));
-      x.font = '800 ' + Math.round(fs) + "px 'Figtree', sans-serif"; var tw = x.measureText(txt).width + fs * 0.9;
-      x.fillStyle = farbe; x.beginPath(); x.roundRect ? x.roundRect(m.x - tw / 2, m.y - fs * 0.75, tw, fs * 1.5, fs * 0.75) : x.rect(m.x - tw / 2, m.y - fs * 0.75, tw, fs * 1.5); x.fill();
-      x.fillStyle = '#1f2937'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, m.x, m.y + 1);
+    var anz = {}, summe = 0, unsicher = 0, gesamt = 0;
+    B.forEach(function (M, bi) {
+      gesamt += M.liste.length;
+      var c = document.createElement('canvas'); c.setAttribute('data-mzbild', bi); box.appendChild(c);
+      var bx = [0, 0, M.canvas.width, M.canvas.height];
+      if (M.liste.length) {
+        var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; M.liste.forEach(function (m) { var r = m.r * 1.6; x0 = Math.min(x0, m.x - r); y0 = Math.min(y0, m.y - r); x1 = Math.max(x1, m.x + r); y1 = Math.max(y1, m.y + r); });
+        var bw = x1 - x0, bh = y1 - y0; if (bh > bw * 1.2) { x0 -= (bh / 1.2 - bw) / 2; bw = bh / 1.2; } else if (bw > bh * 1.6) { y0 -= (bw / 1.6 - bh) / 2; bh = bw / 1.6; }
+        x0 = Math.max(0, x0); y0 = Math.max(0, y0); bx = [x0, y0, Math.min(M.canvas.width - x0, bw), Math.min(M.canvas.height - y0, bh)];
+      }
+      M.bx = bx; c.dataset.bx = bx.map(Math.round).join(','); c.width = Math.round(bx[2]); c.height = Math.round(bx[3]);
+      var x = c.getContext('2d'); x.drawImage(M.canvas, bx[0], bx[1], bx[2], bx[3], 0, 0, c.width, c.height);
+      x.save(); x.translate(-bx[0], -bx[1]);
+      var k = c.width / 700;
+      M.liste.forEach(function (m) {
+        if (m.wert) { anz[m.wert] = (anz[m.wert] || 0) + 1; summe += m.wert; } if ((m.wert && !m.sicher) || (!m.wert && !m.korr)) unsicher++;
+        var farbe = !m.wert ? (m.korr ? '#94a3b8' : '#FB7185') : (m.sicher ? '#F5A524' : '#FB7185');
+        x.lineWidth = 5 * k; x.strokeStyle = farbe; x.setLineDash(m.wert && m.sicher ? [] : [10 * k, 8 * k]);
+        x.beginPath(); x.arc(m.x, m.y, m.r + 3 * k, 0, 7); x.stroke(); x.setLineDash([]);
+        var txt = m.wert ? (muenzTxt(m.wert) + (m.sicher ? '' : '?')) : (m.korr ? '✕' : '?'), fs = Math.max(18 * k, Math.min(34 * k, m.r * 0.6));
+        x.font = '800 ' + Math.round(fs) + "px 'Figtree', sans-serif"; var tw = x.measureText(txt).width + fs * 0.9;
+        x.fillStyle = farbe; x.beginPath(); x.roundRect ? x.roundRect(m.x - tw / 2, m.y - fs * 0.75, tw, fs * 1.5, fs * 0.75) : x.rect(m.x - tw / 2, m.y - fs * 0.75, tw, fs * 1.5); x.fill();
+        x.fillStyle = '#1f2937'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, m.x, m.y + 1);
+      });
+      x.restore();
     });
-    x.restore();
     Object.keys(E.mzExtra).forEach(function (w) { if (E.mzExtra[w]) anz[w] = (anz[w] || 0) + E.mzExtra[w]; }); summe += muenzZusatzSumme(); E.muenzen = summe;
     var teile = Object.keys(anz).filter(function (w) { return anz[w] > 0; }).map(Number).sort(function (a, b) { return b - a; }).map(function (w) { return anz[w] + '× ' + muenzTxt(w); });
     $('gzMzSumme').textContent = (teile.length ? teile.join(' · ') + ' = ' : '') + geldFmt(summe);
-    $('gzMzText').textContent = !M.liste.length ? 'Keine Münze erkannt. Liegen sie einzeln auf einem dunklen, einfarbigen Untergrund?' :
+    $('gzMzText').textContent = !gesamt ? 'Keine Münze erkannt. Liegen sie einzeln auf einem dunklen, einfarbigen Untergrund?' :
       (unsicher ? unsicher + (unsicher === 1 ? ' Münze ist' : ' Münzen sind') + ' unsicher (rot, mit „?“) – antippen bestätigt. ' : '') + 'Falscher Wert? Münze antippen, bis er stimmt (✕ = keine Münze). Daraus lernt die Erkennung.';
     $('gzMzFotoTxt').textContent = 'Münzen neu fotografieren';
   }
   function muenzZusatzSumme() { var E = gz.ergebnis, s2 = 0; Object.keys(E.mzExtra || {}).forEach(function (w) { s2 += w * E.mzExtra[w]; }); return s2; }
-  function muenzErkannt(w) { var M = gz.ergebnis.mz; return M ? M.liste.filter(function (m) { return m.wert === w; }).length : 0; }
+  function muenzErkannt(w) { var n = 0; (gz.ergebnis.mzBilder || []).forEach(function (M) { M.liste.forEach(function (m) { if (m.wert === w) n++; }); }); return n; }
   function muenzListeZeigen() {
     var E = gz.ergebnis;
     $('gzMzListe').innerHTML = muenzWerte().slice().reverse().map(function (w) {
       var n = muenzErkannt(w) + (E.mzExtra[w] || 0);
-      return '<div class="gz-zeile"><b>' + esc(muenzTxt(w)) + ' ' + esc(waehrungSymbol(gz.code)) + '</b><button type="button" class="hell gz-pm" data-mz="' + w + ':-1">−</button><span class="gz-n">' + n + ' ×</span><button type="button" class="hell gz-pm" data-mz="' + w + ':1">+</button><span class="gz-s">' + esc(geldFmt(n * w)) + '</span></div>';
+      return '<div class="gz-zeile gz-zz"><b>' + esc(muenzTxt(w)) + ' ' + esc(waehrungSymbol(gz.code)) + '</b><button type="button" class="hell gz-pm" data-mz="' + w + ':-1">−</button><span class="gz-n">' + n + ' ×</span><button type="button" class="hell gz-pm" data-mz="' + w + ':1">+</button><span class="gz-s">' + esc(geldKurz(n * w)) + '</span></div>';
     }).join('');
   }
   $('gzMzListe').addEventListener('click', function (ev) {
@@ -6609,29 +6801,12 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   });
   // Korrigierte Münzen merken (Größe je Typ nachlernen)
   function muenzKorrekturenLernen() {
-    var M = gz.ergebnis && gz.ergebnis.mz; if (!M || M.gelernt) return; M.gelernt = true;
-    var typen = muenzTypen(gz.code) || [];
-    M.liste.forEach(function (m) {
+    var B = (gz.ergebnis && gz.ergebnis.mzBilder) || [], typen = muenzTypen(gz.code) || [];
+    B.forEach(function (M) { if (M.gelernt) return; M.gelernt = true; M.liste.forEach(function (m) {
       if (!m.korr || !m.wert || !m.mm) return;
       var o = typen.filter(function (t) { return t.wert === m.wert; }).sort(function (a, b) { return ((a.farbe === m.farbe ? 0 : 1) - (b.farbe === m.farbe ? 0 : 1)) || (Math.abs(a.d - m.mm) - Math.abs(b.d - m.mm)); });
       if (o.length && o[0].farbe === m.farbe && Math.abs(o[0].d - m.mm) / o[0].d < 0.12) muenzLernen(gz.code, o[0].id, m.mm);
-    });
-  }
-  function muenzenZaehlen(datei) {
-    var E = gz.ergebnis, id = $('gzMzSchritt').hidden ? 'gzMzFoto' : 'gzMzJetzt', status = id === 'gzMzJetzt' ? $('gzMzStatus') : $('gzMzText');
-    status.textContent = ''; knopfLaeuft(id, 'Foto wird geladen …', 15, 400);
-    var canvas;
-    return geldBildLaden(datei, 2000).then(function (c) {
-      canvas = c; knopfLaeuft(id, 'Foto wird geprüft …', 20, 300);
-      return malen().then(function () { if (!fotoOk(canvas)) throw { still: true }; knopfLaeuft(id, 'Erkennung wird geladen …', 40, 9000); return cvLaden(); });
-    }).then(function (r) {
-      knopfLaeuft(id, 'Münzen werden gesucht …', 94, 2500);
-      return malen().then(function () {
-        muenzKorrekturenLernen();
-        E.mz = { canvas: canvas, liste: muenzenFinden(r.cv, canvas, gz.code) }; E.mzExtra = {};
-        knopfLaeuft(id, 'Fertig', 100, 200); return new Promise(function (ok) { setTimeout(ok, 250); });
-      }).then(function () { knopfFertig(id); ergebnisZeigen(); $('geldBlatt').scrollTop = 0; });
-    }).catch(function (e) { knopfFertig(id); status.textContent = e && e.still ? '' : ((e && e.message) || 'Das hat nicht geklappt.'); });
+    }); });
   }
   // ---------- Münzen anlernen ----------
   function muenzGelerntZeigen() {
@@ -6670,7 +6845,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     }).catch(function (e) { knopfFertig(id); $('gzMzLernFehler').textContent = e && e.still ? '' : ((e && e.message) || 'Das hat nicht geklappt.'); });
   }
   function muenzLernZeigen() {
-    var L = gz.mzl; $('gzStart').hidden = true; $('gzEcken').hidden = true; $('gzErgebnis').hidden = true; $('gzMzSchritt').hidden = true; $('gzMzLern').hidden = false;
+    var L = gz.mzl; $('gzStart').hidden = true; $('gzEcken').hidden = true; $('gzErgebnis').hidden = true; $('gzFotos').hidden = true; $('gzMzLern').hidden = false;
     var c = $('gzMzLernBild'), bx = [0, 0, L.canvas.width, L.canvas.height];
     var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; L.liste.forEach(function (m) { var r = m.r * 1.6; x0 = Math.min(x0, m.x - r); y0 = Math.min(y0, m.y - r); x1 = Math.max(x1, m.x + r); y1 = Math.max(y1, m.y + r); });
     var bw = x1 - x0, bh = y1 - y0; if (bh > bw * 1.2) { x0 -= (bh / 1.2 - bw) / 2; bw = bh / 1.2; } else if (bw > bh * 1.6) { y0 -= (bw / 1.6 - bh) / 2; bh = bw / 1.6; }
@@ -6714,12 +6889,11 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     gz.mzl = null; geldStartZeigen(); $('gzMzLernAuf').open = true;
   });
   $('gzMzLernAbbruch').addEventListener('click', function () { gz.mzl = null; geldStartZeigen(); $('gzMzLernAuf').open = true; });
-  $('gzMzJetzt').addEventListener('click', function () { gz.wahl = { art: 'muenzen' }; fotoWahlZiel = 'geld'; wahlAuf('fotoWahl'); });
-  $('gzMzKeine').addEventListener('click', function () { var E = gz.ergebnis; if (!E) return; E.mz = null; E.keineMz = true; ergebnisZeigen(); $('geldBlatt').scrollTop = 0; });
   $('gzAbbrechen').addEventListener('click', function () { muenzKorrekturenLernen(); gz.ergebnis = null; wahlZu('geldBlatt'); });
-  $('gzMzFoto').addEventListener('click', function () { gz.wahl = { art: 'muenzen' }; fotoWahlZiel = 'geld'; wahlAuf('fotoWahl'); });
-  $('gzMzBild').addEventListener('click', function (ev) {
-    var M = gz.ergebnis && gz.ergebnis.mz; if (!M) return; var r = this.getBoundingClientRect(), bx = M.bx || [0, 0], px = bx[0] + (ev.clientX - r.left) * this.width / r.width, py = bx[1] + (ev.clientY - r.top) * this.height / r.height;
+  $('gzMzFoto').addEventListener('click', function () { muenzKorrekturenLernen(); fotosStart('muenzen'); $('geldBlatt').scrollTop = 0; });
+  $('gzMzBilder').addEventListener('click', function (ev) {
+    var c = ev.target.closest('canvas[data-mzbild]'), E = gz.ergebnis; if (!c || !E) return; var M = E.mzBilder[+c.getAttribute('data-mzbild')]; if (!M) return;
+    var r = c.getBoundingClientRect(), bx = M.bx || [0, 0], px = bx[0] + (ev.clientX - r.left) * c.width / r.width, py = bx[1] + (ev.clientY - r.top) * c.height / r.height;
     var m = M.liste.filter(function (q) { return Math.hypot(q.x - px, q.y - py) < q.r * 1.1; })[0]; if (!m) return;
     var w = muenzWerte().concat([0]), i = w.indexOf(m.wert);
     m.wert = (m.sicher || m.korr || !m.wert) ? w[(i + 1) % w.length] : m.wert; m.sicher = true; m.korr = true; M.gelernt = false; ergebnisZeigen();
@@ -6729,7 +6903,6 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var r = c.getBoundingClientRect(), p = [(ev.clientX - r.left) * c.width / r.width, (ev.clientY - r.top) * c.height / r.height];
     for (var i = E.treffer.length - 1; i >= 0; i--) if (E.treffer[i].bild === bi && imPolygon(p, E.treffer[i].ecken)) { E.treffer[i].zaehlt = !E.treffer[i].zaehlt; ergebnisZeigen(); return; }
   });
-  $('gzWeiter').addEventListener('click', function () { gz.wahl = { art: 'weiter' }; fotoWahlZiel = 'geld'; wahlAuf('fotoWahl'); });
   $('gzListe').addEventListener('click', function (ev) {
     var b = ev.target.closest('[data-pm]'); if (!b || !gz.ergebnis) return; var t = b.getAttribute('data-pm').split(':'), w = +t[0], d = +t[1];
     var anzErk = gz.ergebnis.treffer.filter(function (x) { return x.zaehlt && x.wert === w; }).length, ex = gz.ergebnis.extra[w] || 0;
@@ -6753,13 +6926,11 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var b = ev.target.closest('[data-lern]'); if (!b) return; var t = b.getAttribute('data-lern').split(':');
     gz.wahl = { art: 'lernen', wert: +t[0], seite: t[1] }; fotoWahlZiel = 'geld'; wahlAuf('fotoWahl');
   });
-  $('gzFoto').addEventListener('click', function () { gz.wahl = { art: 'zaehlen' }; fotoWahlZiel = 'geld'; wahlAuf('fotoWahl'); });
+  $('gzFoto').addEventListener('click', function () { fotosStart('scheine'); gz.wahl = { art: 'sammeln' }; fotoWahlZiel = 'geld'; wahlAuf('fotoWahl'); });
   ['gzDatei', 'gzKamera'].forEach(function (id) { $(id).addEventListener('change', function () {
     var f = this.files && this.files[0]; if (!f || !gz.wahl) return;
-    if (gz.wahl.art === 'zaehlen') { geldZaehlen(f); return; }
-    if (gz.wahl.art === 'weiter') { geldZaehlen(f, true); return; }
+    if (gz.wahl.art === 'sammeln') { fotosHinzu(this.files); return; }
     if (gz.wahl.art === 'mzlernen') { muenzLernStart(f); return; }
-    if (gz.wahl.art === 'muenzen') { muenzenZaehlen(f); return; }
     var w = gz.wahl; $('gzStatus').textContent = 'Foto wird geladen …';
     geldBildLaden(f, 1600).then(function (c) { $('gzStatus').textContent = ''; eckenStart(c, w.wert, w.seite); }).catch(function () { $('gzStatus').textContent = 'Das Foto konnte nicht gelesen werden.'; });
   }); });
