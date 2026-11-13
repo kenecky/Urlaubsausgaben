@@ -3,7 +3,10 @@
 // Andere Apps auf kenecky.github.io (z. B. F1 Race Control) teilen sich den Cache-Speicher.
 // Deshalb beim Aufräumen nur eigene alte Versionen (gleiches Präfix) löschen.
 var PREFIX = 'reiseausgaben-v';
-var CACHE = PREFIX + '127';
+var CACHE = PREFIX + '128';
+// Feste Bibliotheken (Erkennung, Karte, Video) mit Versionsnummer in der Adresse: einmal laden, dann dauerhaft offline
+var LIB_CACHE = 'reiseausgaben-lib-1';
+var LIB_MUSTER = [/^https:\/\/cdn\.jsdelivr\.net\/npm\/@techstark\/opencv-js@/, /^https:\/\/unpkg\.com\/(leaflet|mp4-muxer|webm-muxer)@/];
 var DATEIEN = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
@@ -23,6 +26,14 @@ self.addEventListener('activate', function (e) {
 // Zuerst Netz (frische Version), bei fehlendem Internet aus dem Cache.
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
+  if (LIB_MUSTER.some(function (m) { return m.test(e.request.url); })) {
+    e.respondWith(caches.open(LIB_CACHE).then(function (c) {
+      return c.match(e.request.url).then(function (t) {
+        return t || fetch(e.request).then(function (a) { if (a && (a.ok || a.type === 'opaque')) c.put(e.request.url, a.clone()); return a; });
+      });
+    }));
+    return;
+  }
   if (new URL(e.request.url).origin !== self.location.origin) return; // z. B. Kurs-Abfragen nicht zwischenspeichern
   e.respondWith(
     fetch(e.request).then(function (antwort) {
