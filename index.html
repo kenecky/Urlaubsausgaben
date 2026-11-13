@@ -1225,7 +1225,7 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .foto-zeile .foto-weg { width: 40px; height: 40px; min-height: 0; margin: 0; padding: 0; flex: none; }
 .t-bar { cursor: pointer; } .t-cam { width: 13px; height: 13px; vertical-align: -1px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linejoin: round; opacity: .8; }
 .gz-auf { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 10px; }
-.gz-auf svg, #gzFoto svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.gz-auf svg, .gz-gross svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
 .geld-blatt { position: fixed; inset: 0; z-index: 1800; background: var(--bg); overflow-y: auto; overscroll-behavior: contain; }
 .geld-blatt[hidden] { display: none; }
 .gz-innen { max-width: 620px; margin: 0 auto; padding: 14px 16px calc(30px + env(safe-area-inset-bottom)); }
@@ -1234,13 +1234,22 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .gz-kopf button { width: 44px; height: 44px; margin: 0; padding: 0; border-radius: 50%; }
 .gz-soll { background: var(--karte); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; font-size: 14px; display: flex; justify-content: space-between; }
 #gzFoto:disabled { opacity: .45; filter: grayscale(1); }
+.gz-gross { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 100%; min-height: 56px; font-size: 16px; padding-top: 10px; padding-bottom: 10px; }
+.gz-k-titel { display: flex; align-items: center; gap: 10px; }
+.gz-k-status, .gz-balken { display: none; }
+.gz-k-status { font-size: 12.5px; font-weight: 600; opacity: .95; }
+.gz-balken { width: 82%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.35); overflow: hidden; }
+.gz-balken i { display: block; height: 100%; background: #fff; border-radius: 3px; transform-origin: left center; transform: scaleX(0); will-change: transform; }
+.gz-gross.laeuft, .gz-gross.laeuft:disabled { background: #98A4A6 !important; color: #fff !important; opacity: 1 !important; filter: none !important; }
+.gz-gross.laeuft .gz-k-status, .gz-gross.laeuft .gz-balken { display: block; }
+#gzMzSchritt .hell { width: 100%; margin-top: 10px; }
+.gz-schein-info { background: var(--karte); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; font-size: 14px; display: flex; justify-content: space-between; }
 #gzBuchen { background: var(--mango); color: var(--mango-text); }
 .gz-lern-auf { margin-top: 18px; }
 .gz-lern-auf > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font: 700 17px 'Bricolage', 'Figtree', sans-serif; padding: 10px 0; }
 .gz-lern-auf > summary::-webkit-details-marker { display: none; }
 .gz-lern-auf > summary::after { content: ''; width: 9px; height: 9px; border-right: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor; transform: rotate(45deg); transition: transform .2s; margin-right: 6px; }
 .gz-lern-auf[open] > summary::after { transform: rotate(-135deg); }
-#gzFoto { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 56px; font-size: 16px; }
 .geld-blatt h3 { font: 700 17px 'Bricolage', 'Figtree', sans-serif; margin: 18px 0 4px; }
 .gz-status { font-weight: 600; min-height: 1em; margin: 8px 2px; }
 .gz-zeile { display: flex; align-items: center; gap: 8px; background: var(--karte); border-radius: 12px; padding: 8px 10px; margin-bottom: 6px; }
@@ -1794,7 +1803,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   <div class="gz-kopf"><b>Bargeld zählen</b><button type="button" class="hell" id="gzX" aria-label="Schließen">✕</button></div>
   <div id="gzStart">
     <div class="gz-soll">Aktueller Bargeldbestand: <b id="gzErwartet"></b></div>
-    <button type="button" id="gzFoto"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>Zuerst Scheine fotografieren</button>
+    <button type="button" id="gzFoto" class="gz-gross"><span class="gz-k-titel"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>Zuerst Scheine fotografieren</span><span class="gz-k-status"></span><span class="gz-balken"><i></i></span></button>
     <p class="hinweis" id="gzFotoHinweis"></p>
     <p class="gz-status" id="gzStatus"></p>
     <details class="gz-lern-auf" id="gzLernAuf"><summary>Scheine anlernen</summary>
@@ -1807,6 +1816,13 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     <p class="gz-status" id="gzEckenStatus"></p>
     <div class="gz-knoepfe"><button type="button" class="hell" id="gzEckenAbbruch">Abbrechen</button><button type="button" id="gzEckenOk">Übernehmen</button></div>
   </div>
+  <div id="gzMzSchritt" hidden>
+    <div class="gz-schein-info"><span id="gzScheinInfo"></span><b id="gzScheinSumme"></b></div>
+    <button type="button" id="gzMzJetzt" class="gz-gross"><span class="gz-k-titel"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>Jetzt Münzen fotografieren</span><span class="gz-k-status"></span><span class="gz-balken"><i></i></span></button>
+    <p class="hinweis">Münzen nebeneinander auf einen dunklen, einfarbigen Untergrund legen (nicht stapeln), von oben fotografieren.</p>
+    <p class="gz-status" id="gzMzStatus"></p>
+    <button type="button" class="hell" id="gzMzKeine">Keine Münzen vorhanden</button>
+  </div>
   <div id="gzErgebnis" hidden>
     <canvas id="gzBild"></canvas>
     <p class="hinweis" id="gzTreffer"></p>
@@ -1814,13 +1830,14 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     <div class="gz-mz"><div class="gz-mz-kopf"><b>Münzen</b><span id="gzMzSumme"></span></div>
       <canvas id="gzMzBild" hidden></canvas>
       <p class="hinweis" id="gzMzText"></p>
-      <button type="button" class="hell" id="gzMzFoto">Münzen fotografieren</button>
+      <button type="button" class="hell gz-gross" id="gzMzFoto"><span class="gz-k-titel" id="gzMzFotoTxt">Münzen fotografieren</span><span class="gz-k-status"></span><span class="gz-balken"><i></i></span></button>
       <label class="gz-muenz" id="gzMzHand">Summe der Münzen (optional) <input type="text" inputmode="decimal" id="gzMuenzen" placeholder="0"></label>
     </div>
     <div class="gz-abgleich"><div>Gezählt<b id="gzSumme"></b></div><div>Laut App<b id="gzSoll"></b></div><div>Differenz<b id="gzDiff"></b></div></div>
     <p class="hinweis" id="gzDiffText"></p>
     <button type="button" id="gzBuchen" hidden></button>
     <button type="button" class="hell" id="gzNeu">Bargeld neu zählen</button>
+    <button type="button" class="hell" id="gzAbbrechen">Abbrechen</button>
   </div>
   <input type="file" id="gzDatei" accept="image/*" hidden><input type="file" id="gzKamera" accept="image/*" capture="environment" hidden>
 </div></div>
@@ -6168,7 +6185,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     gz.code = lokal.code;
     var werte = SCHEIN_WERTE[gz.code], ix = scheinIndex()[gz.code] || {};
     $('gzErwartet').textContent = geldFmt(geldErwartet());
-    $('gzStart').hidden = false; $('gzErgebnis').hidden = true; $('gzEcken').hidden = true; $('gzStatus').textContent = '';
+    $('gzStart').hidden = false; $('gzErgebnis').hidden = true; $('gzEcken').hidden = true; $('gzMzSchritt').hidden = true; $('gzStatus').textContent = ''; knopfFertig('gzFoto');
     if (!werte) { $('gzLernen').innerHTML = '<p class="hinweis">Für ' + esc(gz.code) + ' kenne ich die Scheine noch nicht. Sag mir Bescheid, dann ergänze ich die Liste.</p>'; $('gzFoto').disabled = true; return; }
     var angelernt = 0;
     $('gzLernen').innerHTML = werte.map(function (w) {
@@ -6193,7 +6210,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var w = canvas.width, h = canvas.height, bw = w * 0.8, bh = bw / 2.42; if (bh > h * 0.8) { bh = h * 0.8; bw = bh * 2.42; }
     gz.ecken = [[(w - bw) / 2, (h - bh) / 2], [(w + bw) / 2, (h - bh) / 2], [(w + bw) / 2, (h + bh) / 2], [(w - bw) / 2, (h + bh) / 2]];
     $('gzEckenTitel').textContent = scheinTxt(wert) + ' ' + waehrungSymbol(gz.code) + ' – ' + (seite === 'v' ? 'Vorderseite' : 'Rückseite');
-    $('gzStart').hidden = true; $('gzErgebnis').hidden = true; $('gzEcken').hidden = false;
+    $('gzStart').hidden = true; $('gzErgebnis').hidden = true; $('gzMzSchritt').hidden = true; $('gzEcken').hidden = false;
     var cv2 = $('gzEckenBild'); cv2.width = w; cv2.height = h; eckenZeichnen();
   }
   function eckenZeichnen() {
@@ -6245,18 +6262,36 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       });
     })).then(function (l) { l = l.filter(Boolean); gz.vorlagen = { code: gz.code, liste: l }; return l; });
   }
+  // Großer Knopf mit Status-Zeile und Fortschrittsbalken (Balken läuft auch weiter, wenn die Erkennung rechnet)
+  function knopfLaeuft(id, text, pct, ms) {
+    var b = $(id); b.classList.add('laeuft'); b.disabled = true; b.querySelector('.gz-k-status').textContent = text;
+    var i = b.querySelector('.gz-balken i'); i.style.transition = 'transform ' + (ms || 300) + 'ms ' + (ms > 1000 ? 'cubic-bezier(.2,.6,.3,1)' : 'ease-out'); i.style.transform = 'scaleX(' + pct / 100 + ')';
+  }
+  function knopfFertig(id) { var b = $(id); b.classList.remove('laeuft'); b.disabled = false; var i = b.querySelector('.gz-balken i'); i.style.transition = 'none'; i.style.transform = 'scaleX(0)'; }
+  function malen() { return new Promise(function (ok) { requestAnimationFrame(function () { setTimeout(ok, 60); }); }); }
   function geldZaehlen(datei) {
-    $('gzStatus').textContent = 'Erkennung wird geladen …'; $('gzFoto').disabled = true;
-    var canvas;
-    return geldBildLaden(datei, 1600).then(function (c) { canvas = c; return cvLaden(); }).then(function (r) {
-      $('gzStatus').textContent = 'Scheine werden gesucht …';
-      return new Promise(function (ok) { setTimeout(ok, 30); }).then(function () { return vorlagenLaden(r.cv); }).then(function (v) {
-        if (!v.length) throw new Error('Keine angelernten Scheine gefunden.');
-        var t = scheineFinden(r.cv, canvas, v);
-        gz.ergebnis = { canvas: canvas, treffer: t.map(function (x) { x.zaehlt = true; return x; }), extra: {}, muenzen: 0 };
-        $('gzStatus').textContent = ''; ergebnisZeigen();
-      });
-    }).catch(function (e) { $('gzStatus').textContent = (e && e.message) || 'Das hat nicht geklappt.'; }).then(function () { $('gzFoto').disabled = false; });
+    $('gzStatus').textContent = ''; knopfLaeuft('gzFoto', 'Foto wird geladen …', 12, 400);
+    var canvas, cv;
+    return geldBildLaden(datei, 1600).then(function (c) { canvas = c; knopfLaeuft('gzFoto', 'Erkennung wird geladen …', 45, 9000); return cvLaden(); }).then(function (r) {
+      cv = r.cv; knopfLaeuft('gzFoto', 'Scheine werden vorbereitet …', 55, 400); return malen().then(function () { return vorlagenLaden(cv); });
+    }).then(function (v) {
+      if (!v.length) throw new Error('Keine angelernten Scheine gefunden.');
+      knopfLaeuft('gzFoto', 'Scheine werden gesucht …', 94, 4000);
+      return malen().then(function () {
+        var t = scheineFinden(cv, canvas, v);
+        gz.ergebnis = { canvas: canvas, treffer: t.map(function (x) { x.zaehlt = true; return x; }), extra: {}, muenzen: 0, mz: null };
+        knopfLaeuft('gzFoto', 'Fertig', 100, 200);
+        return new Promise(function (ok) { setTimeout(ok, 250); });
+      }).then(function () { knopfFertig('gzFoto'); if (MUENZ_TYPEN[gz.code]) muenzSchrittZeigen(); else ergebnisZeigen(); });
+    }).catch(function (e) { knopfFertig('gzFoto'); $('gzStatus').textContent = (e && e.message) || 'Das hat nicht geklappt.'; });
+  }
+  function scheinSumme() { var E = gz.ergebnis, s2 = 0; E.treffer.forEach(function (t) { if (t.zaehlt) s2 += t.wert; }); Object.keys(E.extra).forEach(function (w) { s2 += w * E.extra[w]; }); return s2; }
+  function muenzSchrittZeigen() {
+    var E = gz.ergebnis, n = E.treffer.length;
+    $('gzStart').hidden = true; $('gzEcken').hidden = true; $('gzErgebnis').hidden = true; $('gzMzSchritt').hidden = false;
+    $('gzScheinInfo').textContent = n ? n + (n === 1 ? ' Schein erkannt' : ' Scheine erkannt') : 'Kein Schein erkannt';
+    $('gzScheinSumme').textContent = geldFmt(scheinSumme()); $('gzMzStatus').textContent = ''; knopfFertig('gzMzJetzt');
+    $('geldBlatt').scrollTop = 0;
   }
   function ergebnisZeichnen() {
     var E = gz.ergebnis, c = $('gzBild'), x = c.getContext('2d'); c.width = E.canvas.width; c.height = E.canvas.height; x.drawImage(E.canvas, 0, 0);
@@ -6271,7 +6306,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     });
   }
   function ergebnisZeigen() {
-    var E = gz.ergebnis; $('gzStart').hidden = true; $('gzEcken').hidden = true; $('gzErgebnis').hidden = false;
+    var E = gz.ergebnis; $('gzStart').hidden = true; $('gzEcken').hidden = true; $('gzMzSchritt').hidden = true; $('gzErgebnis').hidden = false;
     ergebnisZeichnen();
     var werte = SCHEIN_WERTE[gz.code] || [], anz = {};
     E.treffer.forEach(function (t) { if (t.zaehlt) anz[t.wert] = (anz[t.wert] || 0) + 1; });
@@ -6297,8 +6332,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     $('gzMzFoto').hidden = !kann; $('gzMzHand').hidden = kann;
     if (!kann || !M) {
       c.hidden = true; $('gzMzSumme').textContent = '';
-      $('gzMzText').textContent = kann ? 'Münzen getrennt fotografieren: nebeneinander auf einen dunklen, einfarbigen Untergrund legen (nicht stapeln), von oben.' : '';
-      if (kann) E.muenzen = 0; return;
+      $('gzMzText').textContent = kann ? 'Keine Münzen gezählt.' : '';
+      if (kann) { E.muenzen = 0; $('gzMzSumme').textContent = geldFmt(0); $('gzMzFotoTxt').textContent = 'Münzen doch fotografieren'; } return;
     }
     // Ausschnitt um die Münzen, damit die Werte gut lesbar sind
     var bx = [0, 0, M.canvas.width, M.canvas.height];
@@ -6325,7 +6360,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     $('gzMzSumme').textContent = (teile.length ? teile.join(' · ') + ' = ' : '') + geldFmt(summe);
     $('gzMzText').textContent = !M.liste.length ? 'Keine Münze erkannt. Liegen sie einzeln auf einem dunklen, einfarbigen Untergrund?' :
       (unsicher ? unsicher + (unsicher === 1 ? ' Münze ist' : ' Münzen sind') + ' unsicher (rot, mit „?“) – antippen bestätigt. ' : '') + 'Falscher Wert? Münze antippen, bis er stimmt (✕ = keine Münze). Daraus lernt die Erkennung.';
-    $('gzMzFoto').textContent = 'Münzen neu fotografieren';
+    $('gzMzFotoTxt').textContent = 'Münzen neu fotografieren';
   }
   // Korrigierte Münzen merken (Größe je Typ nachlernen)
   function muenzKorrekturenLernen() {
@@ -6338,15 +6373,21 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     });
   }
   function muenzenZaehlen(datei) {
-    var E = gz.ergebnis; $('gzMzText').textContent = 'Münzen werden gesucht …'; $('gzMzFoto').disabled = true;
+    var E = gz.ergebnis, id = $('gzMzSchritt').hidden ? 'gzMzFoto' : 'gzMzJetzt', status = id === 'gzMzJetzt' ? $('gzMzStatus') : $('gzMzText');
+    status.textContent = ''; knopfLaeuft(id, 'Foto wird geladen …', 15, 400);
     var canvas;
-    return geldBildLaden(datei, 2000).then(function (c) { canvas = c; return cvLaden(); }).then(function (r) {
-      return new Promise(function (ok) { setTimeout(ok, 30); }).then(function () {
+    return geldBildLaden(datei, 2000).then(function (c) { canvas = c; knopfLaeuft(id, 'Erkennung wird geladen …', 40, 9000); return cvLaden(); }).then(function (r) {
+      knopfLaeuft(id, 'Münzen werden gesucht …', 94, 2500);
+      return malen().then(function () {
         muenzKorrekturenLernen();
-        E.mz = { canvas: canvas, liste: muenzenFinden(r.cv, canvas, gz.code) }; ergebnisZeigen();
-      });
-    }).catch(function (e) { $('gzMzText').textContent = (e && e.message) || 'Das hat nicht geklappt.'; }).then(function () { $('gzMzFoto').disabled = false; });
+        E.mz = { canvas: canvas, liste: muenzenFinden(r.cv, canvas, gz.code) };
+        knopfLaeuft(id, 'Fertig', 100, 200); return new Promise(function (ok) { setTimeout(ok, 250); });
+      }).then(function () { knopfFertig(id); ergebnisZeigen(); $('geldBlatt').scrollTop = 0; });
+    }).catch(function (e) { knopfFertig(id); status.textContent = (e && e.message) || 'Das hat nicht geklappt.'; });
   }
+  $('gzMzJetzt').addEventListener('click', function () { gz.wahl = { art: 'muenzen' }; fotoWahlZiel = 'geld'; wahlAuf('fotoWahl'); });
+  $('gzMzKeine').addEventListener('click', function () { var E = gz.ergebnis; if (!E) return; E.mz = null; E.keineMz = true; ergebnisZeigen(); $('geldBlatt').scrollTop = 0; });
+  $('gzAbbrechen').addEventListener('click', function () { muenzKorrekturenLernen(); gz.ergebnis = null; wahlZu('geldBlatt'); });
   $('gzMzFoto').addEventListener('click', function () { gz.wahl = { art: 'muenzen' }; fotoWahlZiel = 'geld'; wahlAuf('fotoWahl'); });
   $('gzMzBild').addEventListener('click', function (ev) {
     var M = gz.ergebnis && gz.ergebnis.mz; if (!M) return; var r = this.getBoundingClientRect(), bx = M.bx || [0, 0], px = bx[0] + (ev.clientX - r.left) * this.width / r.width, py = bx[1] + (ev.clientY - r.top) * this.height / r.height;

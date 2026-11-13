@@ -3,7 +3,7 @@
 // Andere Apps auf kenecky.github.io (z. B. F1 Race Control) teilen sich den Cache-Speicher.
 // Deshalb beim Aufräumen nur eigene alte Versionen (gleiches Präfix) löschen.
 var PREFIX = 'reiseausgaben-v';
-var CACHE = PREFIX + '124';
+var CACHE = PREFIX + '125';
 var DATEIEN = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
