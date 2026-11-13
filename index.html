@@ -1233,6 +1233,13 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .gz-kopf b { font: 800 22px 'Bricolage', 'Figtree', sans-serif; }
 .gz-kopf button { width: 44px; height: 44px; margin: 0; padding: 0; border-radius: 50%; }
 .gz-soll { background: var(--karte); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; font-size: 14px; display: flex; justify-content: space-between; }
+#gzFoto:disabled { opacity: .45; filter: grayscale(1); }
+#gzBuchen { background: var(--mango); color: var(--mango-text); }
+.gz-lern-auf { margin-top: 18px; }
+.gz-lern-auf > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font: 700 17px 'Bricolage', 'Figtree', sans-serif; padding: 10px 0; }
+.gz-lern-auf > summary::-webkit-details-marker { display: none; }
+.gz-lern-auf > summary::after { content: ''; width: 9px; height: 9px; border-right: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor; transform: rotate(45deg); transition: transform .2s; margin-right: 6px; }
+.gz-lern-auf[open] > summary::after { transform: rotate(-135deg); }
 #gzFoto { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 56px; font-size: 16px; }
 .geld-blatt h3 { font: 700 17px 'Bricolage', 'Figtree', sans-serif; margin: 18px 0 4px; }
 .gz-status { font-weight: 600; min-height: 1em; margin: 8px 2px; }
@@ -1786,13 +1793,13 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
 <div class="geld-blatt" id="geldBlatt" hidden><div class="gz-innen">
   <div class="gz-kopf"><b>Bargeld zählen</b><button type="button" class="hell" id="gzX" aria-label="Schließen">✕</button></div>
   <div id="gzStart">
-    <div class="gz-soll">Laut App in bar: <b id="gzErwartet"></b></div>
-    <button type="button" id="gzFoto"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>Scheine fotografieren</button>
+    <div class="gz-soll">Aktueller Bargeldbestand: <b id="gzErwartet"></b></div>
+    <button type="button" id="gzFoto"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>Zuerst Scheine fotografieren</button>
     <p class="hinweis" id="gzFotoHinweis"></p>
     <p class="gz-status" id="gzStatus"></p>
-    <h3>Scheine anlernen</h3>
+    <details class="gz-lern-auf" id="gzLernAuf"><summary>Scheine anlernen</summary>
     <p class="hinweis">Einmal pro Schein: einzeln flach hinlegen, fotografieren und die vier Ecken auf die Scheinecken ziehen. Vorder- und Rückseite anlernen, dann wird jede Seite erkannt.</p>
-    <div id="gzLernen"></div>
+    <div id="gzLernen"></div></details>
   </div>
   <div id="gzEcken" hidden>
     <p class="hinweis">Ziehe die vier Punkte genau auf die Ecken des Scheins: <b id="gzEckenTitel"></b></p>
@@ -1813,7 +1820,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     <div class="gz-abgleich"><div>Gezählt<b id="gzSumme"></b></div><div>Laut App<b id="gzSoll"></b></div><div>Differenz<b id="gzDiff"></b></div></div>
     <p class="hinweis" id="gzDiffText"></p>
     <button type="button" id="gzBuchen" hidden></button>
-    <button type="button" class="hell" id="gzNeu">Neues Foto</button>
+    <button type="button" class="hell" id="gzNeu">Bargeld neu zählen</button>
   </div>
   <input type="file" id="gzDatei" accept="image/*" hidden><input type="file" id="gzKamera" accept="image/*" capture="environment" hidden>
 </div></div>
@@ -6170,7 +6177,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
         ['v', 'h'].map(function (s) { return '<button type="button" class="gz-seite' + (e[s] ? ' an' : '') + '" data-lern="' + w + ':' + s + '">' + (e[s] ? '✓ ' : '+ ') + (s === 'v' ? 'Vorderseite' : 'Rückseite') + '</button>'; }).join('') + '</div>';
     }).join('');
     $('gzFoto').disabled = !angelernt;
-    $('gzFotoHinweis').textContent = angelernt ? 'Scheine nebeneinander hinlegen, höchstens leicht überlappend. Ein ruhiger Untergrund hilft.' : 'Zuerst mindestens einen Schein anlernen (unten).';
+    $('gzFotoHinweis').textContent = angelernt ? 'Scheine nebeneinander hinlegen, höchstens leicht überlappend. Ein ruhiger Untergrund hilft.' : 'Zuerst mindestens einen Schein anlernen (unten unter „Scheine anlernen“).';
   }
   function geldBildLaden(datei, max) {
     return new Promise(function (ok, fehler) {
@@ -6239,7 +6246,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     })).then(function (l) { l = l.filter(Boolean); gz.vorlagen = { code: gz.code, liste: l }; return l; });
   }
   function geldZaehlen(datei) {
-    $('gzStatus').textContent = 'Erkennung wird geladen …';
+    $('gzStatus').textContent = 'Erkennung wird geladen …'; $('gzFoto').disabled = true;
     var canvas;
     return geldBildLaden(datei, 1600).then(function (c) { canvas = c; return cvLaden(); }).then(function (r) {
       $('gzStatus').textContent = 'Scheine werden gesucht …';
@@ -6249,7 +6256,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
         gz.ergebnis = { canvas: canvas, treffer: t.map(function (x) { x.zaehlt = true; return x; }), extra: {}, muenzen: 0 };
         $('gzStatus').textContent = ''; ergebnisZeigen();
       });
-    }).catch(function (e) { $('gzStatus').textContent = (e && e.message) || 'Das hat nicht geklappt.'; });
+    }).catch(function (e) { $('gzStatus').textContent = (e && e.message) || 'Das hat nicht geklappt.'; }).then(function () { $('gzFoto').disabled = false; });
   }
   function ergebnisZeichnen() {
     var E = gz.ergebnis, c = $('gzBild'), x = c.getContext('2d'); c.width = E.canvas.width; c.height = E.canvas.height; x.drawImage(E.canvas, 0, 0);
@@ -6360,6 +6367,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   $('gzBuchen').addEventListener('click', function () {
     var d = gz.diff; if (!d) return;
     if (reise && reise.status === 'abgeschlossen') { toast('Die Reise ist abgeschlossen.'); return; }
+    if (!confirm(d < 0 ? 'Differenz von ' + geldFmt(-d) + ' als Ausgabe (Sonstiges, bar) buchen?' : 'Differenz von +' + geldFmt(d) + ' als Bargeld-Korrektur buchen?')) return;
     var e = { id: neueId(), datum: heute(), betrag: Math.abs(d), zahlung: 'Bar', waehrung: gz.code, geaendert: Date.now() };
     if (d < 0) { e.kategorie = 'Sonstiges'; e.beschreibung = 'Bargeld-Differenz (Zählung)'; }
     else { e.kategorie = ABHEBUNG; e.zahlung = ''; e.beschreibung = 'Bargeld-Korrektur (Zählung)'; }
