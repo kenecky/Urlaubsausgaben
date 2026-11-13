@@ -10,8 +10,51 @@
   "theme_color": "#0E4A55",
   "lang": "de",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Neue Ausgabe",
+      "short_name": "Neue Ausgabe",
+      "description": "Direkt eine neue Ausgabe erfassen",
+      "url": "./index.html?aktion=neu",
+      "icons": [
+        {
+          "src": "kurz-neu.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Bargeld zählen",
+      "short_name": "Bargeld zählen",
+      "description": "Bargeld per Foto zählen",
+      "url": "./index.html?aktion=bargeld",
+      "icons": [
+        {
+          "src": "kurz-bargeld.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

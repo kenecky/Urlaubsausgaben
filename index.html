@@ -1218,6 +1218,11 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 #gpTempo { flex: none; width: 52px; height: 38px; margin: 0; padding: 0; font-size: 14px; font-weight: 700; }
 .route-jetzt { display: flex; align-items: center; justify-content: center; }
 .route-jetzt span { display: block; margin: 2px; flex: none; box-sizing: border-box; width: 24px; height: 24px; border-radius: 50%; background: #F5A524; border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(245,165,36,.3), 0 3px 8px rgba(0,0,0,.35); }
+.preis-hinweis { margin: 6px 2px 2px; font-size: 13px; line-height: 1.35; color: var(--grau); display: flex; gap: 6px; align-items: baseline; }
+.preis-hinweis b { white-space: nowrap; }
+.preis-hinweis.teurer b { color: #C2410C; }
+.preis-hinweis.guenstiger b { color: #15803D; }
+.preis-hinweis.normal b { color: var(--petrol); }
 .foto-zeile { display: flex; align-items: center; gap: 10px; margin: 10px 2px 0; }
 .foto-zeile img { width: 64px; height: 64px; object-fit: cover; border-radius: 12px; flex: none; cursor: zoom-in; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
 .foto-zeile .foto-btn { width: auto; flex: 1; margin: 0; height: 40px; min-height: 0; padding: 0 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; }
@@ -1539,6 +1544,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
           <input type="number" id="betrag" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
         </div>
       </div>
+      <p class="preis-hinweis" id="preisHinweis" hidden></p>
       <div class="zeile" id="gebuehrZeile" hidden>
         <div><label for="gebuehr" id="gebuehrLabel">Automatengebühr (₱)</label><input type="number" id="gebuehr" inputmode="decimal" step="0.01" min="0" placeholder="0"></div>
         <div class="verteil-info" id="gebuehrInfo"></div>
@@ -2384,7 +2390,26 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var g = formGebuehr(), b = feldZahl('betrag');
     $('gebuehrInfo').textContent = g > 0 && b > 0 ? 'Belastet: ' + (b + g).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + ' ' + waehrungSymbol(formW()) : '';
   }
+  // Teuer oder günstig? Vergleich mit den bisherigen Ausgaben dieser Kategorie (gleiche Reise, gleiche Währung, Median)
+  function preisHinweis() {
+    var el = $('preisHinweis'); if (!el) return;
+    var b = parseFloat($('betrag').value), kat = $('kategorie').value, w = formW(), mehrtaegig = $('verteilen').checked && $('datumBis').value > $('datum').value;
+    if (!reise || !(b > 0) || !kat || kat === ABHEBUNG || mehrtaegig) { el.hidden = true; return; }
+    var werte = ausgaben.filter(function (a) { return a.id !== bearbeiteId && a.kategorie === kat && !istAbh(a) && !istPauschal(a) && (a.waehrung || hauptCode()) === w && a.betrag > 0; })
+      .map(function (a) { return a.betrag; }).sort(function (x, y) { return x - y; });
+    if (werte.length < 4) { el.hidden = true; return; }
+    var m = werte.length >> 1, med = werte.length % 2 ? werte[m] : (werte[m - 1] + werte[m]) / 2, d = (b - med) / med;
+    var sym = waehrungSymbol(w), medTxt = (med % 1 ? zahl(med) : Math.round(med).toLocaleString('de-DE')) + '\u00a0' + sym, urteil, kl;
+    if (d >= 1) { urteil = (b / med).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + '× so teuer'; kl = 'teurer'; }
+    else if (d > 0.3) { urteil = Math.round(d * 100) + ' % teurer'; kl = 'teurer'; }
+    else if (d < -0.3) { urteil = Math.round(-d * 100) + ' % günstiger'; kl = 'guenstiger'; }
+    else { urteil = 'im üblichen Rahmen'; kl = 'normal'; }
+    el.className = 'preis-hinweis ' + kl; el.hidden = false;
+    el.innerHTML = '<b>' + esc(urteil) + '</b><span>' + (d >= 1 ? 'wie' : 'als') + ' sonst bei ' + esc(kat) + ' (meist um ' + esc(medTxt) + ', ' + werte.length + ' Ausgaben)</span>';
+    if (kl === 'normal') el.querySelector('span').textContent = '– ' + kat + ' kostet sonst meist um ' + medTxt + ' (' + werte.length + ' Ausgaben)';
+  }
   function berechne() {
+    try { preisHinweis(); } catch (e) {}
     gebuehrInfo();
     if (formEuro()) { $('kurs').value = 1; $('abgebucht').value = ''; $('rechenHinweis').hidden = true; return; }
     if (istBarModus()) { barVorschau(); return; }
@@ -2456,7 +2481,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     berechne();
   }
   $('zahlung').addEventListener('change', kursBereichUmschalten);
-  $('kategorie').addEventListener('change', function () { waehrungLabels(); kursBereichUmschalten(); });
+  $('kategorie').addEventListener('change', function () { waehrungLabels(); kursBereichUmschalten(); preisHinweis(); });
+  ['betrag', 'waehrung', 'datumBis', 'verteilen', 'datum'].forEach(function (id) { $(id).addEventListener('input', preisHinweis); $(id).addEventListener('change', preisHinweis); });
   $('gebuehr').addEventListener('input', function () { beruehrt('php'); if (typeof formEinpassen === 'function') setTimeout(formEinpassen, 0); });
   $('datum').addEventListener('input', function () {
     if (multi && !bearbeiteId) {
@@ -7785,6 +7811,22 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var laufend = aktive().filter(function (m) { return reiseStatus(m) === 'laeuft'; });
     var ziel = laufend.filter(function (m) { return m.id === g.aktiv; })[0] || (laufend.length === 1 ? laufend[0] : null);
     if (ziel) reiseOeffnen(ziel.id);
+  })();
+  // Schnellstart vom App-Icon (lange drücken): ?aktion=neu | bargeld
+  (function () {
+    var akt = ''; try { akt = new URLSearchParams(location.search).get('aktion') || ''; } catch (e) {}
+    if (!akt) return;
+    try { history.replaceState(history.state, '', location.pathname); } catch (e) {}
+    if (!reise) {
+      var g = globalLaden(), laufend = aktive().filter(function (m) { return reiseStatus(m) === 'laeuft'; });
+      var ziel = laufend.filter(function (m) { return m.id === g.aktiv; })[0] || laufend[0] || aktive().filter(function (m) { return m.id === g.aktiv; })[0];
+      if (!ziel) { setTimeout(function () { toast('Keine laufende Reise – bitte zuerst eine Reise öffnen.'); }, 600); return; }
+      reiseOeffnen(ziel.id);
+    }
+    setTimeout(function () {
+      if (akt === 'neu') $('neuKopfBtn').click();
+      else if (akt === 'bargeld') $('gzAuf').click();
+    }, 250);
   })();
   ladeSchritt(95, 'Ansicht wird vorbereitet …');
   ladeFertig();

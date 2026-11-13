@@ -3,11 +3,11 @@
 // Andere Apps auf kenecky.github.io (z. B. F1 Race Control) teilen sich den Cache-Speicher.
 // Deshalb beim Aufräumen nur eigene alte Versionen (gleiches Präfix) löschen.
 var PREFIX = 'reiseausgaben-v';
-var CACHE = PREFIX + '131';
+var CACHE = PREFIX + '132';
 // Feste Bibliotheken (Erkennung, Karte, Video) mit Versionsnummer in der Adresse: einmal laden, dann dauerhaft offline
 var LIB_CACHE = 'reiseausgaben-lib-1';
 var LIB_MUSTER = [/^https:\/\/cdn\.jsdelivr\.net\/npm\/@techstark\/opencv-js@/, /^https:\/\/unpkg\.com\/(leaflet|mp4-muxer|webm-muxer)@/];
-var DATEIEN = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+var DATEIEN = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './kurz-neu.png', './kurz-bargeld.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(DATEIEN); }));
