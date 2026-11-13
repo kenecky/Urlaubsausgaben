@@ -1249,6 +1249,11 @@ html[data-thema="dunkel"] .ort-gps { color: #CFE6E4; }
 .gz-s { margin-left: auto; font-weight: 700; }
 .gz-muenz { display: block; margin: 10px 0; font-size: 13.5px; color: var(--grau); }
 .gz-muenz input { margin-top: 4px; }
+.gz-mz { background: var(--karte); border-radius: 16px; padding: 10px 12px; margin: 10px 0; }
+.gz-mz-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.gz-mz-kopf span { font-weight: 700; color: var(--text); font-size: 14px; text-align: right; }
+.gz-mz canvas { width: 100%; border-radius: 12px; margin-top: 8px; display: block; }
+.gz-mz button { width: 100%; margin-top: 8px; }
 .gz-abgleich { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: #0E4A55; color: #fff; border-radius: 16px; padding: 12px; font-size: 12.5px; text-align: center; }
 .gz-abgleich b { display: block; font: 700 16px 'Bricolage', 'Figtree', sans-serif; margin-top: 2px; }
 .gz-minus { color: #fca5a5; } .gz-plus { color: #86efac; } .gz-gleich { color: #fff; }
@@ -1799,7 +1804,12 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     <canvas id="gzBild"></canvas>
     <p class="hinweis" id="gzTreffer"></p>
     <div id="gzListe"></div>
-    <label class="gz-muenz">Münzen (Summe, optional) <input type="text" inputmode="decimal" id="gzMuenzen" placeholder="0"></label>
+    <div class="gz-mz"><div class="gz-mz-kopf"><b>Münzen</b><span id="gzMzSumme"></span></div>
+      <canvas id="gzMzBild" hidden></canvas>
+      <p class="hinweis" id="gzMzText"></p>
+      <button type="button" class="hell" id="gzMzFoto">Münzen fotografieren</button>
+      <label class="gz-muenz" id="gzMzHand">Summe der Münzen (optional) <input type="text" inputmode="decimal" id="gzMuenzen" placeholder="0"></label>
+    </div>
     <div class="gz-abgleich"><div>Gezählt<b id="gzSumme"></b></div><div>Laut App<b id="gzSoll"></b></div><div>Differenz<b id="gzDiff"></b></div></div>
     <p class="hinweis" id="gzDiffText"></p>
     <button type="button" id="gzBuchen" hidden></button>
@@ -5993,6 +6003,151 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     }
     return treffer;
   }
+  // ---------- Münz-Erkennung: Kreise finden, Farbe (Ring/Kern gold oder silber) + relative Größe ----------
+  // Durchmesser relativ (20 Piso = 30), gemessen wie die Erkennung misst; wird durch Korrekturen nachgelernt
+  var MUENZ_TYPEN = { PHP: [
+    { id: '20', wert: 20, farbe: 'ring', d: 30.0 }, { id: '10alt', wert: 10, farbe: 'kern', d: 25.4 },
+    { id: '5alt', wert: 5, farbe: 'gold', d: 25.1 }, { id: '10neu', wert: 10, farbe: 'silber', d: 26.2 },
+    { id: '5neu', wert: 5, farbe: 'silber', d: 24.8 }, { id: '1neu', wert: 1, farbe: 'silber', d: 22.9 },
+    { id: '1alt', wert: 1, farbe: 'silber', d: 22.7 }] };
+  function muenzLern() { try { return JSON.parse(localStorage.getItem('reisen.muenzen') || '{}') || {}; } catch (e) { return {}; } }
+  function muenzTypen(code) {
+    var basis = MUENZ_TYPEN[code]; if (!basis) return null;
+    var l = muenzLern()[code] || {};
+    return basis.map(function (t) { var x = l[t.id]; return { id: t.id, wert: t.wert, farbe: t.farbe, d: x && x.n ? (t.d * 2 + x.s) / (2 + x.n) : t.d }; });
+  }
+  function muenzLernen(code, typId, mm) {
+    var l = muenzLern(); l[code] = l[code] || {}; var x = l[code][typId] || { n: 0, s: 0 };
+    if (x.n >= 20) { x.s *= 19 / 20; x.n = 19; } x.n++; x.s += mm; l[code][typId] = x;
+    try { localStorage.setItem('reisen.muenzen', JSON.stringify(l)); } catch (e) {}
+  }
+  function median(a) { if (!a.length) return 0; var b = a.slice().sort(function (x, y) { return x - y; }); var m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; }
+  // Kreise im verkleinerten Bild (max. 1400 px) finden
+  function kreiseFinden(cv, rgb) {
+    var W = rgb.cols, H = rgb.rows, lab = new cv.Mat(), labf = new cv.Mat(), klein = new cv.Mat(), bg = new cv.Mat();
+    cv.cvtColor(rgb, lab, cv.COLOR_RGB2Lab); lab.convertTo(labf, cv.CV_32F);
+    cv.resize(labf, klein, new cv.Size(Math.max(8, Math.round(W / 8)), Math.max(8, Math.round(H / 8))), 0, 0, cv.INTER_AREA);
+    cv.GaussianBlur(klein, klein, new cv.Size(0, 0), 7.5, 7.5, cv.BORDER_REFLECT);
+    cv.resize(klein, bg, new cv.Size(W, H), 0, 0, cv.INTER_LINEAR);
+    var a = labf.data32F, b = bg.data32F, v = new cv.Mat(H, W, cv.CV_8UC1), vd = v.data;
+    for (var i = 0, j = 0; i < W * H; i++, j += 3) { var d0 = a[j] - b[j], d1 = a[j + 1] - b[j + 1], d2 = a[j + 2] - b[j + 2]; vd[i] = Math.min(255, Math.sqrt(d0 * d0 + d1 * d1 + d2 * d2) * 3); }
+    lab.delete(); labf.delete(); klein.delete(); bg.delete();
+    var tmp = new cv.Mat(), t = cv.threshold(v, tmp, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU); tmp.delete();
+    var m = new cv.Mat(); cv.threshold(v, m, Math.max(t, 50), 255, cv.THRESH_BINARY); v.delete();
+    var k3 = cv.Mat.ones(3, 3, cv.CV_8U); cv.morphologyEx(m, m, cv.MORPH_OPEN, k3); k3.delete();
+    var cs = new cv.MatVector(), hi = new cv.Mat(); cv.findContours(m, cs, hi, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE); hi.delete(); m.delete();
+    var mf = cv.Mat.zeros(H, W, cv.CV_8UC1), rs = [], weiss = new cv.Scalar(255);
+    for (var c = 0; c < cs.size(); c++) {
+      var ct = cs.get(c), fl = cv.contourArea(ct);
+      if (fl > 80) cv.drawContours(mf, cs, c, weiss, -1);
+      if (fl >= 300) { var ec = cv.minEnclosingCircle(ct); if (fl / (Math.PI * ec.radius * ec.radius) > 0.8) rs.push(ec.radius); }
+      ct.delete();
+    }
+    cs.delete();
+    var rmed = rs.length ? median(rs) : 40, rmin = Math.round(rmed * 0.7), rmax = Math.round(rmed * 1.3);
+    var g = new cv.Mat(), kr = new cv.Mat(); cv.cvtColor(rgb, g, cv.COLOR_RGB2GRAY); cv.GaussianBlur(g, g, new cv.Size(0, 0), 2, 2, cv.BORDER_REFLECT);
+    cv.HoughCircles(g, kr, cv.HOUGH_GRADIENT, 1, rmin * 1.2, 60, 18, rmin, rmax); g.delete();
+    var md = mf.data, gut = [];
+    for (var q = 0; q < kr.cols; q++) {
+      var x = kr.data32F[q * 3], y = kr.data32F[q * 3 + 1], r = kr.data32F[q * 3 + 2], rr = r * 0.9, n = 0, drin = 0;
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      for (var yy = Math.max(0, Math.ceil(y - rr)); yy <= Math.min(H - 1, Math.floor(y + rr)); yy++) for (var xx = Math.max(0, Math.ceil(x - rr)); xx <= Math.min(W - 1, Math.floor(x + rr)); xx++) {
+        if ((xx - x) * (xx - x) + (yy - y) * (yy - y) > rr * rr) continue; n++; if (md[yy * W + xx]) drin++;
+      }
+      if (n && drin / n >= 0.85) gut.push({ x: x, y: y, r: r, f: drin / n });
+    }
+    kr.delete(); mf.delete();
+    gut.sort(function (p, q2) { return q2.f - p.f; });
+    var fin = []; gut.forEach(function (k) { if (fin.every(function (f) { return Math.hypot(k.x - f.x, k.y - f.y) > 0.8 * (k.r + f.r); })) fin.push(k); });
+    return fin;
+  }
+  // Rand genauer bestimmen: auf 90 Strahlen stärkster Hell→Dunkel-Übergang, dann robuster Kreisfit
+  function kreisVerfeinern(gr, W, H, k) {
+    var pts = [], n = Math.max(8, Math.round(k.r));
+    function wert(x, y) { var x0 = Math.floor(x), y0 = Math.floor(y); if (x0 < 0 || y0 < 0 || x0 >= W - 1 || y0 >= H - 1) return 0; var fx = x - x0, fy = y - y0, i = y0 * W + x0; return gr[i] * (1 - fx) * (1 - fy) + gr[i + 1] * fx * (1 - fy) + gr[i + W] * (1 - fx) * fy + gr[i + W + 1] * fx * fy; }
+    for (var s = 0; s < 90; s++) {
+      var w = s / 90 * 2 * Math.PI, c = Math.cos(w), sn = Math.sin(w), best = -1e9, bp = null, vor = null;
+      for (var i = 0; i < n; i++) {
+        var d = k.r * (0.75 + 0.5 * i / (n - 1)), px = k.x + c * d, py = k.y + sn * d, v = wert(px, py);
+        if (vor !== null && vor[0] - v > best) { best = vor[0] - v; bp = [vor[1], vor[2]]; }
+        vor = [v, px, py];
+      }
+      if (bp) pts.push(bp);
+    }
+    var cx = k.x, cy = k.y, R = k.r;
+    for (var runde = 0; runde < 3 && pts.length >= 6; runde++) {
+      // algebraischer Kreisfit: 2x·cx + 2y·cy + c = x² + y²
+      var S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], B = [0, 0, 0];
+      pts.forEach(function (p) { var row = [2 * p[0], 2 * p[1], 1], rhs = p[0] * p[0] + p[1] * p[1]; for (var a = 0; a < 3; a++) { B[a] += row[a] * rhs; for (var b = 0; b < 3; b++) S[a][b] += row[a] * row[b]; } });
+      var l = loese3(S, B); if (!l) break;
+      cx = l[0]; cy = l[1]; R = Math.sqrt(Math.max(1, l[2] + cx * cx + cy * cy));
+      var fehler = pts.map(function (p) { return Math.abs(Math.hypot(p[0] - cx, p[1] - cy) - R); }), grenze = Math.max(2, fehler.slice().sort(function (a, b) { return a - b; })[Math.floor(fehler.length * 0.7)]);
+      pts = pts.filter(function (p, i) { return fehler[i] < grenze; });
+    }
+    if (!(R > k.r * 0.7 && R < k.r * 1.3) || Math.hypot(cx - k.x, cy - k.y) > k.r * 0.3) return k;
+    return { x: cx, y: cy, r: R };
+  }
+  function loese3(A, b) {
+    var M = A.map(function (r, i) { return r.concat([b[i]]); });
+    for (var c = 0; c < 3; c++) {
+      var p = c; for (var r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      if (Math.abs(M[p][c]) < 1e-9) return null; var t = M[c]; M[c] = M[p]; M[p] = t;
+      for (r = 0; r < 3; r++) if (r !== c) { var f = M[r][c] / M[c][c]; for (var k = c; k < 4; k++) M[r][k] -= f * M[c][k]; }
+    }
+    return [M[0][3] / M[0][0], M[1][3] / M[1][1], M[2][3] / M[2][2]];
+  }
+  // Farbklasse: b-Kanal (gelb) innen und am Ring nach Weißabgleich am Untergrund
+  function muenzFarbe(bk, W, H, k) {
+    var sc = 0, nc = 0, sr = 0, nr = 0, r = k.r;
+    for (var y = Math.max(0, Math.floor(k.y - r)); y <= Math.min(H - 1, Math.ceil(k.y + r)); y++) for (var x = Math.max(0, Math.floor(k.x - r)); x <= Math.min(W - 1, Math.ceil(k.x + r)); x++) {
+      var d = Math.hypot(x - k.x, y - k.y) / r, v = bk[y * W + x];
+      if (d < 0.45) { sc += v; nc++; } else if (d > 0.75 && d < 0.92) { sr += v; nr++; }
+    }
+    var c = nc ? sc / nc : 128, ri = nr ? sr / nr : 128;
+    if (ri - c > 8) return 'ring'; if (c - ri > 8) return 'kern'; if ((c + ri) / 2 > 145) return 'gold'; return 'silber';
+  }
+  // Ganze Münz-Erkennung: [{x,y,r (Pixel im Eingabe-Canvas), farbe, typ, wert, mm, sicher}]
+  function muenzenFinden(cv, canvas, code) {
+    var typen = muenzTypen(code) || [], src = cv.imread(canvas), rgbG = new cv.Mat(); cv.cvtColor(src, rgbG, cv.COLOR_RGBA2RGB); src.delete();
+    var s = 1400 / Math.max(rgbG.cols, rgbG.rows), rgb = new cv.Mat(); cv.resize(rgbG, rgb, new cv.Size(Math.round(rgbG.cols * s), Math.round(rgbG.rows * s)), 0, 0, cv.INTER_AREA);
+    var ks = kreiseFinden(cv, rgb), W = rgb.cols, H = rgb.rows;
+    // Weißabgleich am Untergrund (Grauwelt außerhalb der Münzen)
+    var mk = cv.Mat.ones(H, W, cv.CV_8UC1); ks.forEach(function (k) { cv.circle(mk, new cv.Point(Math.round(k.x), Math.round(k.y)), Math.round(k.r * 1.3), new cv.Scalar(0), -1); });
+    var mu = cv.mean(rgb, mk); mk.delete();
+    var mm = (mu[0] + mu[1] + mu[2]) / 3, gain = [mm / Math.max(1, mu[0]), mm / Math.max(1, mu[1]), mm / Math.max(1, mu[2])], d = rgb.data;
+    for (var i = 0; i < d.length; i += 3) { d[i] = Math.min(255, d[i] * gain[0]); d[i + 1] = Math.min(255, d[i + 1] * gain[1]); d[i + 2] = Math.min(255, d[i + 2] * gain[2]); }
+    var lab = new cv.Mat(); cv.cvtColor(rgb, lab, cv.COLOR_RGB2Lab); rgb.delete();
+    var bk = new Uint8Array(W * H), ld = lab.data; for (i = 0; i < W * H; i++) bk[i] = ld[i * 3 + 2]; lab.delete();
+    // Rand im großen Graubild verfeinern
+    var gG = new cv.Mat(); cv.cvtColor(rgbG, gG, cv.COLOR_RGB2GRAY); var gf = new cv.Mat(); gG.convertTo(gf, cv.CV_32F); gG.delete();
+    cv.GaussianBlur(gf, gf, new cv.Size(0, 0), 1.5, 1.5, cv.BORDER_REFLECT);
+    var GW = rgbG.cols, GH = rgbG.rows, gr = gf.data32F; rgbG.delete();
+    var m = ks.map(function (k) {
+      var gk = kreisVerfeinern(gr, GW, GH, { x: k.x / s, y: k.y / s, r: k.r / s });
+      return { x: gk.x, y: gk.y, r: gk.r, farbe: muenzFarbe(bk, W, H, { x: gk.x * s, y: gk.y * s, r: gk.r * s }) };
+    });
+    gf.delete();
+    muenzenEinordnen(m, typen);
+    return m;
+  }
+  // Maßstab so wählen, dass alle Münzen am besten zu einem Typ ihrer Farbe passen
+  function muenzenEinordnen(m, typen) {
+    var best = null;
+    m.forEach(function (i) { typen.forEach(function (t) {
+      if (t.farbe !== i.farbe) return; var s = i.r / t.d, kost = 0;
+      m.forEach(function (j) { var o = typen.filter(function (t2) { return t2.farbe === j.farbe; }).map(function (t2) { return Math.abs(j.r / s - t2.d) / t2.d; }); kost += Math.min(0.08, o.length ? Math.min.apply(null, o) : 0.08); });
+      if (!best || kost < best.k) best = { k: kost, s: s };
+    }); });
+    m.forEach(function (j) {
+      j.typ = null; j.wert = 0; j.sicher = false; if (!best) return;
+      j.mm = j.r / best.s;
+      var o = typen.filter(function (t) { return t.farbe === j.farbe; }).map(function (t) { return { t: t, e: Math.abs(j.mm - t.d) / t.d }; }).sort(function (a, b) { return a.e - b.e; });
+      if (!o.length) return; j.typ = o[0].t.id; j.wert = o[0].t.wert;
+      var alt = o.filter(function (q) { return q.t.wert !== j.wert; });
+      j.sicher = o[0].e < 0.035 && (!alt.length || alt[0].e - o[0].e > 0.02);
+    });
+    return best ? best.s : 0;
+  }
   // ---------- Bargeld per Foto zählen: Scheine anlernen, erkennen, mit dem App-Bestand abgleichen ----------
   var SCHEIN_WERTE = { PHP: [1000, 500, 200, 100, 50, 20], EUR: [200, 100, 50, 20, 10, 5], USD: [100, 50, 20, 10, 5, 1], THB: [1000, 500, 100, 50, 20], IDR: [100000, 50000, 20000, 10000, 5000, 2000, 1000], VND: [500000, 200000, 100000, 50000, 20000, 10000], MYR: [100, 50, 20, 10, 5, 1], SGD: [100, 50, 10, 5, 2], JPY: [10000, 5000, 1000], GBP: [50, 20, 10, 5], CHF: [200, 100, 50, 20, 10], AUD: [100, 50, 20, 10, 5], KHR: [100000, 50000, 20000, 10000, 5000, 2000, 1000], LAK: [100000, 50000, 20000, 10000, 5000], LKR: [5000, 1000, 500, 100, 50, 20], INR: [500, 200, 100, 50, 20, 10], TRY: [200, 100, 50, 20, 10, 5], MXN: [1000, 500, 200, 100, 50, 20] };
   var gz = { code: 'PHP', vorlagen: null, ergebnis: null, ecken: null, quelle: null };
@@ -6119,6 +6274,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       if (!n && !(scheinIndex()[gz.code] || {})[w]) return '';
       return '<div class="gz-zeile"><b>' + esc(scheinTxt(w)) + ' ' + esc(waehrungSymbol(gz.code)) + '</b><button type="button" class="hell gz-pm" data-pm="' + w + ':-1">−</button><span class="gz-n">' + n + ' ×</span><button type="button" class="hell gz-pm" data-pm="' + w + ':1">+</button><span class="gz-s">' + esc(geldFmt(n * w)) + '</span></div>';
     }).join('');
+    muenzBereichZeigen();
     var mz = +E.muenzen || 0; summe += mz;
     var erw = geldErwartet(), diff = Math.round((summe - erw) * 100) / 100;
     $('gzSumme').textContent = geldFmt(summe); $('gzSoll').textContent = geldFmt(erw);
@@ -6128,6 +6284,69 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     $('gzTreffer').textContent = E.treffer.length ? E.treffer.filter(function (t) { return t.zaehlt; }).length + ' Scheine erkannt. Falsch erkannt? Rahmen antippen, dann zählt er nicht.' : 'Kein Schein erkannt. Liegen die Scheine flach und gut beleuchtet nebeneinander?';
     gz.diff = diff;
   }
+  function muenzWerte() { var t = muenzTypen(gz.code) || []; return t.map(function (x) { return x.wert; }).filter(function (w, i, a) { return a.indexOf(w) === i; }).sort(function (a, b) { return a - b; }); }
+  function muenzBereichZeigen() {
+    var E = gz.ergebnis, kann = !!MUENZ_TYPEN[gz.code], M = E.mz, c = $('gzMzBild');
+    $('gzMzFoto').hidden = !kann; $('gzMzHand').hidden = kann;
+    if (!kann || !M) {
+      c.hidden = true; $('gzMzSumme').textContent = '';
+      $('gzMzText').textContent = kann ? 'Münzen getrennt fotografieren: nebeneinander auf einen dunklen, einfarbigen Untergrund legen (nicht stapeln), von oben.' : '';
+      if (kann) E.muenzen = 0; return;
+    }
+    // Ausschnitt um die Münzen, damit die Werte gut lesbar sind
+    var bx = [0, 0, M.canvas.width, M.canvas.height];
+    if (M.liste.length) {
+      var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; M.liste.forEach(function (m) { var r = m.r * 1.6; x0 = Math.min(x0, m.x - r); y0 = Math.min(y0, m.y - r); x1 = Math.max(x1, m.x + r); y1 = Math.max(y1, m.y + r); });
+      var bw = x1 - x0, bh = y1 - y0; if (bh > bw * 1.2) { x0 -= (bh / 1.2 - bw) / 2; bw = bh / 1.2; } else if (bw > bh * 1.6) { y0 -= (bw / 1.6 - bh) / 2; bh = bw / 1.6; }
+      x0 = Math.max(0, x0); y0 = Math.max(0, y0); bx = [x0, y0, Math.min(M.canvas.width - x0, bw), Math.min(M.canvas.height - y0, bh)];
+    }
+    M.bx = bx; c.dataset.bx = bx.map(Math.round).join(","); c.hidden = false; c.width = Math.round(bx[2]); c.height = Math.round(bx[3]); var x = c.getContext('2d'); x.drawImage(M.canvas, bx[0], bx[1], bx[2], bx[3], 0, 0, c.width, c.height);
+    x.save(); x.translate(-bx[0], -bx[1]);
+    var k = c.width / 700, anz = {}, summe = 0, unsicher = 0;
+    M.liste.forEach(function (m) {
+      if (m.wert) { anz[m.wert] = (anz[m.wert] || 0) + 1; summe += m.wert; } if (m.wert && !m.sicher) unsicher++;
+      var farbe = !m.wert ? '#94a3b8' : (m.sicher ? '#F5A524' : '#FB7185');
+      x.lineWidth = 5 * k; x.strokeStyle = farbe; x.setLineDash(m.wert && m.sicher ? [] : [10 * k, 8 * k]);
+      x.beginPath(); x.arc(m.x, m.y, m.r + 3 * k, 0, 7); x.stroke(); x.setLineDash([]);
+      var txt = m.wert ? (scheinTxt(m.wert) + (m.sicher ? '' : '?')) : '✕', fs = Math.max(18 * k, Math.min(34 * k, m.r * 0.6));
+      x.font = '800 ' + Math.round(fs) + "px 'Figtree', sans-serif"; var tw = x.measureText(txt).width + fs * 0.9;
+      x.fillStyle = farbe; x.beginPath(); x.roundRect ? x.roundRect(m.x - tw / 2, m.y - fs * 0.75, tw, fs * 1.5, fs * 0.75) : x.rect(m.x - tw / 2, m.y - fs * 0.75, tw, fs * 1.5); x.fill();
+      x.fillStyle = '#1f2937'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, m.x, m.y + 1);
+    });
+    x.restore(); E.muenzen = summe;
+    var teile = Object.keys(anz).map(Number).sort(function (a, b) { return b - a; }).map(function (w) { return anz[w] + '× ' + scheinTxt(w); });
+    $('gzMzSumme').textContent = (teile.length ? teile.join(' · ') + ' = ' : '') + geldFmt(summe);
+    $('gzMzText').textContent = !M.liste.length ? 'Keine Münze erkannt. Liegen sie einzeln auf einem dunklen, einfarbigen Untergrund?' :
+      (unsicher ? unsicher + (unsicher === 1 ? ' Münze ist' : ' Münzen sind') + ' unsicher (rot, mit „?“) – antippen bestätigt. ' : '') + 'Falscher Wert? Münze antippen, bis er stimmt (✕ = keine Münze). Daraus lernt die Erkennung.';
+    $('gzMzFoto').textContent = 'Münzen neu fotografieren';
+  }
+  // Korrigierte Münzen merken (Größe je Typ nachlernen)
+  function muenzKorrekturenLernen() {
+    var M = gz.ergebnis && gz.ergebnis.mz; if (!M || M.gelernt) return; M.gelernt = true;
+    var typen = muenzTypen(gz.code) || [];
+    M.liste.forEach(function (m) {
+      if (!m.korr || !m.wert || !m.mm) return;
+      var o = typen.filter(function (t) { return t.wert === m.wert; }).sort(function (a, b) { return ((a.farbe === m.farbe ? 0 : 1) - (b.farbe === m.farbe ? 0 : 1)) || (Math.abs(a.d - m.mm) - Math.abs(b.d - m.mm)); });
+      if (o.length && o[0].farbe === m.farbe && Math.abs(o[0].d - m.mm) / o[0].d < 0.12) muenzLernen(gz.code, o[0].id, m.mm);
+    });
+  }
+  function muenzenZaehlen(datei) {
+    var E = gz.ergebnis; $('gzMzText').textContent = 'Münzen werden gesucht …'; $('gzMzFoto').disabled = true;
+    var canvas;
+    return geldBildLaden(datei, 2000).then(function (c) { canvas = c; return cvLaden(); }).then(function (r) {
+      return new Promise(function (ok) { setTimeout(ok, 30); }).then(function () {
+        muenzKorrekturenLernen();
+        E.mz = { canvas: canvas, liste: muenzenFinden(r.cv, canvas, gz.code) }; ergebnisZeigen();
+      });
+    }).catch(function (e) { $('gzMzText').textContent = (e && e.message) || 'Das hat nicht geklappt.'; }).then(function () { $('gzMzFoto').disabled = false; });
+  }
+  $('gzMzFoto').addEventListener('click', function () { gz.wahl = { art: 'muenzen' }; fotoWahlZiel = 'geld'; wahlAuf('fotoWahl'); });
+  $('gzMzBild').addEventListener('click', function (ev) {
+    var M = gz.ergebnis && gz.ergebnis.mz; if (!M) return; var r = this.getBoundingClientRect(), bx = M.bx || [0, 0], px = bx[0] + (ev.clientX - r.left) * this.width / r.width, py = bx[1] + (ev.clientY - r.top) * this.height / r.height;
+    var m = M.liste.filter(function (q) { return Math.hypot(q.x - px, q.y - py) < q.r * 1.1; })[0]; if (!m) return;
+    var w = muenzWerte().concat([0]), i = w.indexOf(m.wert);
+    m.wert = m.sicher || m.korr ? w[(i + 1) % w.length] : m.wert; m.sicher = true; m.korr = true; M.gelernt = false; ergebnisZeigen();
+  });
   $('gzBild').addEventListener('click', function (ev) {
     var E = gz.ergebnis; if (!E) return; var r = this.getBoundingClientRect(), p = [(ev.clientX - r.left) * this.width / r.width, (ev.clientY - r.top) * this.height / r.height];
     for (var i = E.treffer.length - 1; i >= 0; i--) if (imPolygon(p, E.treffer[i].ecken)) { E.treffer[i].zaehlt = !E.treffer[i].zaehlt; ergebnisZeigen(); return; }
@@ -6145,9 +6364,9 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     if (d < 0) { e.kategorie = 'Sonstiges'; e.beschreibung = 'Bargeld-Differenz (Zählung)'; }
     else { e.kategorie = ABHEBUNG; e.zahlung = ''; e.beschreibung = 'Bargeld-Korrektur (Zählung)'; }
     if (e.waehrung === hauptCode()) delete e.waehrung;
-    ausgaben.push(e); speichern(); zeichnen(); toast('Gebucht: ' + e.beschreibung); ergebnisZeigen();
+    muenzKorrekturenLernen(); ausgaben.push(e); speichern(); zeichnen(); toast('Gebucht: ' + e.beschreibung); ergebnisZeigen();
   });
-  $('gzNeu').addEventListener('click', function () { gz.ergebnis = null; geldStartZeigen(); });
+  $('gzNeu').addEventListener('click', function () { muenzKorrekturenLernen(); gz.ergebnis = null; geldStartZeigen(); });
   $('gzEckenOk').addEventListener('click', function () { var b = this; b.disabled = true; $('gzEckenStatus').textContent = 'Wird gespeichert …'; eckenUebernehmen().catch(function (e) { toast((e && e.message) || 'Fehler'); }).then(function () { b.disabled = false; $('gzEckenStatus').textContent = ''; }); });
   $('gzEckenAbbruch').addEventListener('click', function () { geldStartZeigen(); });
   $('gzLernen').addEventListener('click', function (ev) {
@@ -6158,11 +6377,12 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   ['gzDatei', 'gzKamera'].forEach(function (id) { $(id).addEventListener('change', function () {
     var f = this.files && this.files[0]; if (!f || !gz.wahl) return;
     if (gz.wahl.art === 'zaehlen') { geldZaehlen(f); return; }
+    if (gz.wahl.art === 'muenzen') { muenzenZaehlen(f); return; }
     var w = gz.wahl; $('gzStatus').textContent = 'Foto wird geladen …';
     geldBildLaden(f, 1600).then(function (c) { $('gzStatus').textContent = ''; eckenStart(c, w.wert, w.seite); }).catch(function () { $('gzStatus').textContent = 'Das Foto konnte nicht gelesen werden.'; });
   }); });
   $('gzAuf').addEventListener('click', function () { if (reise && reise.status === 'abgeschlossen') { toast('Die Reise ist abgeschlossen.'); return; } gz.ergebnis = null; geldStartZeigen(); wahlAuf('geldBlatt'); cvLaden().catch(function () {}); });
-  $('gzX').addEventListener('click', function () { wahlZu('geldBlatt'); });
+  $('gzX').addEventListener('click', function () { muenzKorrekturenLernen(); wahlZu('geldBlatt'); });
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.t-bar')) $('gzAuf').click(); });
   $('geoFoto').addEventListener('click', function () {
     var a = ap && ap.fotoA; if (!a) return;
