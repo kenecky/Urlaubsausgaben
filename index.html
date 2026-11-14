@@ -5448,7 +5448,15 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     b.add('form-fest'); window.scrollTo(0, 0);
     var k = $('formKarte');
     ['form-eng', 'form-eng2'].forEach(function (c) { if (k.getBoundingClientRect().bottom > window.innerHeight - 4) b.add(c); });
+    formPlatzPruefen();
   }
+  // Passt das Formular nicht mehr (z. B. Vorschläge oder Preis-Hinweis eingeblendet), wieder scrollen erlauben
+  function formPlatzPruefen() {
+    var b = document.body.classList; if (aktSeite !== 'neu' || $('reiseAnsicht').hidden) { b.remove('form-fest'); return; }
+    var unten = $('formKarte').getBoundingClientRect().bottom + window.scrollY;
+    var fest = unten <= window.innerHeight - 4; b.toggle('form-fest', fest); if (fest && window.scrollY) window.scrollTo(0, 0);
+  }
+  if (window.ResizeObserver) new ResizeObserver(function () { formPlatzPruefen(); }).observe($('formKarte'));
   window.addEventListener('resize', function () { setTimeout(formEinpassen, 50); });
   // Vollbild im Querformat (Weltkarte, Verlauf): Element wird ins Vollbild verschoben und danach zurückgelegt
   var vbZurueck = null;
