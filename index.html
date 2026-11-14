@@ -6198,6 +6198,8 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     var tmp = new cv.Mat(), t = cv.threshold(v, tmp, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU); tmp.delete();
     var m = new cv.Mat(); cv.threshold(v, m, Math.max(t, 50), 255, cv.THRESH_BINARY); v.delete();
     var k3 = cv.Mat.ones(3, 3, cv.CV_8U); cv.morphologyEx(m, m, cv.MORPH_OPEN, k3); k3.delete();
+    // Randmaske (leicht verbreitert): helle Münzen auf hellem Grund zeigen oft nur ihren Rand
+    var rand = new cv.Mat(), k5r = cv.Mat.ones(5, 5, cv.CV_8U); cv.dilate(m, rand, k5r); k5r.delete();
     var cs = new cv.MatVector(), hi = new cv.Mat(); cv.findContours(m, cs, hi, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE); hi.delete(); m.delete();
     var mf = cv.Mat.zeros(H, W, cv.CV_8UC1), rs = [], weiss = new cv.Scalar(255);
     for (var c = 0; c < cs.size(); c++) {
@@ -6207,7 +6209,7 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       ct.delete();
     }
     cs.delete();
-    var rmed = rs.length ? median(rs) : 40, rmin = Math.round(rmed * 0.7), rmax = Math.round(rmed * 1.3);
+    var rmed = rs.length ? median(rs) : 0, rmin = rmed ? Math.round(rmed * 0.7) : Math.round(Math.min(W, H) * 0.02), rmax = rmed ? Math.round(rmed * 1.3) : Math.round(Math.min(W, H) * 0.15);
     var g = new cv.Mat(), kr = new cv.Mat(); cv.cvtColor(rgb, g, cv.COLOR_RGB2GRAY); cv.GaussianBlur(g, g, new cv.Size(0, 0), 2, 2, cv.BORDER_REFLECT);
     cv.HoughCircles(g, kr, cv.HOUGH_GRADIENT, 1, rmin * 1.2, 60, 18, rmin, rmax); g.delete();
     var md = mf.data, gut = [];
@@ -6217,9 +6219,17 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
       for (var yy = Math.max(0, Math.ceil(y - rr)); yy <= Math.min(H - 1, Math.floor(y + rr)); yy++) for (var xx = Math.max(0, Math.ceil(x - rr)); xx <= Math.min(W - 1, Math.floor(x + rr)); xx++) {
         if ((xx - x) * (xx - x) + (yy - y) * (yy - y) > rr * rr) continue; n++; if (md[yy * W + xx]) drin++;
       }
-      if (n && drin / n >= 0.85) gut.push({ x: x, y: y, r: r, f: drin / n });
+      if (n && drin / n >= 0.85) { gut.push({ x: x, y: y, r: r, f: drin / n }); continue; }
+      // sonst: Rand rundherum vorhanden?
+      var rd = rand.data, treff = 0;
+      for (var w = 0; w < 72; w++) {
+        var cw = Math.cos(w / 72 * 2 * Math.PI), sw = Math.sin(w / 72 * 2 * Math.PI), hit = false;
+        for (var f2 = 0.93; f2 <= 1.05 && !hit; f2 += 0.04) { var px = Math.round(x + cw * r * f2), py = Math.round(y + sw * r * f2); if (px >= 0 && py >= 0 && px < W && py < H && rd[py * W + px]) hit = true; }
+        if (hit) treff++;
+      }
+      if (treff / 72 >= 0.75) gut.push({ x: x, y: y, r: r, f: 0.7 * treff / 72 });
     }
-    kr.delete(); mf.delete();
+    kr.delete(); mf.delete(); rand.delete();
     gut.sort(function (p, q2) { return q2.f - p.f; });
     var fin = []; gut.forEach(function (k) { if (fin.every(function (f) { return Math.hypot(k.x - f.x, k.y - f.y) > 0.8 * (k.r + f.r); })) fin.push(k); });
     return fin;
@@ -6296,22 +6306,37 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
   }
   // Maßstab so wählen, dass alle Münzen am besten zu einem Typ ihrer Farbe passen
   function muenzenEinordnen(m, typen) {
-    var best = null;
+    // Für jede Annahme „Münze i ist Typ t“ ergibt sich ein Maßstab; bewertet wird, wie gut alle Münzen dazu passen
+    var hyp = [];
     m.forEach(function (i) { typen.forEach(function (t) {
-      if (t.farbe !== i.farbe) return; var s = i.r / t.d, kost = 0;
-      m.forEach(function (j) { var o = typen.filter(function (t2) { return t2.farbe === j.farbe; }).map(function (t2) { return Math.abs(j.r / s - t2.d) / t2.d; }); kost += Math.min(0.08, o.length ? Math.min.apply(null, o) : 0.08); });
-      if (!best || kost < best.k) best = { k: kost, s: s };
+      if (t.farbe !== i.farbe) return; var s = i.r / t.d, kost = 0, zu = [];
+      m.forEach(function (j) {
+        var o = typen.filter(function (t2) { return t2.farbe === j.farbe; }).map(function (t2) { return { t: t2, e: Math.abs(j.r / s - t2.d) / t2.d }; }).sort(function (a, b) { return a.e - b.e; });
+        kost += Math.min(0.08, o.length ? o[0].e : 0.08); zu.push(o);
+      });
+      var summe = zu.reduce(function (a, o) { return a + (o.length ? o[0].t.wert : 0); }, 0);
+      hyp.push({ k: kost, s: s, zu: zu, summe: summe });
     }); });
-    m.forEach(function (j) {
-      j.typ = null; j.wert = 0; j.sicher = false; if (!best) return;
-      j.mm = j.r / best.s;
-      var o = typen.filter(function (t) { return t.farbe === j.farbe; }).map(function (t) { return { t: t, e: Math.abs(j.mm - t.d) / t.d }; }).sort(function (a, b) { return a.e - b.e; });
-      if (!o.length) return; j.typ = o[0].t.id; j.wert = o[0].t.wert;
+    m.mehrdeutig = false;
+    m.forEach(function (j) { j.typ = null; j.wert = 0; j.sicher = false; });
+    if (!hyp.length) return 0;
+    var bk = Math.min.apply(null, hyp.map(function (h) { return h.k; }));
+    // Fast gleich gute Annahmen mit anderem Ergebnis? (z. B. nur silberne Münzen ohne Vergleichsmünze)
+    var nah = hyp.filter(function (h) { return h.k <= bk + 0.012 * m.length + 1e-9; });
+    var summen = nah.map(function (h) { return h.summe; }).filter(function (x, i, a) { return a.indexOf(x) === i; });
+    var best = nah.slice().sort(function (a, b) { return a.summe - b.summe || a.k - b.k; })[0]; // bei Gleichstand: kleinere Werte sind häufiger
+    if (summen.length < 2) best = hyp.filter(function (h) { return h.k === bk; })[0];
+    else m.mehrdeutig = true;
+    m.forEach(function (j, idx) {
+      var o = best.zu[idx]; j.mm = j.r / best.s; if (!o.length) return;
+      j.typ = o[0].t.id; j.wert = o[0].t.wert;
       var alt = o.filter(function (q) { return q.t.wert !== j.wert; });
-      j.sicher = o[0].e < 0.035 && (!alt.length || alt[0].e - o[0].e > 0.02);
+      var unterschiedlich = m.mehrdeutig && nah.some(function (h) { var q = h.zu[idx]; return q.length && q[0].t.wert !== j.wert; });
+      j.sicher = !unterschiedlich && o[0].e < 0.035 && (!alt.length || alt[0].e - o[0].e > 0.02);
     });
-    return best ? best.s : 0;
+    return best.s;
   }
+
   // ---------- Hilfen: Foto-Prüfung, Schein-Ecken vorschlagen, unbekannte Scheine finden ----------
   // Foto zu dunkel / zu hell / unscharf? (ohne OpenCV, auf 800 px verkleinert)
   function fotoPruefen(canvas) {
@@ -6817,7 +6842,9 @@ html[data-thema="dunkel"] .ak-karte { color: #CFE6E4; }
     Object.keys(E.mzExtra).forEach(function (w) { if (E.mzExtra[w]) anz[w] = (anz[w] || 0) + E.mzExtra[w]; }); summe += muenzZusatzSumme(); E.muenzen = summe;
     var teile = Object.keys(anz).filter(function (w) { return anz[w] > 0; }).map(Number).sort(function (a, b) { return b - a; }).map(function (w) { return anz[w] + '× ' + muenzTxt(w); });
     $('gzMzSumme').textContent = (teile.length ? teile.join(' · ') + ' = ' : '') + geldFmt(summe);
+    var mehrdeutig = B.some(function (M) { return M.liste.mehrdeutig; });
     $('gzMzText').textContent = !gesamt ? 'Keine Münze erkannt. Liegen sie einzeln auf einem dunklen, einfarbigen Untergrund?' :
+      (mehrdeutig ? 'Auf dem Foto liegen nur silberne Münzen – ohne Vergleichsmünze lässt sich die Größe nicht sicher bestimmen, darum sind die Werte geschätzt (rot). Tipp: eine Münze mit Gold (z. B. 20 ₱ oder alte 5 ₱) mit aufs Foto legen, dann stimmt es meist sofort. ' : '') +
       (unsicher ? unsicher + (unsicher === 1 ? ' Münze ist' : ' Münzen sind') + ' unsicher (rot, mit „?“) – antippen bestätigt. ' : '') + 'Falscher Wert? Münze antippen, bis er stimmt (✕ = keine Münze). Daraus lernt die Erkennung.';
     $('gzMzFotoTxt').textContent = 'Münzen neu fotografieren';
   }
